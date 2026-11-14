@@ -76,3 +76,12 @@ test('assistants and scripts on this computer are unchanged', async () => {
     assert.equal((await ask(a.url, 'GET', '/api/events')).status, 200);
   } finally { a.close(); }
 });
+
+test('a proxy that adds only a less common header still counts as another device', async () => {
+  const a = await start({ port: 0, dir: tmp() });
+  const one = { via: '1.1 proxy', 'x-forwarded-proto': 'https', 'x-forwarded-port': '443', 'x-forwarded-server': 'proxy', 'cf-connecting-ip': '100.1.2.3', 'true-client-ip': '100.1.2.3', 'x-client-ip': '100.1.2.3', 'fastly-client-ip': '100.1.2.3', 'tailscale-user-profile-pic': 'https://example.com/p.png' };
+  try {
+    for (const [k, v] of Object.entries(one)) assert.equal((await ask(a.url, 'GET', '/api/state', { [k]: v })).status, 403, k);
+    assert.equal((await ask(a.url, 'GET', '/api/state')).status, 200, 'this computer, asked directly, is unchanged');
+  } finally { a.close(); }
+});

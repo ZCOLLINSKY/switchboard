@@ -14,8 +14,10 @@ async function start(opts = {}) {
   const extra = opts.allowedHosts != null ? [].concat(opts.allowedHosts) : (process.env.SWITCHBOARD_ALLOWED_HOSTS || '').split(',');
   const allowed = new Set([...LOOPBACK, host].concat(extra.map((s) => String(s).trim()).filter(Boolean)));
   // Headers a proxy adds. tailscale serve, a reverse proxy or a tunnel reaches the board from 127.0.0.1, but the person
-  // (or anyone else) is on another device.
-  const PROXY = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-real-ip', 'tailscale-user-login', 'tailscale-user-name'];
+  // (or anyone else) is on another device. A proxy that adds none of them, or a plain TCP forward (ssh -L, socat), cannot
+  // be told apart from this computer: SETUP.md says so.
+  const PROXY = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-real-ip', 'tailscale-user-login', 'tailscale-user-name', 'tailscale-user-profile-pic',
+    'via', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-server', 'cf-connecting-ip', 'true-client-ip', 'x-client-ip', 'fastly-client-ip'];
   const store = open(opts.dir, { holdMs: opts.holdMs, collectMs: opts.collectMs });
   const waiters = new Set();
   // Simulation mode: made-up days you can switch between, with events that happen while you watch.

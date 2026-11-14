@@ -246,7 +246,12 @@ login item, or a board they start will refuse the phone. Open the key link once
 on the phone, as `https://your-machine.your-tailnet.ts.net:8443/?key=…`. Never
 put it on the open internet. Anything that comes through `tailscale serve` (or any other proxy)
 counts as another device, so even reading the board from there needs the key
-link; assistants on this computer are not affected.
+link; assistants on this computer are not affected. The board can tell only by
+the headers a proxy adds, so use `tailscale serve` as shown. A proxy that adds
+none of them (nginx's default `proxy_pass` setup, say) or a plain port forward
+(`ssh -L`, `socat`, `tailscale serve --tcp`) makes the other device look like
+this computer: it could then read the board and collect decisions without the
+key. Approving still needs the key.
 
 ## Rules that always apply
 

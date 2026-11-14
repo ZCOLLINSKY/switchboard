@@ -38,8 +38,10 @@ async function start(opts = {}) {
     const port = server.address().port, env = [];
     if (path.resolve(store.dir) !== path.resolve(os.homedir(), '.local', 'share', 'switchboard')) env.push(`-e SWITCHBOARD_HOME="${store.dir}"`);
     if (port !== 4747) env.push(`-e SWITCHBOARD_PORT=${port}`);
+    // A plugin's or a Desktop extension's folder is replaced on every update: a connector pointed at it would break later.
+    const managed = /[\\/]\.claude[\\/]plugins[\\/]|[\\/]Claude Extensions[\\/]/.test(__dirname + path.sep);
     return { folder: __dirname, plugin: ['/plugin marketplace add ZCOLLINSKY/switchboard', '/plugin install switchboard@zcollinsky'],
-      mcp: ['claude mcp add --scope user switchboard'].concat(env, ['--', `node "${path.join(__dirname, 'mcp.js')}"`]).join(' '),
+      mcp: managed ? null : ['claude mcp add --scope user switchboard'].concat(env, ['--', `node "${path.join(__dirname, 'mcp.js')}"`]).join(' '),
       desktop: 'https://github.com/ZCOLLINSKY/switchboard/releases/latest' };
   };
   const clients = new Set();
@@ -118,6 +120,9 @@ async function start(opts = {}) {
       // page key, reading included. A browser's live feed cannot send headers, so it may carry the key in its address.
       const keyed = fromPage(req) || (p === '/api/events' && url.searchParams.get('key') === pageKey);
       if (!local && p.startsWith('/api/') && p !== '/api/health' && !keyed) return json(res, 403, { error: 'Open Switchboard through its key link on this device first.' });
+      // Any call from the assistant connector on this computer (opening the board, asking for decisions) means one is in
+      // use, so the page stops offering to connect one. A website cannot send this header without the board's permission.
+      if (local && req.headers['x-switchboard-client'] === 'mcp' && !store.db.seen.mcp) { store.connectorSeen(); changed(); }
 
       if (req.method === 'GET' && p === '/' && url.searchParams.get('key')) {
         if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Ask your assistant to open Switchboard for you, or get the current link in a terminal with: node "${path.join(__dirname, 'cli.js')}" link` });
@@ -186,7 +191,7 @@ async function start(opts = {}) {
       }
       let out;
       let m;
-      if (p === '/api/lights') { out = store.raise(body); if (req.headers['x-switchboard-client'] === 'mcp') store.connectorSeen(); }
+      if (p === '/api/lights') out = store.raise(body);
       else if (p === '/api/complete') {
         if (typeof body.decision_id !== 'string' || !body.decision_id) return json(res, 400, { error: 'Send the decision_id you were handed, so the report lands on the right decision.' });
         out = store.complete(body.id, body.outcome, body.detail, Date.now(), body.decision_id);

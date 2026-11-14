@@ -77,7 +77,7 @@ test('the page offers to connect an assistant until one is connected, with copy 
   assert.doesNotThrow(() => new (require('vm').Script)(code), 'the page script parses');
   assert.match(code, /Connect an assistant/);
   assert.match(code, /S\.connected/);
-  assert.match(code, /S\.connect\.mcp/);
+  assert.match(code, /if \(S\.connect\.mcp\)/, 'the terminal line only when there is one');
   assert.match(code, /navigator\.clipboard\.writeText/);
 });
 
@@ -86,4 +86,34 @@ test('the button that ends a hold does not suggest the board sends anything', ()
   assert.doesNotMatch(html, /Send now/);
   assert.match(html, /B\('Skip the wait'/);
   for (const f of ['README.md', 'docs/API.md', 'lib/store.js']) assert.doesNotMatch(fs.readFileSync(path.join(root, f), 'utf8'), /Send now|Release now/, f);
+});
+
+test('"connected" turns on with any call through the connector: opening the board, or asking for decisions', async () => {
+  for (const first of [['open_board'], ['get_decisions']]) {
+    const dir = tmp(), a = await start({ port: 0, dir }), browser = path.join(tmp(), 'browser.sh');
+    fs.writeFileSync(browser, '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+    const m = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port, BROWSER: browser });
+    try {
+      await m.hello();
+      await m.call(first[0]);
+      assert.equal((await state(a)).connected, true, first[0]);
+      assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'data.json'), 'utf8')).seen.mcp > 0, true, 'and it is saved');
+    } finally { m.close(); a.close(); }
+  }
+  // A plain request that names no connector is not one.
+  const a = await start({ port: 0, dir: tmp() });
+  try { await fetch(a.url + '/api/health'); await post(a, '/api/decisions', { agent: 'cron' }); assert.equal((await state(a)).connected, false); } finally { a.close(); }
+});
+
+test('the terminal line is never offered from a plugin or Desktop extension folder, which updates replace', async () => {
+  for (const where of [['.claude', 'plugins', 'cache', 'zcollinsky', 'switchboard', '0.2.0'], ['Library', 'Application Support', 'Claude', 'Claude Extensions', 'local.mcpb.zach.switchboard']]) {
+    const copy = path.join(tmp(), ...where);
+    for (const f of ['server.js', 'lib', 'public']) fs.cpSync(path.join(root, f), path.join(copy, f), { recursive: true });
+    const a = await require(path.join(copy, 'server.js')).start({ port: 0, dir: tmp() });
+    try {
+      const c = (await state(a)).connect;
+      assert.equal(c.mcp, null, where.join('/'));
+      assert.equal(c.plugin.length, 2); assert.match(c.desktop, /^https:/);
+    } finally { a.close(); }
+  }
 });

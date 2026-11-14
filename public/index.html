@@ -693,7 +693,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     var line = function (t) { return h('div', { class: 'cline' }, h('code', { text: t }), B('Copy', function () { copyText(t); }, 'plain')); };
     var box = h('div', { class: 'say connect' }, h('p', { text: 'Claude Code: paste these two lines into a session, then start a new one.' }));
     S.connect.plugin.forEach(function (t) { box.appendChild(line(t)); });
-    box.appendChild(h('p', { text: 'Or paste this into a terminal:' })); box.appendChild(line(S.connect.mcp));
+    if (S.connect.mcp) { box.appendChild(h('p', { text: 'Or paste this into a terminal:' })); box.appendChild(line(S.connect.mcp)); }
     box.appendChild(h('p', {}, 'Claude Desktop: ', h('a', { href: S.connect.desktop, target: '_blank', rel: 'noopener', text: 'download the .mcpb file' }), ' from the latest release and double-click it.'));
     box.appendChild(h('p', { text: 'Then say: \u201cOpen my Switchboard, then set it up for me.\u201d' }));
     return box;

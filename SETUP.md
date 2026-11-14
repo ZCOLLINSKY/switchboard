@@ -224,7 +224,9 @@ then start the board with that address allowed:
 variable in the MCP server's settings (`-e` in step 3) and in the login item, or
 a board they start will refuse the phone. Open the key link once on the phone,
 as `https://your-machine.your-tailnet.ts.net/?key=…`. Never put it on the open
-internet.
+internet. Anything that comes through `tailscale serve` (or any other proxy)
+counts as another device, so even reading the board from there needs the key
+link; assistants on this computer are not affected.
 
 ## Rules that always apply
 

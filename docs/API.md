@@ -4,6 +4,8 @@ Base: `http://127.0.0.1:4747`. Writes are `POST` with `content-type: application
 
 **Page-only calls.** `act`, `bulk`, `promote`, `demote`, `settings`, `learn`, `unlearn`, `reoffer`, `areas/rename`, `areas/remove`, `sim`, `dump` and loading the examples (`demo` without `clear`) are the person's own actions. They need the page key in an `x-switchboard-key` header. A browser gets the key by opening the link the server prints (`/?key=…`); the page keeps it for that address and port and removes it from the address bar. There is no cookie. Without the key these calls answer 403. A refused call changes nothing. Assistants and scripts use the other calls. `/api/state` says `canAct` for the caller.
 
+**From another device.** A request counts as this computer's only when it comes from a loopback address, names `localhost`, `127.0.0.1` or `[::1]` as its host, and carries no proxy header (`X-Forwarded-For`, `Forwarded`, `X-Forwarded-Host`, `X-Real-IP`, `Tailscale-User-Login` or `Tailscale-User-Name`). Anything else, such as a phone through `tailscale serve`, needs the key for every `/api` call, reading included. The page itself and `GET /api/health` stay open, and health then leaves out `data`. `GET /api/events` may carry the key as `?key=…`, because a browser's live feed cannot send headers.
+
 | Call | What it does |
 |---|---|
 | `GET /api/state` | Everything the screen shows: areas, lights, queue order, counts, total seconds |

@@ -1011,15 +1011,17 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   document.addEventListener('visibilitychange', function () { live(!document.hidden); if (!document.hidden) { mark = Date.now(); load(); } });
   if (!/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) $('kbd-k').textContent = 'Ctrl K';
   var es = null;
+  // From another device the live feed needs the key too, and a feed cannot send headers: it goes in the address.
+  function feed() { return '/api/events' + (pageKey ? '?key=' + encodeURIComponent(pageKey) : ''); }
   var bc = null; try { bc = new BroadcastChannel('switchboard-' + location.host); bc.onmessage = function (e) { if (e.data === 'change') onChange(); }; } catch (e) { bc = null; }
   var leading = false;
   function lead() {
     // Browsers allow about six connections per address. One tab holds the live feed and tells the others.
     if (!bc || !navigator.locks) return false;
-    navigator.locks.request('switchboard-live-' + location.host, function () { leading = true; var src = new EventSource('/api/events'); src.addEventListener('change', function () { onChange(); bc.postMessage('change'); }); src.addEventListener('open', function () { if (S) load(true); bc.postMessage('change'); }); return new Promise(function () {}); });
+    navigator.locks.request('switchboard-live-' + location.host, function () { leading = true; var src = new EventSource(feed()); src.addEventListener('change', function () { onChange(); bc.postMessage('change'); }); src.addEventListener('open', function () { if (S) load(true); bc.postMessage('change'); }); return new Promise(function () {}); });
     return true;
   }
-  function live(on) { if (leading || (bc && navigator.locks)) return; if (on && !es) { try { es = new EventSource('/api/events'); es.addEventListener('change', onChange); es.addEventListener('open', function () { if (S) load(true); }); } catch (e) {} } else if (!on && es) { es.close(); es = null; } }
+  function live(on) { if (leading || (bc && navigator.locks)) return; if (on && !es) { try { es = new EventSource(feed()); es.addEventListener('change', onChange); es.addEventListener('open', function () { if (S) load(true); }); } catch (e) {} } else if (!on && es) { es.close(); es = null; } }
   var chT = null, loading = false;
   function onChange() { if (chT) return; chT = setTimeout(function later() { chT = null; if (loading || busy || typing()) { if (typing()) chT = setTimeout(later, 1500); return; } loading = true; load().then(function () { loading = false; }, function () { loading = false; }); }, 300); }
   if (!lead()) live(!document.hidden);

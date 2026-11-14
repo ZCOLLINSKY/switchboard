@@ -10,7 +10,12 @@ const { open } = require('./lib/store');
 async function start(opts = {}) {
   const port = Number(opts.port != null ? opts.port : process.env.SWITCHBOARD_PORT || 4747);
   const host = opts.host || process.env.SWITCHBOARD_HOST || '127.0.0.1';
-  const allowed = new Set(['localhost', '127.0.0.1', '[::1]', host].concat((process.env.SWITCHBOARD_ALLOWED_HOSTS || '').split(',').map((s) => s.trim()).filter(Boolean)));
+  const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
+  const extra = opts.allowedHosts != null ? [].concat(opts.allowedHosts) : (process.env.SWITCHBOARD_ALLOWED_HOSTS || '').split(',');
+  const allowed = new Set([...LOOPBACK, host].concat(extra.map((s) => String(s).trim()).filter(Boolean)));
+  // Headers a proxy adds. tailscale serve, a reverse proxy or a tunnel reaches the board from 127.0.0.1, but the person
+  // (or anyone else) is on another device.
+  const PROXY = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-real-ip', 'tailscale-user-login', 'tailscale-user-name'];
   const store = open(opts.dir, { holdMs: opts.holdMs, collectMs: opts.collectMs });
   const waiters = new Set();
   // Simulation mode: made-up days you can switch between, with events that happen while you watch.
@@ -96,9 +101,12 @@ async function start(opts = {}) {
       if (!allowed.has(hostName)) return json(res, 403, { error: 'Host not allowed. Set SWITCHBOARD_ALLOWED_HOSTS to add one.' });
       const url = new URL(req.url, 'http://x');
       const p = url.pathname;
-      const local = /^(?:127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '');
-      // From another machine (a phone on a private network), the page key is needed for every call, reading included.
-      if (!local && p.startsWith('/api/') && p !== '/api/events' && !fromPage(req)) return json(res, 403, { error: 'Open Switchboard through its key link on this device first.' });
+      // Local means this computer, asked directly: from a loopback address, by a loopback name, through no proxy.
+      const local = /^(?:127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '') && LOOPBACK.has(hostName) && !PROXY.some((k) => req.headers[k] != null);
+      // From another device (a phone on a private network, anything through tailscale serve), every /api call needs the
+      // page key, reading included. A browser's live feed cannot send headers, so it may carry the key in its address.
+      const keyed = fromPage(req) || (p === '/api/events' && url.searchParams.get('key') === pageKey);
+      if (!local && p.startsWith('/api/') && p !== '/api/health' && !keyed) return json(res, 403, { error: 'Open Switchboard through its key link on this device first.' });
 
       if (req.method === 'GET' && p === '/' && url.searchParams.get('key')) {
         if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Get the current one with: node "${path.join(__dirname, 'cli.js')}" link` });

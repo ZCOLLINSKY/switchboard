@@ -259,7 +259,7 @@ async function callTool(name, a, signal) {
     const v = await api('GET', '/api/state', null, signal);
     const areaName = (id) => (v.areas.find((x) => x.id === id) || {}).name || id;
     const want = String(a.area == null ? '' : a.area).toLowerCase();
-    if (a.state === 'done' || a.state === 'dropped') throw new Error('Finished lights are not listed here. The person can search them under "What did I decide?".');
+    if (a.state === 'done' || a.state === 'dropped') throw new Error('Finished lights are not listed here. The person can search them under "Past decisions" on the board.');
     return { board: BASE, need_you_seconds: v.seconds, counts: v.counts,
       areas: v.areas.map((x) => ({ name: x.name, note: x.note, voice: [x.voice].concat((x.rules || []).map((r) => 'Always: ' + r)).filter(Boolean).join('\n') || undefined, asleep_until: x.wakeAt ? new Date(x.wakeAt).toISOString() : null })),
       lights: v.lights.filter((l) => (!a.state || l.state === a.state) && (!want || areaName(l.area).toLowerCase() === want))

@@ -16,7 +16,7 @@ back.
 
 ## Try it in one minute
 
-You need [Node.js](https://nodejs.org) 18 or newer. Nothing to install.
+You need [Node.js](https://nodejs.org) 18 or newer. Nothing else to install.
 
 ```sh
 git clone https://github.com/ZCOLLINSKY/switchboard.git
@@ -26,6 +26,11 @@ node cli.js sim --open
 
 No git? On the GitHub page, click **Code**, then **Download ZIP**, unzip it,
 and run `node cli.js sim --open` in that folder.
+
+To get a terminal in a folder: on a Mac, open **Terminal**, type `cd ` (with a
+space), drag the folder onto the window and press Return. On Windows, open the
+folder, click the address bar, type `powershell` and press Enter: PowerShell
+opens in that folder.
 
 A made-up busy morning opens in your browser, and new things arrive while you
 watch. It keeps its own data and never touches a real board. Ctrl+C stops it.
@@ -88,7 +93,7 @@ What makes it different from a to-do list:
 <details>
 <summary>Everything else it does</summary>
 
-- **Rules are watched.** The first five automatic runs all come back for a look, then one now and then at random. "What runs by itself" lists every rule with an off switch, and a sudden spike pauses a rule and asks.
+- **Rules are watched.** The first five automatic runs all come back for a look, then one now and then at random. "Your rules" lists every rule with an off switch, and a sudden spike pauses a rule and asks.
 - **Nothing goes stale quietly.** An old reply says who has been waiting ("Dale has waited 2 days"). A job that goes quiet past the time it promised turns amber and breaks "All clear". The third snooze asks you to do it, drop it, or give it a date.
 - **Slammed days stay calm.** The queue is ordered by meaning: what is due within a day, then messages to people waiting on you (the bigger quote first among those), then broken jobs that hold something up, then the rest by age. Identical changes collapse into one "Approve all 8" row. A long queue shows the top five, and never folds away a deadline or a blocker.
 - **The minutes are honest.** The headline counts taps, using the middle of your last ten for each job type. Work away from the board ("chores") and anything not timed yet are counted apart, never guessed in.
@@ -113,7 +118,7 @@ browser you use: that is what lets the browser approve things. Any other browser
 and any script, can read the board but not act on it. `node cli.js link`
 prints the link again, and `node cli.js stop` stops the board. Run `npm link` once in this folder if you would rather type `switchboard link`.
 
-Then, in a second terminal, load the examples so you can try the buttons:
+Then, in a second terminal, in the same folder, load the examples so you can try the buttons:
 
 ```sh
 node cli.js demo
@@ -131,21 +136,18 @@ folder and say:
 It will start the board, connect itself, ask what you have going, and put your
 real lights on it. What it changes on your machine: it adds the `switchboard`
 MCP server to your assistant's settings and copies one skill into
-`~/.claude/skills`. It asks before it adds a line to your `~/.claude/CLAUDE.md`
-or sets the board to start at login. [SETUP.md](SETUP.md) is short if you
-would rather read it first.
+`~/.claude/skills`. Your assistant may ask you to approve (or paste) each of
+those. It asks before it adds a line to your `~/.claude/CLAUDE.md` or sets the
+board to start at login. The new tools load in its next session, so you start
+one more. Setup is done once you have tapped one light on the board and it has
+picked up your answer. [SETUP.md](SETUP.md) is short if you would rather read
+it first.
 
-To connect Claude Code by hand, from this folder:
+To connect Claude Code by hand instead, from this folder:
 
 ```sh
 claude mcp add --scope user switchboard -- node "$PWD/mcp.js"
 ```
-
-Along the way it asks you to approve (or paste) up to three changes to its own
-settings: connecting the board, copying its skill, and one line in your
-`~/.claude/CLAUDE.md`. The new tools load in its next session, so you start one
-more. Setup is done once you have tapped one light on the board and it has
-picked up your answer.
 
 ## How anything turns on a light
 
@@ -210,7 +212,7 @@ days from the bar at the top of the page. Nothing touches your real board.
   "failed". Until it does, the light says "approved, not yet sent". For text
   messages, the button opens your own Messages app with the draft filled in.
 - **Nothing is erased.** Every change is appended to `events.jsonl` next to the
-  data file, and "What did I decide?" reads from that log. Finished lights move
+  data file, and "Past decisions" reads from that log. Finished lights move
   to `archive.jsonl` after 30 days.
 - **It listens only on your own computer** unless you start it with `--host`.
   There is no login, so don't put it on the open internet.

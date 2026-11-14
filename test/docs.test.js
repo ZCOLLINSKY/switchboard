@@ -41,3 +41,26 @@ test('nothing an assistant is told to run prints the key link to it', () => {
   assert.match(two, /link --open/, 'step 2 opens the link for the person instead of handing it over');
   assert.doesNotMatch(two, /Give them that link/);
 });
+
+test('the docs and the connector name the screens the page really has', () => {
+  const page = read('public/index.html');
+  assert.match(page, /'Your rules'/); assert.match(page, /'Past decisions'/);
+  for (const f of ['README.md', 'SETUP.md', 'mcp.js', 'server.js', 'cli.js', 'lib/store.js', 'docs/API.md', 'skill/switchboard/SKILL.md', 'manifest.json', 'public/index.html']) {
+    assert.doesNotMatch(read(f), /What did I decide|What runs by itself/i, f);
+  }
+});
+
+test('the page never assumes a terminal in the repository, and its approve button does not say the board sends', () => {
+  const page = read('public/index.html');
+  assert.doesNotMatch(page, /in Terminal: node cli\.js/);
+  assert.doesNotMatch(page, /Approve & send/);
+});
+
+test('the README reads right for someone who is not a developer', () => {
+  const r = read('README.md');
+  assert.doesNotMatch(r, /Nothing to install\./);
+  assert.match(r, /PowerShell/); assert.match(r, /Terminal/);
+  const by = r.indexOf('To connect Claude Code by hand'), along = r.indexOf('approve (or paste)');
+  assert.ok(along > 0 && along < by, 'what setup asks to change comes before the by-hand command, not after it');
+  assert.match(r, /second terminal, in the same folder/);
+});

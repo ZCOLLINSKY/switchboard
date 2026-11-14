@@ -388,3 +388,21 @@ test('an assistant that checked in today makes an approval nobody collects turn 
   assert.equal(b.state, 'approved');
   assert.match(s.view(t + 60 * MIN).lights.find((x) => x.id === b.id).alert, /Waiting for an assistant to check in/);
 });
+
+test('an empty collection says what is still in the undo window, and what is ready for other sessions', () => {
+  const s = open(fs.mkdtempSync(path.join(os.tmpdir(), 'sb-')));
+  const HOLD = require('../lib/store').HOLD_MS;
+  const mine = s.raise({ area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'], agent: 'claude-code:shop~1a2b' }, T0);
+  const theirs = s.raise({ area: 'Home', title: 'Which colour?', kind: 'decide', options: ['Red', 'Blue'], agent: 'claude-code:home~9f9f' }, T0);
+  s.act(mine.id, 'answer', { value: 'L' }, T0); s.act(theirs.id, 'answer', { value: 'Red' }, T0 - HOLD);
+  const early = s.decisions(T0 + 1000, { agent: 'claude-code:shop~1a2b' });
+  assert.deepEqual(early.decisions, []);
+  assert.equal(early.held, 1);
+  assert.equal(early.next_release_at, new Date(T0 + HOLD).toISOString());
+  assert.equal(early.ready_for_other_sessions, 1, 'counted, never handed over');
+  assert.equal(s.db.lights.find((l) => l.id === theirs.id).decision.collectedAt, null);
+  const later = s.decisions(T0 + HOLD, { agent: 'claude-code:shop~1a2b' });
+  assert.deepEqual(later.decisions.map((d) => d.id), [mine.id]);
+  assert.ok(!('held' in later) && !('next_release_at' in later), 'nothing held: not mentioned');
+  assert.ok(!('ready_for_other_sessions' in s.decisions(T0 + HOLD, { agent: 'x', all: true })), 'one that takes everything has no others');
+});

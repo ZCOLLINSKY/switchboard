@@ -53,7 +53,8 @@ the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
 double-click it, and click Install. In a new chat, say "Open my Switchboard,
 then set it up for me." Claude Desktop starts the board for you; keep the app
 open while you use it. Nothing checks the board between chats, so after you
-answer on the board, start a chat and say "check my Switchboard".
+answer on the board, wait a minute or two (every answer can be taken back for
+20 seconds to 2 minutes), then start a chat and say "check my Switchboard".
 
 **Any other assistant, or no plugin:** get the folder (`git clone` as above, or
 **Download ZIP**) and follow [Let your AI assistant set it up](#let-your-ai-assistant-set-it-up).

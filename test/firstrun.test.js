@@ -117,3 +117,22 @@ test('the terminal line is never offered from a plugin or Desktop extension fold
     } finally { a.close(); }
   }
 });
+
+test('get_decisions says when an answer is still in the undo window, and the guide says answers wait', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir, holdMs: 60000 });
+  const m = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port });
+  try {
+    await m.hello();
+    const l = await m.call('raise_light', { area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'] });
+    const v = (await state(a)).lights.find((x) => x.id === l.id);
+    const r = await fetch(`${a.url}/api/lights/${l.id}/act`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-switchboard-key': a.key }, body: JSON.stringify({ action: 'answer', value: 'L', rev: v.rev }) });
+    assert.equal(r.status, 200);
+    const got = await m.call('get_decisions');
+    assert.deepEqual(got.decisions, []);
+    assert.equal(got.held, 1);
+    assert.match(got.note, /undo window/); assert.match(got.note, /wait_for_decision/);
+    const tools = (await m.req('tools/list', {})).result.tools, gd = tools.find((t) => t.name === 'get_decisions');
+    assert.match(gd.description, /20 to 120 seconds/);
+    assert.match((await m.call('setup_guide')).note, /20 to 120 seconds/);
+  } finally { m.close(); a.close(); }
+});

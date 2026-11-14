@@ -64,3 +64,10 @@ test('the README reads right for someone who is not a developer', () => {
   assert.ok(along > 0 && along < by, 'what setup asks to change comes before the by-hand command, not after it');
   assert.match(r, /second terminal, in the same folder/);
 });
+
+test('the changelog tells someone upgrading from 0.1.0 what to redo now that bin/switchboard.js is gone', () => {
+  const c = read('CHANGELOG.md'), up = c.slice(c.indexOf('Upgrading from 0.1.0'), c.indexOf('## 0.1.0'));
+  assert.ok(c.includes('Upgrading from 0.1.0'), 'there is an upgrade note');
+  assert.match(up, /bin\/switchboard\.js/); assert.match(up, /login item/); assert.match(up, /cli\.js/); assert.match(up, /npm link/);
+  assert.ok(!fs.existsSync(path.join(root, 'bin')), 'no shim: a top-level bin/ keeps the plugin out of Claude Desktop chat and Cowork');
+});

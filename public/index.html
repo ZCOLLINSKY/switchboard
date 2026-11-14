@@ -127,7 +127,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
 .bh{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:800}
 .bh i{width:11px;height:11px;border-radius:4px;flex:none}
 .say{font-size:13.5px;color:var(--soft);margin-top:6px}
-.connect{min-width:0} .li .connect{flex:1 1 100%;margin-top:0} .say.connect p{margin:10px 0 0;font-weight:400;flex:none} .connect a{color:var(--blue)} .cmd{display:flex;gap:8px;align-items:center;margin-top:6px} .cmd code{flex:1 1 auto;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--ink)}
+.connect{min-width:0} .li .connect{flex:1 1 100%;margin-top:0} .say.connect p{margin:10px 0 0;font-weight:400;flex:none} .connect a{color:var(--blue)} .cline{display:flex;gap:8px;align-items:center;margin-top:6px} .cline code{flex:1 1 auto;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--ink)}
 .addbox{border:1px dashed var(--line2);background:none;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
 
 .list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -690,7 +690,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function copyText(t) { var no = function () { toast('Copying is not allowed here. Select the line and copy it.'); }; try { navigator.clipboard.writeText(t).then(function () { toast('Copied.'); }, no); } catch (e) { no(); } }
   function connectGuide() {
     if (!S.connect) return null;
-    var line = function (t) { return h('div', { class: 'cmd' }, h('code', { text: t }), B('Copy', function () { copyText(t); }, 'plain')); };
+    var line = function (t) { return h('div', { class: 'cline' }, h('code', { text: t }), B('Copy', function () { copyText(t); }, 'plain')); };
     var box = h('div', { class: 'say connect' }, h('p', { text: 'Claude Code: paste these two lines into a session, then start a new one.' }));
     S.connect.plugin.forEach(function (t) { box.appendChild(line(t)); });
     box.appendChild(h('p', { text: 'Or paste this into a terminal:' })); box.appendChild(line(S.connect.mcp));

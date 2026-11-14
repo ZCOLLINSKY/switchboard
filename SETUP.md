@@ -67,10 +67,11 @@ Claude Code:
 claude mcp add --scope user switchboard -- node "REPO/mcp.js"
 ```
 
-With a custom folder or port, pass them on:
+With a custom folder or port, pass them on. Every `-e` goes after the server's
+name (`switchboard`) and before `--`:
 
 ```sh
-claude mcp add --scope user -e SWITCHBOARD_HOME="/path/to/data" -e SWITCHBOARD_PORT=5000 switchboard -- node "REPO/mcp.js"
+claude mcp add --scope user switchboard -e SWITCHBOARD_HOME="/path/to/data" -e SWITCHBOARD_PORT=5000 -- node "REPO/mcp.js"
 ```
 
 Any other MCP client, in its server config:
@@ -151,7 +152,9 @@ Then:
   asleep until a date, give that container `wake_at` as a date (`2027-01-05`).
   Its lights stay out of the queue until then, and that day it asks what is next.
 - Raise one light per real item, with `for_anyone: true` so that whichever
-  assistant comes next can act on the person's answers.
+  assistant comes next can act on the person's answers, and a stable `key`
+  for each (`setup:dentist`, an email thread id). If setup runs again, the same
+  key updates the same light instead of adding a second one.
   - Theirs to decide or approve: state `need_you`.
   - Something they sent and are waiting on: state `waiting_them` with
     `follow_up_days`. If it was a message to a person, also give `to` (who it
@@ -166,7 +169,9 @@ Then:
 
 ## 6. Prove the loop
 
-1. Raise a small real light, or use one from step 5.
+1. Raise a small real light with `for_anyone: true` and a stable `key`
+   (`setup:first-light`), or use one from step 5. `for_anyone` lets the
+   session that finishes setup collect it, whatever folder it was started in.
 2. **Ask** the person to open the link and act on it. If you skipped step 2,
    print the link now with `node "REPO/cli.js" link` (with the same
    `SWITCHBOARD_HOME` and `SWITCHBOARD_PORT`).
@@ -217,14 +222,21 @@ optional. To have the board on at login, **Ask** first, then:
 ## 8. Optional: open it from a phone
 
 The board has no login, so it listens only on this computer. To open it from a
-phone, use a private network you already trust (for example Tailscale, with
-`tailscale serve --bg 4747`; without `--bg` it stops when its terminal closes),
-then start the board with that address allowed:
-`SWITCHBOARD_ALLOWED_HOSTS=your-machine.your-tailnet.ts.net`. Put the same
-variable in the MCP server's settings (`-e` in step 3) and in the login item, or
-a board they start will refuse the phone. Open the key link once on the phone,
-as `https://your-machine.your-tailnet.ts.net/?key=…`. Never put it on the open
-internet. Anything that comes through `tailscale serve` (or any other proxy)
+phone, use a private network you already trust, for example Tailscale. Give the
+board its own HTTPS port, so it never takes over a page already served at the
+root of this machine's address. Check first with `tailscale serve status`, and
+pick another port if 8443 is taken:
+
+```sh
+tailscale serve --bg --https=8443 4747
+```
+
+Without `--bg` it stops when its terminal closes. Then start the board with
+that address allowed: `SWITCHBOARD_ALLOWED_HOSTS=your-machine.your-tailnet.ts.net`.
+Put the same variable in the MCP server's settings (`-e` in step 3) and in the
+login item, or a board they start will refuse the phone. Open the key link once
+on the phone, as `https://your-machine.your-tailnet.ts.net:8443/?key=…`. Never
+put it on the open internet. Anything that comes through `tailscale serve` (or any other proxy)
 counts as another device, so even reading the board from there needs the key
 link; assistants on this computer are not affected.
 

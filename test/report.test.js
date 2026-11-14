@@ -30,7 +30,7 @@ test('the report counts what came in, what was decided and how fast, and what is
   assert.match(r, /Reported back: 2 \(1 sent, 1 done, 0 failed, 0 not sure\)/);
   assert.match(r, /Waiting on you now: \d+\. Waiting longest: "Still waiting one"/);
   assert.doesNotMatch(r, /NaN|undefined/);
-  assert.match(report([], { lights: [] }, { days: 7, now: T }), /Came in: 0 lights, 0 asking you\.\nYou decided: 0\./, 'an empty week reads plainly');
+  assert.match(report([], { lights: [] }, { days: 7, now: T }), /Came in: 0 lights, 0 asking you\.\nYou decided: 0\.\nTime from asking to your answer: no answers yet\./, 'an empty week reads plainly');
 });
 
 test('cli.js report prints the receipts of the board in use', async () => {

@@ -8,8 +8,16 @@ const path = require('path');
 // A launcher that could not fill in a setting (an empty value, or "${user_config.port}" left as written) means "not set",
 // here and in the board this process may start.
 for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWITCHBOARD_AGENT']) {
-  const v = process.env[k]; if (v != null && (!v.trim() || v.includes('${') || (k === 'SWITCHBOARD_PORT' && !/^\d{1,5}$/.test(v.trim())))) delete process.env[k];
+  const v = process.env[k]; if (v != null && (!v.trim() || v.includes('${'))) delete process.env[k];
 }
+// Any other port that is not a port (a typo such as "5937x") is an error on every call, never a quiet fall back to the
+// usual port, where the person's real board runs. A whole number written as "4747.0" is that number.
+const BAD_PORT = (() => {
+  const v = process.env.SWITCHBOARD_PORT; if (v == null) return null;
+  const m = v.trim().match(/^(\d{1,5})(?:\.0+)?$/), n = m ? Number(m[1]) : 0;
+  if (n >= 1 && n <= 65535) { process.env.SWITCHBOARD_PORT = String(n); return null; }
+  return v;
+})();
 const VERSION = require('./package.json').version; // the one place the version is written
 const os = require('os'), fs = require('fs'), names = require('./lib/names');
 // Who this assistant is on the board: a name fixed by SWITCHBOARD_AGENT, or the client's name plus the repository or folder
@@ -44,7 +52,8 @@ function call(base, method, route, body, signal, ms) {
 const IN_PROCESS = !!process.versions.electron || process.env.SWITCHBOARD_IN_PROCESS === '1';
 let here = null; // the board, when it runs in this process
 async function startHere() {
-  if (!here) here = require('./server').start({ dir: HOME });
+  // signals: a stop signal to this process removes the board's lock, so nothing is later sent to a stale address.
+  if (!here) here = require('./server').start({ dir: HOME, signals: true });
   try { BASE = (await here).url; } catch (e) { here = null; throw new Error(`Switchboard could not start: ${e.code === 'EADDRINUSE' ? 'another program uses its port. Pick another port in its settings.' : e.message}`); }
 }
 // Start the board and wait for it. If it refuses to start, its own reason is passed on, not swallowed.
@@ -55,24 +64,41 @@ async function startBoard() {
   child.stderr.on('data', (d) => { err += d; }); child.on('exit', (code) => { exited = code; }); child.on('error', (e) => { refused = e; });
   for (let i = 0; i < 24; i++) {
     await sleep(250);
-    if (refused) return startHere(); // this runtime cannot start a second Node process: run the board here instead
+    if (refused) {
+      // Claude Desktop's runtime cannot start a second Node process: run the board here instead. Any other failure (an
+      // upgrade removed this node, say) is said: a board inside this session would stop when the session ends, and would
+      // hold the port meanwhile against the person's own login item.
+      if (refused.code === 'ERR_MCP_NODE_HOST_NOT_NODE' || refused.name === 'SelfExecBlockedError') return startHere();
+      throw new Error(`Switchboard could not start: ${refused.code || refused.message}.${refused.code === 'ENOENT' ? ` Node is no longer at ${process.execPath} (an upgrade moves it): restart this session.` : ''}`);
+    }
     if (exited != null) throw new Error(`Switchboard could not start: ${err.trim() || 'it stopped at once (exit ' + exited + ')'}`);
     try { const r = await call(BASE, 'GET', '/api/health', null, null, 1000); if (r.ok) { child.stderr.destroy(); child.unref(); return; } } catch (_) { /* still starting */ }
   }
   child.stderr.destroy(); child.unref();
   throw new Error(`Switchboard was started but does not answer at ${BASE} yet.${err.trim() ? ' It said: ' + err.trim() : ''}`);
 }
-// When a data folder was named, the board used must be the one serving it, never a different board on the default port.
-let checked = !process.env.SWITCHBOARD_HOME;
+// The lock the board leaves in this connector's data folder: where it runs, and the id only that board knows.
+const readLock = () => { try { const l = JSON.parse(fs.readFileSync(path.join(HOME, 'server.lock'), 'utf8')); return l && typeof l === 'object' ? l : null; } catch (e) { return null; } };
+// What answers at an address: a board (with its health), nothing at all, another program, or no answer in time.
+async function probe(base, signal) {
+  let res; try { res = await call(base, 'GET', '/api/health', null, signal, 2000); } catch (e) { if (e.code === 'CANCELLED') throw e; return notThere(e) ? { none: true } : { unsure: true }; }
+  const h = await res.json().catch(() => null);
+  return h && h.name === 'switchboard' && res.ok ? { board: h } : { other: true };
+}
+// Checked once, before the first call: the board used must be this data folder's when one was named (never a different
+// board on the default port), and a program that is not Switchboard is named as such instead of answering "HTTP 404".
+let checked = false;
 async function ensureBoard(signal) {
+  if (BAD_PORT != null) throw new Error(`SWITCHBOARD_PORT "${BAD_PORT}" is not a port number. Fix it in the connector's settings (in Claude Desktop: Settings > Extensions > Switchboard > Port).`);
   if (checked) return;
-  const want = path.resolve(HOME), serves = async (base) => { try { const h = await (await call(base, 'GET', '/api/health', null, signal, 2000)).json(); return h && h.name === 'switchboard' ? path.resolve(path.dirname(h.data)) : null; } catch (e) { return null; } };
-  let lock = null; try { lock = JSON.parse(fs.readFileSync(path.join(HOME, 'server.lock'), 'utf8')).url; } catch (e) { /* none */ }
-  if (lock && (await serves(lock)) === want) { BASE = lock; checked = true; return; }
-  const at = await serves(BASE);
-  if (at === want) { checked = true; return; }
-  if (at) throw new Error(`Another Switchboard (data in ${at}) answers at ${BASE}, not the one for ${want}. Set SWITCHBOARD_PORT for this data folder.`);
-  checked = true; // nothing answers: the normal path below starts this folder's board
+  const named = !!process.env.SWITCHBOARD_HOME, want = path.resolve(HOME), lock = readLock();
+  if (named && lock && lock.url) { const p = await probe(lock.url, signal); if (p.board && p.board.lock === lock.id) { BASE = lock.url; checked = true; return; } }
+  const p = await probe(BASE, signal);
+  // Not remembered: the next call looks again, in case the person has freed the port.
+  if (p.other) throw new Error(`Another program (not Switchboard) answers at ${BASE}. Pick another port: in Claude Desktop, Settings > Extensions > Switchboard > Port; elsewhere, set SWITCHBOARD_PORT.`);
+  const at = p.board && p.board.data ? path.resolve(path.dirname(p.board.data)) : null;
+  if (named && p.board && at !== want) throw new Error(`Another Switchboard${at ? ` (data in ${at})` : ''} answers at ${BASE}, not the one for ${want}. Set SWITCHBOARD_PORT for this data folder.`);
+  checked = true; // this folder's board, or nothing yet: the normal path below starts this folder's board
 }
 async function api(method, route, body, signal, ms = 10000) {
   await ensureBoard(signal);
@@ -86,10 +112,12 @@ async function api(method, route, body, signal, ms = 10000) {
     }
   }
   // Nothing listens at BASE. The board may be on another port: its lock file says where. Never start a second writer.
-  try {
-    const held = JSON.parse(fs.readFileSync(path.join(HOME, 'server.lock'), 'utf8'));
-    if (held.url && held.url !== BASE) { try { const out = await read(await call(held.url, method, route, body, signal, ms)); BASE = held.url; return out; } catch (e2) { if (!notThere(e2)) throw e2; } }
-  } catch (e) { if (e.code !== 'ENOENT' && !(e instanceof SyntaxError) && !notThere(e)) throw e; }
+  // The lock is believed only once the board at its address proves it holds that lock: after a crash the address may
+  // belong to another program, and the request may carry a draft.
+  const held = readLock(), there = held && held.url && held.url !== BASE ? await probe(held.url, signal) : {};
+  if (there.board && there.board.lock === held.id) {
+    try { const out = await read(await call(held.url, method, route, body, signal, ms)); BASE = held.url; return out; } catch (e2) { if (!notThere(e2)) throw e2; }
+  }
   await startBoard();
   // The first attempt never reached a board, so sending it now is the first time, not a repeat.
   return read(await call(BASE, method, route, body, signal, ms));
@@ -160,15 +188,27 @@ const TOOLS = [
 ];
 
 // Opens the key link in the person's browser. The key goes from the board's data folder straight to the browser.
+// open, xdg-open and start hand the link over and exit: an exit with an error means nothing opened. A browser named by
+// BROWSER may keep running instead: still running after a few seconds counts as open.
 function openInBrowser(link) {
   const b = process.env.BROWSER; // the usual override, also used by the tests
   const [cmd, args, extra] = b ? [b, [link], {}] : process.platform === 'darwin' ? ['open', [link], {}]
     : process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', link], { windowsVerbatimArguments: true }] : ['xdg-open', [link], {}];
   return new Promise((resolve, reject) => {
+    let over = false; const end = (ok) => { if (over) return; over = true; c.unref(); if (ok) resolve(); else reject(new Error('the browser did not open')); };
     const c = spawn(cmd, args, Object.assign({ stdio: 'ignore', detached: true, windowsHide: true }, extra));
-    c.on('error', () => reject(new Error(`Could not open a browser from here. Ask the person to run this in their own terminal and open what it prints: node "${path.join(__dirname, 'cli.js')}" link`)));
-    c.on('spawn', () => { c.unref(); resolve(); });
+    c.on('error', () => end(false));
+    c.on('exit', (code) => end(code === 0));
+    c.on('spawn', () => setTimeout(() => end(true), 3000).unref());
   });
+}
+// When no browser opens from here: a small page in the data folder that only the person can read, which they can
+// double-click. It needs no terminal, and the assistant is told only where it is.
+function openerFile(link) {
+  const file = path.join(HOME, 'open-switchboard.html'), safe = link.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  fs.writeFileSync(file, `<!doctype html><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="refresh" content="0;url=${safe}"><title>Switchboard</title><a href="${safe}">Open Switchboard</a>\n`, { mode: 0o600 });
+  fs.chmodSync(file, 0o600); // an older copy may have been made with other permissions
+  return file;
 }
 
 async function callTool(name, a, signal) {
@@ -194,9 +234,17 @@ async function callTool(name, a, signal) {
   }
   if (name === 'open_board') {
     const h = await api('GET', '/api/health', null, signal); // starts the board if it is not running
-    let key = ''; try { key = fs.readFileSync(path.join(path.dirname(h.data || ''), 'page.key'), 'utf8').trim(); } catch (e) { /* none */ }
-    if (!h.data || !/^[a-f0-9]{32}$/.test(key)) throw new Error('The board did not give a key for this computer. Restart it, then try again.');
-    await openInBrowser(`${BASE}/?key=${key}`);
+    // The key comes from this connector's own data folder, and goes only to the board that holds that folder's lock. A
+    // program that merely answers on the port, naming that folder, cannot know the lock's id.
+    const lock = readLock();
+    if (!lock || h.lock !== lock.id) throw new Error(`The board at ${BASE} does not hold this connector's data folder (${HOME}), so it was not given the key. If the person keeps Switchboard's data somewhere else, set SWITCHBOARD_HOME to that folder.`);
+    let key = ''; try { key = fs.readFileSync(path.join(HOME, 'page.key'), 'utf8').trim(); } catch (e) { /* none */ }
+    if (!/^[a-f0-9]{32}$/.test(key)) throw new Error('The board has no key for this computer yet. Restart it, then try again.');
+    const link = `${BASE}/?key=${key}`;
+    try { await openInBrowser(link); } catch (e) {
+      let file = ''; try { file = openerFile(link); } catch (e2) { /* the folder cannot be written */ }
+      throw new Error(`Could not open a browser from here. ${file ? `Ask the person to double-click ${file}: it opens their board ready to approve. Or, in` : 'Ask the person, in'} their own terminal, to run node "${path.join(__dirname, 'cli.js')}" link and open what it prints. Do not open that file or run that command yourself: the link is theirs.`);
+    }
     return { opened: true, board: BASE, note: 'Opened in their browser. The link is theirs and was not shown to you.' };
   }
   if (name === 'list_lights') {

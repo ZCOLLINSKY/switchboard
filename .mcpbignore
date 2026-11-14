@@ -1,5 +1,5 @@
 # What a Claude Desktop install does not need. Everything else in the repo goes in the bundle.
-# The connector reads package.json (its version) and SETUP.md (setup_guide), so both stay in.
+# The connector reads package.json (its version), SETUP.md and skill/ (setup_guide), so they stay in.
 .git
 .gitignore
 .mcpbignore
@@ -13,7 +13,6 @@ scripts/
 .claude/
 .claude-plugin/
 hooks/
-skill/
 CLAUDE.md
 AGENTS.md
 *.mcpb

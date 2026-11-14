@@ -173,7 +173,7 @@ Then:
 3. Call `wait_for_decision` with that light's id, or `get_decisions` after the
    hold: 20 seconds for a change or an answer, 60 for a message to a person
    (120 if they approved it faster than it can be read, and longer if they
-   chose "Release at 7:45 am"). `wait_for_decision` waits at most 50 seconds:
+   chose "Hold until 7:45 am"). `wait_for_decision` waits at most 50 seconds:
    if it returns `decided: false`, call it again. Confirm their answer is there,
    do what it says, then report it with `complete_decision` and its
    `decision_id`. An approval should leave "approved, not yet sent"; an answer

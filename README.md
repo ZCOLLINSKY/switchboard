@@ -47,7 +47,7 @@ What makes it different from a to-do list:
 
 - **The draft is attached.** You approve, edit, or say no. You don't go find the thread.
 - **You approve what you read.** A message to a person is shown whole. If an assistant changes a draft, a recipient or an attachment after it is on your screen, the row says so and its buttons stop until you look again. What you approved is frozen: the assistant is handed those words, that recipient and those files, whatever the light says later. A held key never approves twice.
-- **Every tap can be undone.** A decision waits before any agent can act on it (20 seconds; 60 for a message to a person, with "Release now", and "Release at 7:45 am" outside working hours), and a "Just now" strip lists each one with Take back, even after a reload. An approval no assistant has picked up yet can be taken back from its row at any time.
+- **Every tap can be undone.** A decision waits before any agent can act on it (20 seconds; 60 for a message to a person, with "Skip the wait", and "Hold until 7:45 am" outside working hours), and a "Just now" strip lists each one with Undo, even after a reload. An approval no assistant has picked up yet can be taken back from its row at any time.
 - **Nothing is retried blind.** If an assistant cannot tell whether a message went out, you are asked "It went out / It did not go out" before anything is sent again.
 - **Nothing runs by itself unless you switch it on.** Even then, only a typed change (a from and a to, no free text, nobody to send to) can, after ten single approvals on three different days, in one container. Messages to people always wait for your tap.
 - **The time is real.** Estimates come from how long you actually take.

@@ -413,7 +413,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       var hold = function (action, until) { api('POST', '/api/lights/' + x.id + '/act', { action: action, until: until }).catch(function (e) { toast(e.message); }).then(function () { return load(true); }); };
       list.appendChild(h('div', { class: 'heldrow' }, h('span', {}, text, x.release && left <= 3600 ? h('span', { class: 'cd', 'data-until': String(x.until), text: ' · ' + left + ' sec to undo' }) : null),
         filed && l && S.areas.length > 1 ? B('Move', function () { moveMenu(l); }, 'plain') : null,
-        x.release ? B('Send now', function () { hold('release'); }, 'plain') : null,
+        x.release ? B('Skip the wait', function () { hold('release'); }, 'plain') : null,
         x.release && x.quiet && x.until < x.morning ? B('Hold until 7:45 am', function () { hold('release_at', x.morning); }, 'plain') : null,
         B('Undo', function () { takeBack(x.id); }, 'plain', i === 0 ? 'Z' : null)));
     });

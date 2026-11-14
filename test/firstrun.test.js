@@ -80,3 +80,10 @@ test('the page offers to connect an assistant until one is connected, with copy 
   assert.match(code, /S\.connect\.mcp/);
   assert.match(code, /navigator\.clipboard\.writeText/);
 });
+
+test('the button that ends a hold does not suggest the board sends anything', () => {
+  const html = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /Send now/);
+  assert.match(html, /B\('Skip the wait'/);
+  for (const f of ['README.md', 'docs/API.md', 'lib/store.js']) assert.doesNotMatch(fs.readFileSync(path.join(root, f), 'utf8'), /Send now|Release now/, f);
+});

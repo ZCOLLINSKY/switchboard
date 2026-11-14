@@ -28,11 +28,13 @@ Check whether it is already running:
 node "REPO/cli.js" link
 ```
 
-If that prints a link, it is running: go to step 3. If it says it is not
-running, start it in the background, then wait until it answers:
+If it says it is running, go to step 3. (The link itself, with the person's
+key in it, is printed only in a terminal a person is looking at, never to you.)
+If it says it is not running, start it in the background, then wait until it
+answers:
 
 ```sh
-(node "REPO/cli.js" start < /dev/null > "${TMPDIR:-/tmp}/switchboard-start.log" 2>&1 &)
+(umask 077; node "REPO/cli.js" start < /dev/null > /dev/null 2> "${TMPDIR:-/tmp}/switchboard-start.log" &)
 for i in 1 2 3 4 5 6 7 8 9 10; do node "REPO/cli.js" link && break; sleep 1; done
 ```
 
@@ -40,12 +42,13 @@ If it still does not answer, read `${TMPDIR:-/tmp}/switchboard-start.log`: it
 says why (another program on the port, a damaged data file, a folder your shell
 may not write to). If your shell cannot start or keep background programs, skip
 this step: the MCP server in step 3 starts the board by itself (checked: under
-a second), and step 6 prints the link.
+a second), and step 6 opens it.
 
 The board is at http://127.0.0.1:4747. The person must open it through the link
-with the key in it: the `link` command above prints it. Give them that link,
-never a bare address. You cannot approve, undo or promote from the API, by
-design. To stop the board: `node "REPO/cli.js" stop`. If it says
+with the key in it. Open it for them in their browser with
+`node "REPO/cli.js" link --open` (you never see the key), or ask them to run
+`node "REPO/cli.js" link` in their own terminal. Never give them a bare
+address. You cannot approve, undo or promote from the API, by design. To stop the board: `node "REPO/cli.js" stop`. If it says
 `kill EPERM`, your shell may not signal programs it did not start: ask the
 person to run that command in their own terminal.
 
@@ -176,9 +179,10 @@ Then:
 1. Raise a small real light with `for_anyone: true` and a stable `key`
    (`setup:first-light`), or use one from step 5. `for_anyone` lets the
    session that finishes setup collect it, whatever folder it was started in.
-2. **Ask** the person to open the link and act on it. If you skipped step 2,
-   print the link now with `node "REPO/cli.js" link` (with the same
-   `SWITCHBOARD_HOME` and `SWITCHBOARD_PORT`).
+2. **Ask** the person to act on it on the board. Call `open_board` to open the
+   board in their browser (without the Switchboard tools yet, run
+   `node "REPO/cli.js" link --open` with the same `SWITCHBOARD_HOME` and
+   `SWITCHBOARD_PORT`). Either way the key goes to their browser, not to you.
 3. Call `wait_for_decision` with that light's id, or `get_decisions` after the
    hold: 20 seconds for a change or an answer, 60 for a message to a person
    (120 if they approved it faster than it can be read, and longer if they

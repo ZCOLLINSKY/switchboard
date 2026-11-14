@@ -28,3 +28,16 @@ test('setup asks for a stable key on every light, and proves the loop with a lig
   assert.match(six, /for_anyone: true/);
   assert.match(six, /stable `key`/);
 });
+
+test('nothing an assistant is told to run prints the key link to it', () => {
+  const s = read('SETUP.md'), guide = s.slice(s.indexOf('## 5.'), s.indexOf('## 7.')) + s.slice(s.indexOf('## Rules that always apply'));
+  assert.doesNotMatch(guide, /cli\.js" link(?! --open)/, 'setup_guide (steps 5, 6 and the rules) says open_board, or link --open');
+  assert.match(guide, /open_board/);
+  // The background start keeps nothing it prints, and its error log is the person's alone.
+  const bg = s.split('\n').find((l) => /cli\.js" start/.test(l) && /&\)/.test(l));
+  assert.ok(bg, 'the background start line is there');
+  assert.match(bg, /umask 077/); assert.match(bg, /> \/dev\/null 2>/);
+  const two = s.slice(s.indexOf('## 2.'), s.indexOf('## 3.'));
+  assert.match(two, /link --open/, 'step 2 opens the link for the person instead of handing it over');
+  assert.doesNotMatch(two, /Give them that link/);
+});

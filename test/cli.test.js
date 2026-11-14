@@ -25,12 +25,42 @@ const launch = (args, env) => new Promise((ok, fail) => {
 });
 const stop = (c) => new Promise((ok) => { if (c.exitCode != null) return ok(); c.removeAllListeners('exit'); c.once('exit', ok); c.kill('SIGTERM'); });
 
-test('demo prints the link that can approve, not a view-only address', async () => {
-  const dir = tmp(), a = await start({ port: 0, dir });
+// What a command prints into a pipe is what an assistant's shell reads, or what lands in a log file: the key link is the
+// person's, so it is printed only to a terminal. These tests run every command into a pipe.
+test('link, demo and start never print the key link into a pipe, and say how to open the board instead', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir }), port = new URL(a.url).port, env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port };
   try {
-    const r = await run(['demo'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port });
+    const link = await run(['link'], env);
+    assert.equal(link.code, 0, 'running: the check in SETUP.md still works by its exit code');
+    assert.ok(!link.out.includes(a.key), link.out);
+    assert.match(link.out, new RegExp(`running at ${a.url.replace(/[.]/g, '\\.')}`), link.out);
+    assert.match(link.out, new RegExp(`cli\\.js" link --open --port ${port}`), link.out);
+    const demo = await run(['demo'], env);
+    assert.equal(demo.code, 0, demo.out);
+    assert.match(demo.out, /Examples added/);
+    assert.ok(!demo.out.includes(a.key), demo.out);
+    assert.match(demo.out, /link --open/, 'the way to open the examples, not a view-only address');
+    const again = await run(['start'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: await freePort() });
+    assert.match(again.out, /already running/);
+    assert.ok(!again.out.includes(a.key), again.out);
+  } finally { a.close(); }
+  const dir2 = tmp(), port2 = await freePort(), s = await launch(['start'], { SWITCHBOARD_HOME: dir2, SWITCHBOARD_PORT: port2 });
+  try {
+    const key = fs.readFileSync(path.join(dir2, 'page.key'), 'utf8').trim();
+    assert.ok(!s.out.includes(key), s.out);
+    assert.match(s.out, /link --open/);
+  } finally { await stop(s.c); }
+});
+
+test('link --open hands the key link to the browser and prints no key', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir }), seen = path.join(tmp(), 'opened.txt'), browser = path.join(tmp(), 'browser.sh');
+  fs.writeFileSync(browser, `#!/bin/sh\nprintf '%s' "$1" > "${seen}"\n`, { mode: 0o755 });
+  try {
+    const r = await run(['link', '--open'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port, BROWSER: browser });
     assert.equal(r.code, 0, r.out);
-    assert.ok(r.out.includes(a.link), r.out);
+    assert.ok(!r.out.includes(a.key), r.out);
+    for (let i = 0; i < 50 && !fs.existsSync(seen); i++) await new Promise((ok) => setTimeout(ok, 50));
+    assert.equal(fs.readFileSync(seen, 'utf8'), a.link);
   } finally { a.close(); }
 });
 

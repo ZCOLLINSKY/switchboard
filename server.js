@@ -47,8 +47,16 @@ async function start(opts = {}) {
       desktop: 'https://github.com/ZCOLLINSKY/switchboard/releases/latest' };
   };
   const clients = new Set();
+  // Banners when something new needs the person: off unless asked for (opts.notify in tests, SWITCHBOARD_NOTIFY=1 for a
+  // count only, =titles to name what came in). Never in a simulation.
+  const notifyOpt = opts.notify !== undefined ? opts.notify
+    : process.env.SWITCHBOARD_NOTIFY && process.env.SWITCHBOARD_NOTIFY !== '0' ? { titles: process.env.SWITCHBOARD_NOTIFY === 'titles' } : null;
+  let notify = null;
+  if (!sim && notifyOpt) { const { notifier, osSender } = require('./lib/notify'); const send = notifyOpt.send || osSender(); if (send) notify = notifier({ send, titles: !!notifyOpt.titles }); }
+  const ring = () => { if (notify) try { notify.check(store.view()); } catch (e) { console.error('notify failed:', e.message); } };
+  ring(); // learns what is already waiting, so starting the board never rings
 
-  const changed = () => { store.save(); for (const res of clients) res.write('event: change\ndata: 1\n\n'); for (const w of waiters) w(); };
+  const changed = () => { store.save(); for (const res of clients) res.write('event: change\ndata: 1\n\n'); for (const w of waiters) w(); ring(); };
   // In a simulation, a stand-in assistant collects each decision and reports it sent a few seconds later.
   if (sim) {
     const sending = new Map(); // decision_id -> { id, at }
@@ -237,7 +245,7 @@ async function start(opts = {}) {
     }
   });
 
-  const timer = setInterval(() => { try { if (store.tick()) changed(); } catch (e) { console.error('tick failed:', e.message); } }, 30000);
+  const timer = setInterval(() => { try { if (store.tick()) changed(); else ring(); } catch (e) { console.error('tick failed:', e.message); } }, 30000);
   timer.unref();
   if (sim) loadScenario(opts.scenario || 'morning');
   else if (store.tick()) store.save();

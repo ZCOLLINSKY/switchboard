@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **A banner when something new needs you**, if you switch it on with
+  `SWITCHBOARD_NOTIFY=1` (a count) or `=titles` (what came in): at most one
+  every 30 minutes, none from 11 pm to 7 am, and never for what was already
+  waiting when the board started. macOS and Linux.
+
 ## 0.2.0
 
 Install it in the app you use, and decisions reach the right session.

@@ -224,7 +224,10 @@ days from the bar at the top of the page. Nothing touches your real board.
   `SWITCHBOARD_PORT`, `SWITCHBOARD_HOST`, `SWITCHBOARD_ALLOWED_HOSTS` (extra
   host names to answer to, for a private network), `SWITCHBOARD_URL` (where the
   command line and the connector look for the board) and `SWITCHBOARD_AGENT`
-  (the name an assistant's connector uses on the board).
+  (the name an assistant's connector uses on the board). `SWITCHBOARD_NOTIFY=1` shows a banner on your computer
+  when something new needs you (at most one every 30 minutes, none from 11 pm to
+  7 am; `titles` names what came in, `1` only counts, so nothing private shows
+  on a locked screen). macOS and Linux.
 - **No dependencies, no build step, no account.** Switchboard's own code talks
   only to your board. The one thing that can leave your computer is speech: the
   Speak button uses your browser's speech recognition, which may send the audio

@@ -161,13 +161,13 @@ async function start(opts = {}) {
       // it, and tells the page, at most every few minutes.
       const was = store.db.seen.checkIn, firstIn = () => was == null || Date.now() - was > 5 * 60e3;
       if (p === '/api/decisions') {
-        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), all: body.all === true, only: body.only === true });
+        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true });
         if (got.decisions.length || got.sent_by_you.length || firstIn()) changed();
         return json(res, 200, got);
       }
       if (p === '/api/wait') {
         // An assistant that is mid-task can wait here for one light's answer instead of polling.
-        const id = String(body.id || ''), who = { agent: String(body.agent || '') };
+        const id = String(body.id || ''), who = { agent: String(body.agent || ''), agents: body.agents };
         // Someone else's light would never be handed over: say so now, instead of waiting out the seconds for nothing.
         const why = store.notYours(id, who); if (why) return json(res, 200, { decided: false, reason: why });
         const until = Date.now() + Math.min(Math.max(Number(body.seconds) || 30, 1), 50) * 1000;
@@ -202,7 +202,7 @@ async function start(opts = {}) {
         if (body.action === 'approve' && (!body.revs || (body.ids || []).some((id) => typeof body.revs[id] !== 'string'))) return json(res, 400, { error: 'Send the rev of every light as it was shown.' });
         out = { lights: store.bulk(body.ids, body.action, body) };
       }
-      else if (p === '/api/ack') { out = { acknowledged: store.ack(Array.isArray(body.ids) ? body.ids : [], Date.now(), { agent: String(body.agent || '') }) }; if (store.warnings.length) out.warnings = store.warnings.slice(); }
+      else if (p === '/api/ack') { out = { acknowledged: store.ack(Array.isArray(body.ids) ? body.ids : [], Date.now(), { agent: String(body.agent || ''), agents: body.agents }) }; if (store.warnings.length) out.warnings = store.warnings.slice(); }
       else if (p === '/api/promote') out = store.promote(body.key, body.yes !== false);
       else if (p === '/api/demote') { store.demote(String(body.key || '')); out = { ok: true }; }
       else if (p === '/api/settings') out = store.setting('autonomy', body.autonomy);

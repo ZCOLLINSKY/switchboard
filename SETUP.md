@@ -93,15 +93,19 @@ pass `project` with the repository's name on every call. Its name is then
 `claude-code:<project>`: two sessions started in the same folder that name
 different projects are never handed each other's decisions. The session
 remembers its project after the first call, so one call without it still goes
-to the same place. A session started inside the repository keeps the
+to the same place, and it still collects what it raised before it named one.
+An empty `project` goes back to the folder's name. A project name never holds
+`~` or `:` (they become `-`), so it can never spell a repository's own name.
+A session started inside the repository keeps the
 repository's own name, even when it names that project. That is a different
 name from `claude-code:<project>`: a decision raised from inside the repository
 goes to sessions started inside it, and one raised from outside goes to
 sessions that name the project.
 
 To make every session of this assistant one name, add `-e SWITCHBOARD_AGENT=claude`
-to the command above (a session that names a project is then
-`claude:<project>`). Lights raised with `for_anyone: true` can be collected by
+to the command above (a call that names a project is then
+`claude:<project>`). With a fixed name one connector may serve many chats (Claude
+Desktop works this way), so a project applies only to the call that names it. Lights raised with `for_anyone: true` can be collected by
 any session.
 
 This changes your own settings (`~/.claude.json`). If your shell refuses it,

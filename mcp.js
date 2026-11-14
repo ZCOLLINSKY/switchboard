@@ -14,10 +14,15 @@ const VERSION = require('./package.json').version; // the one place the version 
 const os = require('os'), fs = require('fs'), names = require('./lib/names');
 // Who this assistant is on the board: a name fixed by SWITCHBOARD_AGENT, or the client's name plus the repository or folder
 // it was started in. Once the session names a project, that project replaces the folder for the rest of this process, so
-// a call that forgets it still goes to the same place.
+// a call that forgets it still goes to the same place; an empty project goes back to the folder. A fixed name is the
+// exception: there one process serves many chats (Claude Desktop), so a project applies only to the call that names it.
 const FIXED = process.env.SWITCHBOARD_AGENT || '';
 let CLIENT = 'assistant', FOLDER = null, PROJECT = '';
-const agent = () => names.agentName({ fixed: FIXED, client: CLIENT, folder: FIXED ? null : FOLDER || (FOLDER = names.folderOf(process.cwd())), project: PROJECT });
+const agent = (project = PROJECT) => names.agentName({ fixed: FIXED, client: CLIENT, folder: FIXED ? null : FOLDER || (FOLDER = names.folderOf(process.cwd())), project });
+// Every name this session raised or changed a light under. It collects under all of them, so naming a project part-way
+// through never strands what it raised before. (Not with a fixed name: other chats share that process.)
+const USED = new Set();
+const namesFor = (me) => [me].concat([...USED].filter((n) => n !== me));
 const HOME = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|\/)/, os.homedir());
 let BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${process.env.SWITCHBOARD_PORT || 4747}`).replace(/\/+$/, '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -120,7 +125,7 @@ const lightFields = {
   value: { type: 'number', description: 'Money riding on this, in whole dollars (a quote amount, an invoice). Higher values sort first. Only set it when you know the number.' },
 };
 // Where a decision goes. Taken by every call that raises or collects, and remembered once given.
-const project = { project: S('The code repository this work is for, by name, when this session was started outside that repository\'s folder (for example in the home folder). Decisions go only to sessions naming the same project. Once given it is remembered for the rest of this session. Leave it out when you were started inside the repository.') };
+const project = { project: S('The code repository this work is for, by name, when this session was started outside that repository\'s folder (for example in the home folder). Decisions go only to sessions naming the same project. Pass it on every call that raises or collects. Leave it out when you were started inside the repository.') };
 const TOOLS = [
   { name: 'raise_light', description: 'Put one thing on the person\'s Switchboard. Use it when you are blocked on them (state need_you), have sent something and are waiting on someone else (waiting_them), are running a job they should see (auto), have something lined up (queued), or an automation failed (broken). One light per thread; update it as the thread moves instead of raising a new one.',
     inputSchema: { type: 'object', required: ['area', 'title'], properties: Object.assign({
@@ -142,7 +147,7 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: Object.assign({ all: { type: 'boolean', description: 'Also return decisions on lights raised by other assistants. Leave off unless the person asked you to take over someone else\'s work.' } }, project) } },
   { name: 'complete_decision', description: 'Report what happened after you acted on a decision, naming the decision_id you were handed. "sent": the message went out (this is what turns the light blue and starts the follow-up clock). "done": the change was applied or the answer was handled. "failed": it definitely did not go through; say why. "unsure": you cannot tell whether it went out (a timeout, a crash mid-send); the person is asked to check, and nothing is retried blind. Never report "failed" when you are not sure.',
     inputSchema: { type: 'object', required: ['id', 'decision_id', 'outcome'], properties: Object.assign({ id: S('The light id.'), decision_id: S('The decision_id from get_decisions or wait_for_decision. A report for a decision that was since replaced is refused.'), outcome: S('What happened.', { enum: ['sent', 'done', 'failed', 'unsure'] }), detail: S('One plain line. Required for failed and unsure.') }, project) } },
-  { name: 'wait_for_decision', description: 'Wait up to N seconds for the person to decide one light, when you are mid-task and the answer unblocks you. Works only for a light you raised. Getting the answer this way collects it exactly as get_decisions does: the person can no longer take it back, so act on it and report with complete_decision. Returns {decided:false} if they have not decided; then carry on with other work or wait again. For a light another session raised it returns at once with {decided:false, reason}: only that session can collect it.',
+  { name: 'wait_for_decision', description: 'Wait up to N seconds for the person to decide one light, when you are mid-task and the answer unblocks you. Works only for a light you raised. Getting the answer this way collects it exactly as get_decisions does: the person can no longer take it back, so act on it and report with complete_decision. Returns {decided:false} if they have not decided; then carry on with other work or wait again. For a light another session raised (or one raised under a project this call does not name) it returns at once with {decided:false, reason}.',
     inputSchema: { type: 'object', required: ['id'], properties: Object.assign({ id: S('The light id.'), seconds: { type: 'integer', description: '1 to 50. Default 30.' } }, project) } },
   { name: 'ack_decisions', description: 'The short form of complete_decision with outcome "done", for several lights at once. Not for messages to people: those are skipped and listed in warnings, and need complete_decision with sent, failed or unsure.',
     inputSchema: { type: 'object', required: ['ids'], properties: Object.assign({ ids: { type: 'array', items: { type: 'string' } } }, project) } },
@@ -167,15 +172,17 @@ function openInBrowser(link) {
 }
 
 async function callTool(name, a, signal) {
-  if ('project' in a) { const p = names.projectName(a.project); if (p) PROJECT = p; a = Object.assign({}, a); delete a.project; } // never passed on as a field
+  let project = PROJECT;
+  if ('project' in a) { project = names.projectName(a.project); if (!FIXED) PROJECT = project; a = Object.assign({}, a); delete a.project; } // never passed on as a field
+  const me = agent(project), use = () => { if (!FIXED) USED.add(me); }, all = FIXED ? [me] : namesFor(me);
   const need = (k) => { if (typeof a[k] !== 'string' || !a[k]) throw new Error(`${k} is required (text).`); };
-  if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : agent() }); delete b.for_anyone; return api('POST', '/api/lights', b, signal); }
+  if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : me }); delete b.for_anyone; if (!a.for_anyone) use(); return api('POST', '/api/lights', b, signal); }
   if (['complete_decision', 'wait_for_decision', 'update_light'].includes(name)) need('id');
   if (name === 'complete_decision') { const l = await api('POST', '/api/complete', a, signal); return { id: l.id, state: l.state, warnings: l.warnings }; }
-  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: agent() }, signal, (sec + 10) * 1000); }
-  if (name === 'update_light') return api('POST', '/api/lights/' + encodeURIComponent(a.id), Object.assign({}, a, { agent: agent() }), signal);
-  if (name === 'get_decisions') return api('POST', '/api/decisions', { agent: agent(), all: a.all === true }, signal);
-  if (name === 'ack_decisions') { const ids = Array.isArray(a.ids) ? a.ids : typeof a.ids === 'string' ? [a.ids] : typeof a.id === 'string' ? [a.id] : null; if (!ids) throw new Error('ids is required: a list of light ids.'); return api('POST', '/api/ack', { ids, agent: agent() }, signal); }
+  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: me, agents: all }, signal, (sec + 10) * 1000); }
+  if (name === 'update_light') { use(); return api('POST', '/api/lights/' + encodeURIComponent(a.id), Object.assign({}, a, { agent: me, agents: all }), signal); }
+  if (name === 'get_decisions') return api('POST', '/api/decisions', { agent: me, agents: all, all: a.all === true }, signal);
+  if (name === 'ack_decisions') { const ids = Array.isArray(a.ids) ? a.ids : typeof a.ids === 'string' ? [a.ids] : typeof a.id === 'string' ? [a.id] : null; if (!ids) throw new Error('ids is required: a list of light ids.'); return api('POST', '/api/ack', { ids, agent: me, agents: all }, signal); }
   if (name === 'add_area') return api('POST', '/api/areas', a, signal);
   if (name === 'get_light') { need('id'); const v = await api('GET', '/api/state', null, signal), l = v.lights.find((x) => x.id === a.id); if (!l) throw new Error('No light with that id is open. Finished lights are not listed.'); const keep = ['id', 'title', 'state', 'kind', 'draft', 'source', 'note', 'to', 'attachments', 'options', 'link', 'due', 'value', 'key', 'changeFrom', 'changeTo', 'askedFor', 'changed', 'question', 'followUpDays', 'lastSent']; const out = {}; keep.forEach((k) => { if (l[k] != null && l[k] !== '' && !(Array.isArray(l[k]) && !l[k].length)) out[k] = l[k]; }); out.area = (v.areas.find((x) => x.id === l.area) || {}).name; if (out.due) out.due = new Date(out.due).toISOString(); return out; }
   if (name === 'clear_examples') return api('POST', '/api/demo', { clear: true }, signal);

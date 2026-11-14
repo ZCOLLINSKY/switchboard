@@ -322,7 +322,7 @@ test('pending counts what is waiting for an assistant without collecting it', ()
 test('waiting on another session\'s light says whose it is instead of waiting for nothing', () => {
   const s = open(fs.mkdtempSync(path.join(os.tmpdir(), 'sb-')), { holdMs: 0 });
   const l = s.raise({ area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'], agent: 'claude-code:shop~1a2b' }, T0);
-  assert.equal(s.notYours(l.id, { agent: 'claude-code:home~9f9f' }), 'raised by claude-code:shop~1a2b; only that session can collect it');
+  assert.equal(s.notYours(l.id, { agent: 'claude-code:home~9f9f' }), 'raised by another session, or under a project this call does not name; only a session with that light\'s name can collect it');
   assert.equal(s.notYours(l.id, { agent: 'claude-code:shop~1a2b' }), '');
   assert.equal(s.notYours(l.id, { agent: 'other', all: true }), '', 'one told to take over may');
   const anyone = s.raise({ area: 'Shop', title: 'Pick a color', kind: 'decide', options: ['Red', 'Blue'] }, T0);

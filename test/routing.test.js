@@ -118,11 +118,80 @@ test('waiting on a light another session raised returns at once and says whose i
     const l = await alpha.call('raise_light', { project: 'alpha', area: 'Shop', title: 'Alpha: which size?', kind: 'decide', options: ['Small', 'Large'] });
     await tap(a, l.id, 'answer', { value: 'Small' });
     const t0 = Date.now(), w = await beta.call('wait_for_decision', { id: l.id, seconds: 20, project: 'beta' });
-    assert.deepEqual(w, { decided: false, reason: 'raised by t:alpha; only that session can collect it' });
+    assert.deepEqual(w, { decided: false, reason: 'raised by another session, or under a project this call does not name; only a session with that light\'s name can collect it' });
     assert.ok(Date.now() - t0 < 5000, 'it did not wait');
     const r = await fetch(a.url + '/api/wait', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: l.id, seconds: 20, agent: 'someone' }) });
-    assert.deepEqual(await r.json(), { decided: false, reason: 'raised by t:alpha; only that session can collect it' });
+    assert.deepEqual(await r.json(), { decided: false, reason: 'raised by another session, or under a project this call does not name; only a session with that light\'s name can collect it' });
     assert.equal(a.store.db.lights[0].decision.collectedAt, null, 'nothing was collected');
     assert.equal((await alpha.call('wait_for_decision', { id: l.id, seconds: 2 })).decided, true);
   } finally { alpha.close(); beta.close(); a.close(); }
+});
+
+test('a named project can never take a repository session\'s name, or another client\'s', { skip: !hasGit && 'git is not installed' }, async () => {
+  const { projectName, agentName } = require('../lib/names');
+  assert.equal(projectName('repoA~bb37'), 'repoA-bb37');
+  assert.equal(projectName('claude-desktop:alpha'), 'claude-desktop-alpha');
+  const dir = tmp(), base = tmp(), repo = path.join(base, 'repoA'), plain = path.join(base, 'plain');
+  fs.mkdirSync(repo); fs.mkdirSync(plain);
+  git(repo, 'init', '-q'); git(repo, 'commit', '-q', '--allow-empty', '-m', 'first');
+  const a = await start({ port: 0, dir, holdMs: 0 }), env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port };
+  const owner = mcp(env, repo), other = mcp(env, plain);
+  try {
+    await Promise.all([owner.hello(), other.hello()]);
+    const l = await owner.call('raise_light', { area: 'Code', title: 'Ship it?', kind: 'decide', options: ['Yes', 'No'] });
+    assert.equal(l.agent, `t:repoA~${fp(repo)}`);
+    await tap(a, l.id, 'answer', { value: 'Yes' });
+    const w = await other.call('wait_for_decision', { id: l.id, seconds: 1 });
+    assert.equal(w.decided, false);
+    assert.ok(!w.reason.includes(l.agent), 'the reason does not hand over the name to use: ' + w.reason);
+    const borrowed = await other.call('wait_for_decision', { id: l.id, seconds: 1, project: `repoA~${fp(repo)}` });
+    assert.equal(borrowed.decided, false, 'a project spelled like the repository\'s name is another name');
+    assert.deepEqual((await other.call('get_decisions', { project: `repoA~${fp(repo)}` })).decisions, []);
+    assert.equal(a.store.db.lights[0].decision.collectedAt, null, 'nothing was collected');
+    assert.notEqual(agentName({ client: 't', folder: { base: 'plain', fp: '0000' }, project: projectName(`repoA~${fp(repo)}`) }), l.agent);
+    const got = await owner.call('get_decisions');
+    assert.deepEqual(got.decisions.map((d) => d.id), [l.id]);
+    assert.equal(a.store.db.lights[0].decision.collectedBy, l.agent, 'the board names the session that really collected it');
+  } finally { owner.close(); other.close(); a.close(); }
+});
+
+test('a session that names a project part-way through still collects what it raised before, and nobody else\'s', async () => {
+  const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  const env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port };
+  const s = mcp(env, home), named = mcp(env, home);
+  try {
+    await Promise.all([s.hello(), named.hello()]);
+    const x = await s.call('raise_light', { area: 'Shop', title: 'Order the flyers?', kind: 'decide', options: ['Yes', 'No'] });
+    const y = await s.call('raise_light', { project: 'around-lex', area: 'Code', title: 'Ship release 132?', kind: 'decide', options: ['Yes', 'No'] });
+    assert.notEqual(x.agent, y.agent);
+    const z = await named.call('raise_light', { project: 'beta', area: 'Code', title: 'Beta thing?', kind: 'decide', options: ['Yes', 'No'] });
+    for (const l of [x, y, z]) await tap(a, l.id, 'answer', { value: 'Yes' });
+    const w = await s.call('wait_for_decision', { id: x.id, seconds: 2 });
+    assert.equal(w.decided, true, JSON.stringify(w));
+    const got = await s.call('get_decisions');
+    assert.deepEqual(got.decisions.map((d) => d.id), [y.id], 'its own light under the project, and never beta\'s');
+    const byId = (id) => a.store.db.lights.find((l) => l.id === id);
+    assert.equal(byId(x.id).decision.collectedBy, x.agent); assert.equal(byId(y.id).decision.collectedBy, y.agent);
+    const ack = await s.call('ack_decisions', { ids: [x.id, y.id] });
+    assert.ok(!ack.warnings, JSON.stringify(ack.warnings)); assert.equal(ack.acknowledged, 2);
+    // An empty project goes back to the folder's own name.
+    const back = await s.call('raise_light', { project: '', area: 'Shop', title: 'Order boxes', kind: 'todo' });
+    assert.equal(back.agent, x.agent);
+  } finally { s.close(); named.close(); a.close(); }
+});
+
+test('with a fixed name (Claude Desktop: one connector for every chat), a project applies only to the call that names it', async () => {
+  const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  const desk = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port, SWITCHBOARD_AGENT: 'claude-desktop' }, home);
+  try {
+    await desk.hello();
+    const one = await desk.call('raise_light', { area: 'Home', title: 'Chat 1: paint colour?', kind: 'decide', options: ['Blue', 'Green'] });
+    const two = await desk.call('raise_light', { project: 'alpha', area: 'Code', title: 'Chat 2: ship alpha?', kind: 'decide', options: ['Yes', 'No'] });
+    assert.equal(one.agent, 'claude-desktop'); assert.equal(two.agent, 'claude-desktop:alpha');
+    const three = await desk.call('raise_light', { area: 'Home', title: 'Chat 3: book the plumber?', kind: 'decide', options: ['Yes', 'No'] });
+    assert.equal(three.agent, 'claude-desktop', 'a later chat that names no project is not filed under alpha');
+    await tap(a, one.id, 'answer', { value: 'Blue' }); await tap(a, two.id, 'answer', { value: 'Yes' });
+    assert.deepEqual((await desk.call('get_decisions')).decisions.map((d) => d.id), [one.id], 'a plain claude-desktop decision still comes to a call with no project');
+    assert.deepEqual((await desk.call('get_decisions', { project: 'alpha' })).decisions.map((d) => d.id), [two.id]);
+  } finally { desk.close(); a.close(); }
 });

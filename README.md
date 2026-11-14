@@ -16,6 +16,11 @@ back.
 
 ## Try it in one minute
 
+**In your browser, nothing to install:** [zcollinsky.github.io/switchboard](https://zcollinsky.github.io/switchboard/).
+It is the real board running in the page with made-up data, and it sends nothing anywhere.
+
+**On your computer:**
+
 You need [Node.js](https://nodejs.org) 18 or newer. Nothing else to install.
 
 ```sh

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Try it in the browser.** zcollinsky.github.io/switchboard runs the real board in
+  the page with a made-up morning: nothing to install, nothing sent anywhere.
+  `node scripts/build-demo.js` builds it; GitHub Pages republishes it from main.
 - **A banner when something new needs you**, if you switch it on with
   `SWITCHBOARD_NOTIFY=1` (a count) or `=titles` (what came in): at most one
   every 30 minutes, none from 11 pm to 7 am, and never for what was already

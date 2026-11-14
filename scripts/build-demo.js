@@ -7,7 +7,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 const out = path.resolve(process.argv[2] || path.join(root, 'dist', 'demo', 'index.html'));
 const scenario = process.argv[3] || 'morning';
-const MODULES = ['server.js', 'lib/store.js', 'scenarios/index.js'];
+const MODULES = ['server.js', 'lib/store.js', 'lib/ports.js', 'scenarios/index.js'];
 
 function build(outFile = out, scenarioName = scenario) {
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');

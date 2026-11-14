@@ -9,6 +9,7 @@ const { open } = require('./lib/store');
 
 async function start(opts = {}) {
   const port = Number(opts.port != null ? opts.port : process.env.SWITCHBOARD_PORT || 4747);
+  { const { unsafePort, unsafeMessage } = require('./lib/ports'); if (unsafePort(port)) throw new Error(unsafeMessage(port)); }
   const host = opts.host || process.env.SWITCHBOARD_HOST || '127.0.0.1';
   const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
   const extra = opts.allowedHosts != null ? [].concat(opts.allowedHosts) : (process.env.SWITCHBOARD_ALLOWED_HOSTS || '').split(',');

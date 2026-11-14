@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Ports browsers refuse** (6000, 5060, 10080 and the rest of the Fetch standard's
+  list above 1024) are refused with a plain reason by the board and the
+  connector, instead of a board that starts and can never be reached. Found by
+  running the Desktop extension under Claude Desktop's own MCP runtime
+  (nodeHost.js in Electron 45), where it otherwise works end to end.
 - **Daily backups.** The first save each day copies the data file to
   `backups/data-YYYY-MM-DD.json`; the newest 14 are kept.
 - **Answers are never stranded.** Switchboard remembers when each assistant last

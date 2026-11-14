@@ -15,6 +15,7 @@ for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWI
 const BAD_PORT = (() => {
   const v = process.env.SWITCHBOARD_PORT; if (v == null) return null;
   const m = v.trim().match(/^(\d{1,5})(?:\.0+)?$/), n = m ? Number(m[1]) : 0;
+  if (n >= 1 && n <= 65535 && require('./lib/ports').unsafePort(n)) return { unsafe: n };
   if (n >= 1 && n <= 65535) { process.env.SWITCHBOARD_PORT = String(n); return null; }
   return v;
 })();
@@ -89,6 +90,7 @@ async function probe(base, signal) {
 // board on the default port), and a program that is not Switchboard is named as such instead of answering "HTTP 404".
 let checked = false;
 async function ensureBoard(signal) {
+  if (BAD_PORT && BAD_PORT.unsafe) throw new Error(`${require('./lib/ports').unsafeMessage(BAD_PORT.unsafe)} Change it in the connector's settings (in Claude Desktop: Settings > Extensions > Switchboard > Port).`);
   if (BAD_PORT != null) throw new Error(`SWITCHBOARD_PORT "${BAD_PORT}" is not a port number. Fix it in the connector's settings (in Claude Desktop: Settings > Extensions > Switchboard > Port).`);
   if (checked) return;
   const named = !!process.env.SWITCHBOARD_HOME, want = path.resolve(HOME), lock = readLock();

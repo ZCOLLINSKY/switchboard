@@ -357,13 +357,13 @@ test('raising the same thing again with no key returns the open light instead of
 
 test('an approval on a board no assistant has checked in on today waits instead of turning red', () => {
   const MIN = 60e3, s = fresh();
-  const l = s.raise({ area: 'Shop', title: 'Send the quote', draft: 'Hi Dale, the quote is attached.', to: 'Dale', agent: 'desk' }, T0);
+  const l = s.raise({ area: 'Shop', title: 'Send the quote', draft: 'Hi Dale, the quote is attached.', to: 'Dale', agent: 'claude-desktop' }, T0);
   s.act(l.id, 'approve', { rev: s.view(T0).lights[0].rev }, T0);
   assert.equal(s.tick(T0 + 3 * 60 * MIN), false, 'no assistant has asked for decisions: nothing turns red');
   assert.equal(l.state, 'approved'); assert.equal(l.stuck, false);
   const shown = s.view(T0 + 3 * 60 * MIN).lights[0];
   assert.equal(shown.waitingCheckIn, true);
-  assert.match(shown.alert, /Waiting for an assistant to check in/);
+  assert.match(shown.alert, /Waiting for claude-desktop to check in/);
   assert.match(shown.alert, /check my Switchboard/);
   // An assistant checks in (another one: it collects nothing here). From then on today's rule applies.
   assert.equal(s.decisions(T0 + 3 * 60 * MIN, { agent: 'someone-else' }).decisions.length, 0);
@@ -386,7 +386,7 @@ test('an assistant that checked in today makes an approval nobody collects turn 
   s.act(b.id, 'approve', { rev: s.view(t).lights.find((x) => x.id === b.id).rev }, t);
   s.tick(t + 60 * MIN);
   assert.equal(b.state, 'approved');
-  assert.match(s.view(t + 60 * MIN).lights.find((x) => x.id === b.id).alert, /Waiting for an assistant to check in/);
+  assert.match(s.view(t + 60 * MIN).lights.find((x) => x.id === b.id).alert, /Waiting for other to check in/);
 });
 
 test('an empty collection says what is still in the undo window, and what is ready for other sessions', () => {
@@ -405,4 +405,15 @@ test('an empty collection says what is still in the undo window, and what is rea
   assert.deepEqual(later.decisions.map((d) => d.id), [mine.id]);
   assert.ok(!('held' in later) && !('next_release_at' in later), 'nothing held: not mentioned');
   assert.ok(!('ready_for_other_sessions' in s.decisions(T0 + HOLD, { agent: 'x', all: true })), 'one that takes everything has no others');
+});
+
+test('an approval only one program can collect names that program, instead of asking for a chat that cannot collect it', () => {
+  const MIN = 60e3, s = fresh();
+  const relay = s.raise({ area: 'Board', title: 'Order flyers', draft: 'Order 500 flyers', kind: 'approve', key: 'board:r12', agent: 'zachs-board' }, T0);
+  const anyone = s.raise({ area: 'Shop', title: 'Order boxes', draft: 'Order 20 boxes', kind: 'approve' }, T0);
+  for (const l of [relay, anyone]) s.act(l.id, 'approve', { rev: s.view(T0).lights.find((x) => x.id === l.id).rev }, T0);
+  const shown = (id) => s.view(T0 + 17 * MIN).lights.find((x) => x.id === id);
+  assert.equal(shown(relay.id).alert, 'Waiting for zachs-board to check in. Only it can collect this one.');
+  assert.doesNotMatch(shown(relay.id).alert, /Start a chat/);
+  assert.match(shown(anyone.id).alert, /^Waiting for an assistant to check in\. Start a chat and say/);
 });

@@ -354,3 +354,37 @@ test('raising the same thing again with no key returns the open light instead of
   const f1 = s.raise({ area: 'Site', title: 'Fix a listing', change_from: 'a', change_to: 'b', action_type: 'listing-fix' }, T0);
   assert.notEqual(s.raise({ area: 'Site', title: 'Fix a listing', change_from: 'a', change_to: 'b', action_type: 'listing-fix' }, T0).id, f1.id);
 });
+
+test('an approval on a board no assistant has checked in on today waits instead of turning red', () => {
+  const MIN = 60e3, s = fresh();
+  const l = s.raise({ area: 'Shop', title: 'Send the quote', draft: 'Hi Dale, the quote is attached.', to: 'Dale', agent: 'desk' }, T0);
+  s.act(l.id, 'approve', { rev: s.view(T0).lights[0].rev }, T0);
+  assert.equal(s.tick(T0 + 3 * 60 * MIN), false, 'no assistant has asked for decisions: nothing turns red');
+  assert.equal(l.state, 'approved'); assert.equal(l.stuck, false);
+  const shown = s.view(T0 + 3 * 60 * MIN).lights[0];
+  assert.equal(shown.waitingCheckIn, true);
+  assert.match(shown.alert, /Waiting for an assistant to check in/);
+  assert.match(shown.alert, /check my Switchboard/);
+  // An assistant checks in (another one: it collects nothing here). From then on today's rule applies.
+  assert.equal(s.decisions(T0 + 3 * 60 * MIN, { agent: 'someone-else' }).decisions.length, 0);
+  assert.equal(s.view(T0 + 3 * 60 * MIN).lights[0].waitingCheckIn, false);
+  assert.equal(s.tick(T0 + 3 * 60 * MIN + 1000), true);
+  assert.equal(l.state, 'broken'); assert.equal(l.stuck, true);
+  assert.match(s.view(T0 + 3 * 60 * MIN + 1000).lights[0].alert, /No assistant has collected it/);
+});
+
+test('an assistant that checked in today makes an approval nobody collects turn red after 15 minutes; a day later it waits again', () => {
+  const MIN = 60e3, s = fresh();
+  s.decisions(T0, { agent: 'bot' }); // checks in, nothing to collect yet
+  const a = s.raise({ area: 'Shop', title: 'Fix the price', change_from: '$10', change_to: '$12', agent: 'other' }, T0);
+  s.act(a.id, 'approve', { rev: s.view(T0).lights[0].rev }, T0);
+  assert.equal(s.tick(T0 + 10 * MIN), false);
+  assert.equal(s.tick(T0 + 16 * MIN), true, 'the usual 15 minutes');
+  assert.equal(a.stuck, true);
+  // More than a day since anyone checked in: the next approval waits.
+  const t = T0 + 2 * DAY, b = s.raise({ area: 'Shop', title: 'Fix the hours', change_from: '9', change_to: '10', agent: 'other' }, t);
+  s.act(b.id, 'approve', { rev: s.view(t).lights.find((x) => x.id === b.id).rev }, t);
+  s.tick(t + 60 * MIN);
+  assert.equal(b.state, 'approved');
+  assert.match(s.view(t + 60 * MIN).lights.find((x) => x.id === b.id).alert, /Waiting for an assistant to check in/);
+});

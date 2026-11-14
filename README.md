@@ -34,7 +34,7 @@ Every piece of work is a **light**, and a light always says who holds the ball:
 | Light | Meaning |
 |---|---|
 | Gold | Needs you: approve a draft, pick an option, or look at something a robot can't open |
-| Gold ring | Approved, not yet sent. You said yes; your assistant hasn't reported it done. If nobody collects it in 15 minutes it turns red |
+| Gold ring | Approved, not yet sent. You said yes; your assistant hasn't reported it done. Once an assistant has checked in that day, an approval nobody collects in 15 minutes turns red; before that it says it is waiting for one |
 | Blue | Sent, and waiting on someone else. It doesn't count against you. If they go quiet, it comes back gold with a follow-up. You can say "They replied" or "Stop following up" |
 | Green | Running by itself. Amber if it goes quiet past the time it promised |
 | Red | An automation broke |
@@ -104,6 +104,8 @@ Start a new session and say "Open my Switchboard, then set it up for me."
 the `.mcpb` file from the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
 double-click it, and click Install. In a new chat, say "Open my Switchboard, then set it up for me."
 Claude Desktop starts the board for you; keep the app open while you use it.
+Nothing checks the board between chats, so after you answer on the board,
+start a chat and say "check my Switchboard".
 
 **Claude on the web or on a phone** cannot use Switchboard: those chats run in
 Anthropic's cloud and cannot reach a board on your computer. You can still open

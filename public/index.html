@@ -800,7 +800,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       main.appendChild(h('div', { class: 'lab' }, 'Waiting on an assistant'));
       var sl = h('div', { class: 'list' });
       stuckOut.forEach(function (l) {
-        sl.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.late ? 'late' : 'a'), title: l.late ? 'Gone quiet' : 'Approved, not yet sent' }), h('p', {}, l.title, h('small', { text: area(l.area).name + ' · ' + (l.late ? 'Gone quiet: no word since it was due.' : l.redraftWaiting ? 'You asked for changes: \u201c' + (l.askedFor ? l.askedFor.why : '') + '\u201d. Waiting for your assistant to redraft.' : 'Approved, no assistant has picked it up yet. You can still take it back.') })),
+        sl.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.late ? 'late' : 'a'), title: l.late ? 'Gone quiet' : 'Approved, not yet sent' }), h('p', {}, l.title, h('small', { text: area(l.area).name + ' · ' + (l.late ? 'Gone quiet: no word since it was due.' : l.redraftWaiting ? 'You asked for changes: \u201c' + (l.askedFor ? l.askedFor.why : '') + '\u201d. Waiting for your assistant to redraft.' : (l.waitingCheckIn ? l.alert + ' You can still take it back.' : 'Approved, no assistant has picked it up yet. You can still take it back.')) })),
           h('span', { class: 'btns' }, l.late ? B('Dismiss', function () { act(l, 'drop'); }, 'plain') : l.redraftWaiting && l.canTakeBack ? h('span', {}, B('Write it myself', function () { takeBack(l.id); editId = l.id; editBase = l.draft; openId = l.id; }, 'plain'), B('Undo', function () { takeBack(l.id); }, 'plain')) : l.redraftWaiting ? null : B('Undo', function () { takeBack(l.id); }, 'plain'))));
       });
       main.appendChild(sl);

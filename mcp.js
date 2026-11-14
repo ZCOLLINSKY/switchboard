@@ -182,7 +182,7 @@ async function callTool(name, a, signal) {
     const md = fs.readFileSync(path.join(__dirname, 'SETUP.md'), 'utf8');
     const part = (from, to) => { const a = md.indexOf(from); if (a < 0) return ''; const b = to ? md.indexOf(to, a) : -1; return md.slice(a, b < 0 ? md.length : b).trim(); };
     return { guide: [part('## 5.', '## 7.'), part('## Rules that always apply')].filter(Boolean).join('\n\n'),
-      note: 'You are already connected, so skip installing anything. Wherever the guide says to give the person the link, call open_board instead.' };
+      note: 'You are already connected, so skip installing anything. Wherever the guide says to give the person the link, call open_board instead. In Claude Desktop nothing checks the board between chats: tell the person that after they answer on the board, they start a chat and say "check my Switchboard", so their answers are picked up.' };
   }
   if (name === 'open_board') {
     const h = await api('GET', '/api/health', null, signal); // starts the board if it is not running

@@ -52,6 +52,7 @@ test('S2 a slip on a spot check can be taken back, and "Flag it" then still swit
 
 test('S2 "Take it back" then undo: the approval is in the record again', () => {
   const s = open(tmp(), { collectMs: 1000 });
+  s.decisions(T0, { agent: 'other-bot' }); // an assistant checked in today
   const l = s.raise({ area: 'Shop', title: 'Text Sam', draft: 'Hello Sam', outbound: true, agent: 'bot' }, T0);
   s.act(l.id, 'approve', { rev: rev(l) }, T0);
   s.tick(T0 + 120000); assert.equal(l.stuck, true);

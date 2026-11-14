@@ -146,9 +146,12 @@ async function start(opts = {}) {
       if (!person) delete body.demo;
       // Collecting changes the board (the person can no longer take the decision back), so it is a JSON POST like every
       // other write. A plain GET, which any website could make the browser send, collects nothing.
+      // An assistant asking is a check-in: from then on an approval it leaves turns red after 15 minutes. The board keeps
+      // it, and tells the page, at most every few minutes.
+      const was = store.db.seen.checkIn, firstIn = () => was == null || Date.now() - was > 5 * 60e3;
       if (p === '/api/decisions') {
         const got = store.decisions(Date.now(), { agent: String(body.agent || ''), all: body.all === true, only: body.only === true });
-        if (got.decisions.length || got.sent_by_you.length) changed();
+        if (got.decisions.length || got.sent_by_you.length || firstIn()) changed();
         return json(res, 200, got);
       }
       if (p === '/api/wait') {
@@ -160,6 +163,7 @@ async function start(opts = {}) {
         let over = false, busy = false;
         const check = () => { if (busy) return null; busy = true; try { const d = store.decisionFor(id, Date.now(), who); if (d) { over = true; changed(); } return d; } finally { busy = false; } };
         const first = check();
+        if (!first && firstIn()) changed();
         if (first) return json(res, 200, { decided: true, decision: first });
         return await new Promise((done) => {
           const finish = (out) => { clearInterval(poll); waiters.delete(wake); done(json(res, 200, out)); };

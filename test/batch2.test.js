@@ -56,6 +56,7 @@ test('2.3 complete reports sent, done or failed; a failure turns the light red w
 
 test('2.4 (P3) approved is not sent: it turns blue only on delivery, and red when nobody collects it', () => {
   const s = open(tmp());
+  s.decisions(T0, { agent: 'other-bot' }); // an assistant checked in today, so an approval it leaves turns red
   const l = quote(s);
   s.act(l.id, 'approve', {}, T0);
   assert.equal(l.state, 'approved');

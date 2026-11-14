@@ -1,6 +1,6 @@
 'use strict';
-// Who gets which decision: the name a session has on the board comes from its repository (every worktree and subfolder
-// of one repository is one name), or from the project it names. Sessions started in one plain folder that name
+// Who gets which decision: the name a session has on the board comes from the top folder of its repository or worktree
+// (a subfolder shares it; each worktree is its own), or from the project it names. Sessions started in one plain folder that name
 // different projects are never handed each other's decisions.
 const { childEnv } = require('./fixtures/env');
 const test = require('node:test');
@@ -78,7 +78,7 @@ test('a session that names the project of the folder it was started in keeps the
   } finally { s.close(); a.close(); }
 });
 
-test('every worktree and subfolder of one repository is one name', { skip: !hasGit && 'git is not installed' }, async () => {
+test('a subfolder shares its repository\'s name; each worktree has its own', { skip: !hasGit && 'git is not installed' }, async () => {
   const dir = tmp(), base = tmp(), repo = path.join(base, 'around-town'), wt = path.join(base, 'wt-feature'), sub = path.join(repo, 'src');
   fs.mkdirSync(sub, { recursive: true });
   git(repo, 'init', '-q'); git(repo, 'commit', '-q', '--allow-empty', '-m', 'first'); git(repo, 'worktree', 'add', '-q', wt);
@@ -89,23 +89,29 @@ test('every worktree and subfolder of one repository is one name', { skip: !hasG
     try { await s.hello(); names.push((await s.call('raise_light', { area: 'Code', title: 'From ' + path.basename(cwd), kind: 'todo' })).agent); } finally { s.close(); }
   }
   try {
-    assert.deepEqual(names, Array(3).fill(`t:around-town~${fp(repo)}`), 'the same as before for the main folder, and shared by its worktree and subfolder');
+    assert.equal(names[0], `t:around-town~${fp(repo)}`, 'the main folder keeps the name it had before');
+    assert.equal(names[2], names[0], 'a subfolder shares its repository\'s name');
+    assert.equal(names[1], `t:wt-feature~${fp(wt)}`, 'a worktree is its own session: a release worktree never takes another one\'s decision');
   } finally { a.close(); }
 });
 
-test('the session-start hook counts for the repository\'s name from a worktree', { skip: !hasGit && 'git is not installed' }, async () => {
+test('the session-start hook counts for the worktree\'s own name', { skip: !hasGit && 'git is not installed' }, async () => {
   const dir = tmp(), base = tmp(), repo = path.join(base, 'shop'), wt = path.join(base, 'shop-wt');
   fs.mkdirSync(repo);
   git(repo, 'init', '-q'); git(repo, 'commit', '-q', '--allow-empty', '-m', 'first'); git(repo, 'worktree', 'add', '-q', wt);
   const a = await start({ port: 0, dir, holdMs: 0 });
   try {
-    const l = a.store.raise({ area: 'Shop', title: 'Which size?', kind: 'decide', options: ['Small', 'Large'], agent: `claude-code:shop~${fp(repo)}` });
-    a.store.act(l.id, 'answer', { value: 'Large', rev: require('../lib/store').rev(l) });
+    const rev = require('../lib/store').rev;
+    // Two answers for the worktree's session, one for the main folder's: the worktree's hook counts its own two.
+    for (const [title, agent] of [['Which size?', `claude-code:shop-wt~${fp(wt)}`], ['Which colour?', `claude-code:shop-wt~${fp(wt)}`], ['The main folder\'s question', `claude-code:shop~${fp(repo)}`]]) {
+      const l = a.store.raise({ area: 'Shop', title, kind: 'decide', options: ['Yes', 'No'], agent });
+      a.store.act(l.id, 'answer', { value: 'Yes', rev: rev(l) });
+    }
     const out = await new Promise((ok) => {
       const c = spawn(process.execPath, [path.join(root, 'hooks', 'session-start.js')], { env: childEnv({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port }), stdio: ['pipe', 'pipe', 'inherit'] });
       let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', () => ok(o)); c.stdin.end(JSON.stringify({ cwd: wt }));
     });
-    assert.match(out, /1 decision is ready for this session/);
+    assert.match(out, /2 decisions are ready for this session/);
   } finally { a.close(); }
 });
 

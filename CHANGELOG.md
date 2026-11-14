@@ -9,8 +9,9 @@ Install it in the app you use, and decisions reach the right session.
   Desktop, where the board runs inside the app. A new `open_board` tool opens
   the board in the person's browser with their key, which the assistant never
   sees, and `setup_guide` walks an assistant through the first setup.
-- **Decisions go to the right session.** A session's name now comes from its
-  git repository, so every worktree of one repository shares it. A session
+- **Decisions go to the right session.** A session's name now comes from the
+  top folder of its git checkout, so a session started in a subfolder gets the
+  repository's name, and each worktree stays its own session. A session
   started elsewhere can name its `project`; it is remembered for the rest of the
   session, and the session still collects what it raised before naming one.
   With a fixed name (Claude Desktop, where one connector serves every chat) a

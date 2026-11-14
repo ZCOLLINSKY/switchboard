@@ -86,8 +86,9 @@ Any other MCP client, in its server config:
 **Who gets which decision.** Each assistant session has a name on the board:
 the client's name plus the repository or folder it was started in (for example
 `claude-code:my-shop~3f2a`, where the last part tells apart two folders with the
-same name). Inside a git repository the name is the repository's, so every
-worktree and subfolder of one repository shares it. A decision is handed only to
+same name). Inside a git repository the name is that checkout's top folder, so
+a session started in a subfolder shares it, and each worktree is its own
+session (two release worktrees never take each other's decisions). A decision is handed only to
 sessions with the name of the session that raised the light, so a session
 working on one project never sends another project's message.
 

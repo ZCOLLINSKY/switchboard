@@ -24,6 +24,30 @@ function mcp(env, pre = []) {
 }
 const hello = (m) => m.req('initialize', { protocolVersion: '2025-06-18', clientInfo: { name: 't' } });
 
+// package.json holds the version. `npm version <new>` copies it into the plugin and the Desktop bundle
+// (scripts/sync-version.js), and the connector reads it.
+test('one version everywhere: package.json, the plugin, the Desktop bundle', () => {
+  const v = json('package.json').version;
+  assert.match(v, /^\d+\.\d+\.\d+$/);
+  assert.equal(json('.claude-plugin/plugin.json').version, v);
+  assert.equal(json('manifest.json').version, v);
+  assert.equal(json('package.json').scripts.version, 'node scripts/sync-version.js && git add .claude-plugin/plugin.json manifest.json');
+});
+
+test('the version script copies package.json\'s version into the plugin and the bundle, and changes nothing else', () => {
+  const dir = tmp(), files = ['package.json', '.claude-plugin/plugin.json', 'manifest.json'];
+  fs.mkdirSync(path.join(dir, '.claude-plugin'));
+  for (const f of files) fs.copyFileSync(path.join(root, f), path.join(dir, f));
+  const pkg = fs.readFileSync(path.join(dir, 'package.json'), 'utf8').replace(/"version": "[^"]*"/, '"version": "9.8.7"');
+  fs.writeFileSync(path.join(dir, 'package.json'), pkg);
+  require('child_process').execFileSync(process.execPath, [path.join(root, 'scripts', 'sync-version.js'), dir], { env: childEnv(), stdio: 'pipe' });
+  for (const f of files) {
+    const was = fs.readFileSync(path.join(root, f), 'utf8'), now = fs.readFileSync(path.join(dir, f), 'utf8');
+    assert.equal(JSON.parse(now).version, '9.8.7', f);
+    assert.equal(now, was.replace(/"version": "[^"]*"/, '"version": "9.8.7"'), `${f}: only the version changed`);
+  }
+});
+
 test('the connector reports the version in package.json', async () => {
   const m = mcp({ SWITCHBOARD_HOME: tmp() }); // initialize never contacts a board
   try { assert.equal((await hello(m)).result.serverInfo.version, json('package.json').version); } finally { m.close(); }
@@ -110,7 +134,7 @@ test('the Desktop bundle lists exactly the tools the connector offers, and runs 
 
 test('the Desktop bundle leaves out tests, notes, the relay and git, and keeps what the connector reads', () => {
   const ignore = fs.readFileSync(path.join(root, '.mcpbignore'), 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
-  for (const p of ['test/', 'docs/', 'relay/', '.git', 'hooks/', '.claude-plugin/', 'page.key', 'data.json']) assert.ok(ignore.includes(p), `${p} is left out`);
+  for (const p of ['test/', 'docs/', 'relay/', 'scripts/', '.git', 'hooks/', '.claude-plugin/', 'page.key', 'data.json']) assert.ok(ignore.includes(p), `${p} is left out`);
   for (const p of ['package.json', 'SETUP.md', 'mcp.js', 'server.js', 'cli.js', 'lib/', 'public/', 'scenarios/', 'LICENSE']) assert.ok(!ignore.some((x) => x === p || x === '*' + path.extname(p)), `${p} stays in`);
 });
 

@@ -9,3 +9,5 @@ page.key
 server.lock
 *.tgz
 relay/
+*.mcpb
+dist/

@@ -9,6 +9,7 @@ dist/
 test/
 docs/
 relay/
+scripts/
 .claude/
 .claude-plugin/
 hooks/

@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "switchboard",
   "display_name": "Switchboard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "One local screen for everything your AI assistants are waiting on you for, with the draft attached.",
   "long_description": "Switchboard runs on this computer and shows everything your assistants need from you: drafts to approve, choices to make, jobs that broke. Claude puts each one on the board with the draft attached; you approve, edit or decline on the board, and Claude picks up exactly what you decided. Only the board page can approve: Claude cannot approve on your behalf. Say \"open my Switchboard\" to see it. The board and its data stay on this computer.",
   "author": {

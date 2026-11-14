@@ -3,16 +3,27 @@
   "displayName": "Switchboard",
   "version": "0.2.0",
   "description": "One local screen for everything your AI assistants are waiting on you for, with the draft attached. You approve on the board; the assistant acts.",
-  "author": { "name": "Zach Collins", "url": "https://github.com/ZCOLLINSKY" },
+  "author": {
+    "name": "Zach Collins",
+    "url": "https://github.com/ZCOLLINSKY"
+  },
   "homepage": "https://github.com/ZCOLLINSKY/switchboard",
   "repository": "https://github.com/ZCOLLINSKY/switchboard",
   "license": "MIT",
-  "keywords": ["mcp", "human-in-the-loop", "approvals", "local-first"],
+  "keywords": [
+    "mcp",
+    "human-in-the-loop",
+    "approvals",
+    "local-first"
+  ],
   "skills": "./skill/",
   "mcpServers": {
     "switchboard": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp.js"]
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/mcp.js"
+      ]
     }
-  }
+  },
+  "icon": "./icon.png"
 }

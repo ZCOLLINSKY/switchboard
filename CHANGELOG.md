@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **An icon** for the plugin listing and the Claude Desktop extension: the
+  board's three lights on its dark tile (`npm run icon` redraws it, no
+  dependencies).
 - **Receipts.** `node cli.js report [--days 7]`: what came in and from whom,
   what you decided and how fast (from when it asked you to your answer), what
   assistants picked up and reported, and what has waited longest. Counted from

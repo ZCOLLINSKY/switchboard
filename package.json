@@ -3,10 +3,44 @@
   "version": "0.2.0",
   "description": "One local screen for everything your AI assistants and scripts are waiting on you for, with the draft attached.",
   "license": "MIT",
-  "keywords": ["mcp", "mcp-server", "claude-code", "ai-agents", "human-in-the-loop", "approvals", "local-first"],
-  "bin": { "switchboard": "cli.js" },
-  "scripts": { "start": "node cli.js start", "test": "node --test test/*.test.js", "version": "node scripts/sync-version.js && git add .claude-plugin/plugin.json manifest.json" },
-  "engines": { "node": ">=18" },
-  "files": ["cli.js", "lib/", "public/", "scenarios/", "skill/", "server.js", "mcp.js", "README.md", "SETUP.md", "LICENSE", "docs/API.md", "docs/screenshot.png"],
-  "repository": { "type": "git", "url": "https://github.com/ZCOLLINSKY/switchboard.git" }
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "claude-code",
+    "ai-agents",
+    "human-in-the-loop",
+    "approvals",
+    "local-first"
+  ],
+  "bin": {
+    "switchboard": "cli.js"
+  },
+  "scripts": {
+    "start": "node cli.js start",
+    "test": "node --test test/*.test.js",
+    "version": "node scripts/sync-version.js && git add .claude-plugin/plugin.json manifest.json",
+    "icon": "node scripts/make-icon.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "cli.js",
+    "lib/",
+    "public/",
+    "scenarios/",
+    "skill/",
+    "server.js",
+    "mcp.js",
+    "README.md",
+    "SETUP.md",
+    "LICENSE",
+    "docs/API.md",
+    "docs/screenshot.png",
+    "icon.png"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZCOLLINSKY/switchboard.git"
+  }
 }

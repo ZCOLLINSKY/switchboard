@@ -80,12 +80,28 @@ Any other MCP client, in its server config:
 ```
 
 **Who gets which decision.** Each assistant session has a name on the board:
-the client's name plus the folder it was started in (for example
-`claude-code:my-shop~3f2a`, where the last part tells apart two folders with the same name). A decision is handed only to sessions with the name of
-the session that raised the light, so a session working on one project never
-sends another project's message. To make every session of this assistant one
-name, add `-e SWITCHBOARD_AGENT=claude` to the command above. Lights raised with
-`for_anyone: true` can be collected by any session.
+the client's name plus the repository or folder it was started in (for example
+`claude-code:my-shop~3f2a`, where the last part tells apart two folders with the
+same name). Inside a git repository the name is the repository's, so every
+worktree and subfolder of one repository shares it. A decision is handed only to
+sessions with the name of the session that raised the light, so a session
+working on one project never sends another project's message.
+
+A session started outside the project's folder (your home folder, say) should
+pass `project` with the repository's name on every call. Its name is then
+`claude-code:<project>`: two sessions started in the same folder that name
+different projects are never handed each other's decisions. The session
+remembers its project after the first call, so one call without it still goes
+to the same place. A session started inside the repository keeps the
+repository's own name, even when it names that project. That is a different
+name from `claude-code:<project>`: a decision raised from inside the repository
+goes to sessions started inside it, and one raised from outside goes to
+sessions that name the project.
+
+To make every session of this assistant one name, add `-e SWITCHBOARD_AGENT=claude`
+to the command above (a session that names a project is then
+`claude:<project>`). Lights raised with `for_anyone: true` can be collected by
+any session.
 
 This changes your own settings (`~/.claude.json`). If your shell refuses it,
 give the person the exact command to paste into their terminal.

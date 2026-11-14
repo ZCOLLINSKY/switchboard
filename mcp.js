@@ -11,8 +11,13 @@ for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWI
   const v = process.env[k]; if (v != null && (!v.trim() || v.includes('${') || (k === 'SWITCHBOARD_PORT' && !/^\d{1,5}$/.test(v.trim())))) delete process.env[k];
 }
 const VERSION = require('./package.json').version; // the one place the version is written
-let AGENT = process.env.SWITCHBOARD_AGENT || ''; // who this assistant is on the board; set at initialize if not given
-const os = require('os'), fs = require('fs');
+const os = require('os'), fs = require('fs'), names = require('./lib/names');
+// Who this assistant is on the board: a name fixed by SWITCHBOARD_AGENT, or the client's name plus the repository or folder
+// it was started in. Once the session names a project, that project replaces the folder for the rest of this process, so
+// a call that forgets it still goes to the same place.
+const FIXED = process.env.SWITCHBOARD_AGENT || '';
+let CLIENT = 'assistant', FOLDER = null, PROJECT = '';
+const agent = () => names.agentName({ fixed: FIXED, client: CLIENT, folder: FIXED ? null : FOLDER || (FOLDER = names.folderOf(process.cwd())), project: PROJECT });
 const HOME = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|\/)/, os.homedir());
 let BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${process.env.SWITCHBOARD_PORT || 4747}`).replace(/\/+$/, '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -97,7 +102,7 @@ const lightFields = {
   work_minutes: { type: 'integer', description: 'For a job the person must go and do (a call, a form, a drive): minutes of work, 1 to 600. Listed apart from the quick taps.' },
   changed: S('After a request for changes: one line on what you changed ("Added the $1,008 deposit; offered Thursday only"). Shown next to their request. Keep note for background.'),
   question: S('A question back to the person, when their request needs a fact you do not have. Shown on the card; their answer comes back as a new request.'),
-  for_anyone: { type: 'boolean', description: 'Let any assistant collect the decision, not only sessions like this one (this assistant started in this folder). Use it while setting up the person\'s board, and for work any session can finish.' },
+  for_anyone: { type: 'boolean', description: 'Let any assistant collect the decision, not only sessions like this one (this assistant, started in this repository or folder, or naming the same project). Use it while setting up the person\'s board, and for work any session can finish.' },
   holds_up: S('What is blocked until this is handled, in a few words ("Friday payroll"). A broken job that holds something up sorts near the top.'),
   next: S('One line on what happens after they act. Example: "waits 3 days for their reply, then drafts a follow-up for you".'),
   follow_up_days: { type: 'integer', description: 'For a message to someone: days to wait for a reply before the light comes back.' },
@@ -113,6 +118,8 @@ const lightFields = {
   expect_by: S('For state "auto": ISO time by which you expect to report again. If you go quiet past it, the light turns amber.'),
   value: { type: 'number', description: 'Money riding on this, in whole dollars (a quote amount, an invoice). Higher values sort first. Only set it when you know the number.' },
 };
+// Where a decision goes. Taken by every call that raises or collects, and remembered once given.
+const project = { project: S('The code repository this work is for, by name, when this session was started outside that repository\'s folder (for example in the home folder). Decisions go only to sessions naming the same project. Once given it is remembered for the rest of this session. Leave it out when you were started inside the repository.') };
 const TOOLS = [
   { name: 'raise_light', description: 'Put one thing on the person\'s Switchboard. Use it when you are blocked on them (state need_you), have sent something and are waiting on someone else (waiting_them), are running a job they should see (auto), have something lined up (queued), or an automation failed (broken). One light per thread; update it as the thread moves instead of raising a new one.',
     inputSchema: { type: 'object', required: ['area', 'title'], properties: Object.assign({
@@ -123,21 +130,21 @@ const TOOLS = [
       phone: S('For a text the person sends from their own phone: the recipient number. The board opens their Messages app with the draft.'),
       channel: S('How an approved draft goes out: agent (you send it after picking up the decision), sms (they send from their phone), copy (they paste it somewhere).', { enum: ['agent', 'sms', 'copy'] }),
       action_type: S('A stable name for this recurring kind of action, e.g. "listing-fix". Unedited approval streaks are tracked per type so the person can promote it to run by itself.'),
-    }, lightFields) } },
+    }, lightFields, project) } },
   { name: 'update_light', description: 'Change a light you raised: move it to a new state as the thread progresses, update progress, replace the draft, or mark it done.',
     inputSchema: { type: 'object', required: ['id'], properties: Object.assign({ id: S('The light id.'),
       state: S('New state.', { enum: ['need_you', 'waiting_them', 'auto', 'queued', 'broken', 'done', 'dropped'] }), reason: S('Why it moved.'),
-      kind: S('New kind.', { enum: ['approve', 'decide', 'sense', 'todo', 'fix'] }), area: S('Move it to this container.') }, lightFields) } },
+      kind: S('New kind.', { enum: ['approve', 'decide', 'sense', 'todo', 'fix'] }), area: S('Move it to this container.') }, lightFields, project) } },
   { name: 'list_lights', description: 'See what is on the board now. Check this before raising a light so you do not duplicate a thread.',
     inputSchema: { type: 'object', properties: { area: S('Only this container.'), state: S('Only this state.') } } },
   { name: 'get_decisions', description: 'Collect what the person decided on the lights you raised: approvals (with their final text and whether they edited it), answers, declines, "they replied". Collecting is a commitment and a claim: the person can no longer take the decision back, and nobody else is handed it for 10 minutes, so act on each one and report with complete_decision and its decision_id. Send exactly what the decision carries: its text, its "to", its attachments and its payload are what the person approved, even if the light has changed since. A decision with needs_check: true was collected before and never reported: find out whether it already went out BEFORE sending anything, and report "unsure" if you cannot tell. "sent_by_you" lists messages the person sent themselves: facts for your records, never something to send. Also returns follow-ups that need a draft from you and quick notes that need filing.',
-    inputSchema: { type: 'object', properties: { all: { type: 'boolean', description: 'Also return decisions on lights raised by other assistants. Leave off unless the person asked you to take over someone else\'s work.' } } } },
+    inputSchema: { type: 'object', properties: Object.assign({ all: { type: 'boolean', description: 'Also return decisions on lights raised by other assistants. Leave off unless the person asked you to take over someone else\'s work.' } }, project) } },
   { name: 'complete_decision', description: 'Report what happened after you acted on a decision, naming the decision_id you were handed. "sent": the message went out (this is what turns the light blue and starts the follow-up clock). "done": the change was applied or the answer was handled. "failed": it definitely did not go through; say why. "unsure": you cannot tell whether it went out (a timeout, a crash mid-send); the person is asked to check, and nothing is retried blind. Never report "failed" when you are not sure.',
-    inputSchema: { type: 'object', required: ['id', 'decision_id', 'outcome'], properties: { id: S('The light id.'), decision_id: S('The decision_id from get_decisions or wait_for_decision. A report for a decision that was since replaced is refused.'), outcome: S('What happened.', { enum: ['sent', 'done', 'failed', 'unsure'] }), detail: S('One plain line. Required for failed and unsure.') } } },
+    inputSchema: { type: 'object', required: ['id', 'decision_id', 'outcome'], properties: Object.assign({ id: S('The light id.'), decision_id: S('The decision_id from get_decisions or wait_for_decision. A report for a decision that was since replaced is refused.'), outcome: S('What happened.', { enum: ['sent', 'done', 'failed', 'unsure'] }), detail: S('One plain line. Required for failed and unsure.') }, project) } },
   { name: 'wait_for_decision', description: 'Wait up to N seconds for the person to decide one light, when you are mid-task and the answer unblocks you. Works only for a light you raised. Getting the answer this way collects it exactly as get_decisions does: the person can no longer take it back, so act on it and report with complete_decision. Returns {decided:false} if they have not decided; then carry on with other work or wait again.',
-    inputSchema: { type: 'object', required: ['id'], properties: { id: S('The light id.'), seconds: { type: 'integer', description: '1 to 50. Default 30.' } } } },
+    inputSchema: { type: 'object', required: ['id'], properties: Object.assign({ id: S('The light id.'), seconds: { type: 'integer', description: '1 to 50. Default 30.' } }, project) } },
   { name: 'ack_decisions', description: 'The short form of complete_decision with outcome "done", for several lights at once. Not for messages to people: those are skipped and listed in warnings, and need complete_decision with sent, failed or unsure.',
-    inputSchema: { type: 'object', required: ['ids'], properties: { ids: { type: 'array', items: { type: 'string' } } } } },
+    inputSchema: { type: 'object', required: ['ids'], properties: Object.assign({ ids: { type: 'array', items: { type: 'string' } } }, project) } },
   { name: 'add_area', description: 'Create or update a container (a business, a project, school, family).',
     inputSchema: { type: 'object', required: ['name'], properties: { name: S('Container name.'), note: S('One line shown under the name.'), voice: S('How drafts for this container should sound, in the person\'s own words. Read it from list_lights before you write a draft.'), color: S('Hex color like #4C8DF6.'), wake_at: S('ISO date. Until then the container is dimmed; on that date it raises one light asking for its focus.') } } },
   { name: 'get_light', description: 'Read one light in full: its draft, what came in, note, recipient, attachments, due date, and what the person asked to change. Use it before redrafting.', inputSchema: { type: 'object', required: ['id'], properties: { id: S('The light id.') } } },
@@ -159,14 +166,15 @@ function openInBrowser(link) {
 }
 
 async function callTool(name, a, signal) {
+  if ('project' in a) { const p = names.projectName(a.project); if (p) PROJECT = p; a = Object.assign({}, a); delete a.project; } // never passed on as a field
   const need = (k) => { if (typeof a[k] !== 'string' || !a[k]) throw new Error(`${k} is required (text).`); };
-  if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : AGENT }); delete b.for_anyone; return api('POST', '/api/lights', b, signal); }
+  if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : agent() }); delete b.for_anyone; return api('POST', '/api/lights', b, signal); }
   if (['complete_decision', 'wait_for_decision', 'update_light'].includes(name)) need('id');
   if (name === 'complete_decision') { const l = await api('POST', '/api/complete', a, signal); return { id: l.id, state: l.state, warnings: l.warnings }; }
-  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: AGENT }, signal, (sec + 10) * 1000); }
-  if (name === 'update_light') return api('POST', '/api/lights/' + encodeURIComponent(a.id), Object.assign({}, a, { agent: AGENT }), signal);
-  if (name === 'get_decisions') return api('POST', '/api/decisions', { agent: AGENT, all: a.all === true }, signal);
-  if (name === 'ack_decisions') { const ids = Array.isArray(a.ids) ? a.ids : typeof a.ids === 'string' ? [a.ids] : typeof a.id === 'string' ? [a.id] : null; if (!ids) throw new Error('ids is required: a list of light ids.'); return api('POST', '/api/ack', { ids, agent: AGENT }, signal); }
+  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: agent() }, signal, (sec + 10) * 1000); }
+  if (name === 'update_light') return api('POST', '/api/lights/' + encodeURIComponent(a.id), Object.assign({}, a, { agent: agent() }), signal);
+  if (name === 'get_decisions') return api('POST', '/api/decisions', { agent: agent(), all: a.all === true }, signal);
+  if (name === 'ack_decisions') { const ids = Array.isArray(a.ids) ? a.ids : typeof a.ids === 'string' ? [a.ids] : typeof a.id === 'string' ? [a.id] : null; if (!ids) throw new Error('ids is required: a list of light ids.'); return api('POST', '/api/ack', { ids, agent: agent() }, signal); }
   if (name === 'add_area') return api('POST', '/api/areas', a, signal);
   if (name === 'get_light') { need('id'); const v = await api('GET', '/api/state', null, signal), l = v.lights.find((x) => x.id === a.id); if (!l) throw new Error('No light with that id is open. Finished lights are not listed.'); const keep = ['id', 'title', 'state', 'kind', 'draft', 'source', 'note', 'to', 'attachments', 'options', 'link', 'due', 'value', 'key', 'changeFrom', 'changeTo', 'askedFor', 'changed', 'question', 'followUpDays', 'lastSent']; const out = {}; keep.forEach((k) => { if (l[k] != null && l[k] !== '' && !(Array.isArray(l[k]) && !l[k].length)) out[k] = l[k]; }); out.area = (v.areas.find((x) => x.id === l.area) || {}).name; if (out.due) out.due = new Date(out.due).toISOString(); return out; }
   if (name === 'clear_examples') return api('POST', '/api/demo', { clear: true }, signal);
@@ -207,8 +215,8 @@ async function handle(msg) {
   if (method === 'notifications/cancelled') { const c = inflight.get(params && params.requestId); if (c) c.abort(); return; }
   if (id === undefined || method === undefined) return; // a notification, or a reply to something we never ask
   try {
-    // The folder's name plus a short fingerprint of its full path: two projects both called "app" are two names.
-    if (method === 'initialize' && !AGENT) AGENT = `${(params && params.clientInfo && typeof params.clientInfo.name === 'string' && params.clientInfo.name) || 'assistant'}:${path.basename(process.cwd())}~${require('crypto').createHash('sha1').update(process.cwd()).digest('hex').slice(0, 4)}`;
+    // The repository's or folder's name plus a short fingerprint of its full path: two projects both called "app" are two names.
+    if (method === 'initialize' && !FOLDER) { CLIENT = (params && params.clientInfo && typeof params.clientInfo.name === 'string' && params.clientInfo.name) || 'assistant'; if (!FIXED) FOLDER = names.folderOf(process.cwd()); }
     if (method === 'initialize' && IN_PROCESS) setImmediate(() => api('GET', '/api/health').catch((e) => console.error('switchboard:', e.message)));
     if (method === 'initialize') return send({ jsonrpc: '2.0', id, result: { protocolVersion: VERSIONS.includes(params && params.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'switchboard', version: VERSION },
       instructions: 'Switchboard is the person\'s one screen for everything waiting on them. Raise a light instead of stopping to ask; always attach the draft; check get_decisions when you start work and between jobs. If they have not opened the board on this computer yet, call open_board.' } });

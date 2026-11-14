@@ -9,6 +9,9 @@ Switchboard is the person's one screen for everything that is waiting on them.
 Its headline is "N lights need you. About M minutes." Your job is to keep that
 number small and true.
 
+If you were started outside the project's folder, pass `project` with the
+repository's name on every call.
+
 ## When you start work, and between jobs
 
 1. Call `get_decisions`. You get the decisions on lights you raised. Collecting

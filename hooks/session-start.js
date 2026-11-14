@@ -3,11 +3,12 @@
 // SessionStart hook: one line telling a new session what Switchboard has ready for it.
 // It only asks GET /api/pending, which counts and collects nothing. It never starts the board, never reads the page
 // key, and prints nothing (so adds nothing to the session) when nothing is waiting or no board answers.
-const path = require('path'), os = require('os'), fs = require('fs'), crypto = require('crypto');
+const path = require('path'), os = require('os'), fs = require('fs'), names = require('../lib/names');
 setTimeout(() => process.exit(0), 3000).unref(); // never hold up the session
 
-// The name mcp.js gives a Claude Code session started in this folder, so the counts match what get_decisions hands it.
-const agentFor = (cwd) => process.env.SWITCHBOARD_AGENT || `claude-code:${path.basename(cwd)}~${crypto.createHash('sha1').update(cwd).digest('hex').slice(0, 4)}`;
+// The name mcp.js gives a Claude Code session started in this folder (its repository's, inside one), so the counts match
+// what get_decisions hands it before the session names a project.
+const agentFor = (cwd) => { const fixed = process.env.SWITCHBOARD_AGENT || ''; return names.agentName({ fixed, client: 'claude-code', folder: fixed ? null : names.folderOf(cwd) }); };
 const home = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|[\\/])/, os.homedir());
 
 async function count(base, agent) {

@@ -18,15 +18,15 @@ and tell the person to install Node.js from https://nodejs.org, then continue.
 Check whether it is already running:
 
 ```sh
-node "REPO/bin/switchboard.js" link
+node "REPO/cli.js" link
 ```
 
 If that prints a link, it is running: go to step 3. If it says it is not
 running, start it in the background, then wait until it answers:
 
 ```sh
-(node "REPO/bin/switchboard.js" start < /dev/null > "${TMPDIR:-/tmp}/switchboard-start.log" 2>&1 &)
-for i in 1 2 3 4 5 6 7 8 9 10; do node "REPO/bin/switchboard.js" link && break; sleep 1; done
+(node "REPO/cli.js" start < /dev/null > "${TMPDIR:-/tmp}/switchboard-start.log" 2>&1 &)
+for i in 1 2 3 4 5 6 7 8 9 10; do node "REPO/cli.js" link && break; sleep 1; done
 ```
 
 If it still does not answer, read `${TMPDIR:-/tmp}/switchboard-start.log`: it
@@ -38,7 +38,7 @@ a second), and step 6 prints the link.
 The board is at http://127.0.0.1:4747. The person must open it through the link
 with the key in it: the `link` command above prints it. Give them that link,
 never a bare address. You cannot approve, undo or promote from the API, by
-design. To stop the board: `node "REPO/bin/switchboard.js" stop`. If it says
+design. To stop the board: `node "REPO/cli.js" stop`. If it says
 `kill EPERM`, your shell may not signal programs it did not start: ask the
 person to run that command in their own terminal.
 
@@ -145,7 +145,7 @@ Then:
 
 1. Raise a small real light, or use one from step 5.
 2. **Ask** the person to open the link and act on it. If you skipped step 2,
-   print the link now with `node "REPO/bin/switchboard.js" link` (with the same
+   print the link now with `node "REPO/cli.js" link` (with the same
    `SWITCHBOARD_HOME` and `SWITCHBOARD_PORT`).
 3. Call `wait_for_decision` with that light's id, or `get_decisions` after the
    hold: 20 seconds for a change or an answer, 60 for a message to a person
@@ -173,7 +173,7 @@ optional. To have the board on at login, **Ask** first, then:
   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
   <plist version="1.0"><dict>
     <key>Label</key><string>com.switchboard</string>
-    <key>ProgramArguments</key><array><string>/full/path/to/node</string><string>REPO/bin/switchboard.js</string><string>start</string></array>
+    <key>ProgramArguments</key><array><string>/full/path/to/node</string><string>REPO/cli.js</string><string>start</string></array>
     <key>RunAtLoad</key><true/>
     <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
     <key>ThrottleInterval</key><integer>30</integer>

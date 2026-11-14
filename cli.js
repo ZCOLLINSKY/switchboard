@@ -4,8 +4,8 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const { spawn } = require('child_process');
-const root = path.join(__dirname, '..');
-const SELF = `node "${path.join(root, 'bin', 'switchboard.js')}"`; // what to type, wherever Switchboard was put
+const root = __dirname;
+const SELF = `node "${path.join(root, 'cli.js')}"`; // what to type, wherever Switchboard was put
 const expand = (p) => p.replace(/^~(?=$|[\\/])/, os.homedir());
 const HOME = expand(process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard'));
 
@@ -80,7 +80,7 @@ function openLink(link) {
   c.unref();
 }
 async function startBoard(opts, label) {
-  try { return await require('../server').start(opts); }
+  try { return await require('./server').start(opts); }
   catch (e) {
     if (e.code === 'ELOCKED') { const b = await board(opts.dir || HOME); const k = b && keyIn(b.dir); fail(`Switchboard is already running${b ? ' at ' + b.url : ''}.${k ? `\nOpen it with: ${b.url}/?key=${k}` : ''}\nTo stop it: ${SELF} stop${b && b.url !== 'http://127.0.0.1:4747' ? ' --port ' + new URL(b.url).port : ''}`); }
     if (e.code === 'EADDRINUSE') {
@@ -113,12 +113,12 @@ async function startBoard(opts, label) {
   } else if (cmd === 'sim') {
     // A throwaway board with made-up data. Never touches your real one.
     const p = flags.port || 4750, name = words[0] || 'morning';
-    const known = Object.keys(require('../scenarios').scenarios); if (!known.includes(name)) fail(`No scenario "${name}". Try: ${known.join(', ')}`);
+    const known = Object.keys(require('./scenarios').scenarios); if (!known.includes(name)) fail(`No scenario "${name}". Try: ${known.join(', ')}`);
     const s = await startBoard({ port: p, host: flags.host, dir: path.join(os.homedir(), '.local', 'share', 'switchboard-sim', String(p)), sim: true, scenario: name, live: !flags['no-live'], signals: true }, 'a simulation');
     console.log(`Simulation "${name}" is on. Open it with this link:\n  ${s.link}\nMade-up data only. Switch scenarios from the bar at the top of the page.\nStop with Ctrl+C.`);
     if (flags.open) openLink(s.link);
   } else if (cmd === 'mcp') {
-    require('../mcp');
+    require('./mcp');
   } else if (cmd === 'demo') {
     // Loading the examples is the person's own action, so it carries the page key of the board that is running.
     const b = await board(HOME); if (!b) notRunning();

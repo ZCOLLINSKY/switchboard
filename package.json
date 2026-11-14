@@ -4,9 +4,9 @@
   "description": "One local screen for everything your AI assistants and scripts are waiting on you for, with the draft attached.",
   "license": "MIT",
   "keywords": ["mcp", "mcp-server", "claude-code", "ai-agents", "human-in-the-loop", "approvals", "local-first"],
-  "bin": { "switchboard": "bin/switchboard.js" },
-  "scripts": { "start": "node bin/switchboard.js start", "test": "node --test test/*.test.js" },
+  "bin": { "switchboard": "cli.js" },
+  "scripts": { "start": "node cli.js start", "test": "node --test test/*.test.js" },
   "engines": { "node": ">=18" },
-  "files": ["bin/", "lib/", "public/", "scenarios/", "skill/", "server.js", "mcp.js", "README.md", "SETUP.md", "LICENSE", "docs/API.md", "docs/screenshot.png"],
+  "files": ["cli.js", "lib/", "public/", "scenarios/", "skill/", "server.js", "mcp.js", "README.md", "SETUP.md", "LICENSE", "docs/API.md", "docs/screenshot.png"],
   "repository": { "type": "git", "url": "https://github.com/ZCOLLINSKY/switchboard.git" }
 }

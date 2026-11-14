@@ -284,7 +284,7 @@ test('bulk over 200 is refused, not cut (K13); dropping "Keep going?" switches t
 test('command line: with a data folder named, it never talks to a board serving other data', async () => {
   const other = await start({ port: 0, dir: tmp() });
   const { execFileSync } = require('child_process');
-  const run = (args, env) => { try { return execFileSync(process.execPath, [path.join(__dirname, '..', 'bin', 'switchboard.js')].concat(args), { env: Object.assign({}, process.env, env), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return String(e.stdout) + String(e.stderr); } };
+  const run = (args, env) => { try { return execFileSync(process.execPath, [path.join(__dirname, '..', 'cli.js')].concat(args), { env: Object.assign({}, process.env, env), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return String(e.stdout) + String(e.stderr); } };
   try {
     const out = run(['link'], { SWITCHBOARD_HOME: tmp(), SWITCHBOARD_URL: '', SWITCHBOARD_PORT: String(new URL(other.url).port) });
     assert.doesNotMatch(out, new RegExp(other.key), 'the other board\'s key is never printed');

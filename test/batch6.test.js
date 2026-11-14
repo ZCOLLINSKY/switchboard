@@ -173,7 +173,7 @@ test('X7 a lock left by a dead or unrelated process is taken over; a live board 
 });
 test('X7 a real stop (SIGTERM) removes the lock', async () => {
   const dir = tmp(), { spawn } = require('child_process');
-  const child = spawn(process.execPath, [path.join(__dirname, '..', 'bin', 'switchboard.js'), 'start', '--port', '0'], { env: Object.assign({}, process.env, { SWITCHBOARD_HOME: dir }), stdio: ['ignore', 'pipe', 'inherit'] });
+  const child = spawn(process.execPath, [path.join(__dirname, '..', 'cli.js'), 'start', '--port', '0'], { env: Object.assign({}, process.env, { SWITCHBOARD_HOME: dir }), stdio: ['ignore', 'pipe', 'inherit'] });
   await new Promise((ok) => child.stdout.once('data', ok));
   assert.equal(fs.existsSync(path.join(dir, 'server.lock')), true);
   child.kill('SIGTERM'); await new Promise((ok) => child.once('exit', ok));

@@ -21,7 +21,7 @@ You need [Node.js](https://nodejs.org) 18 or newer. Nothing to install.
 ```sh
 git clone https://github.com/ZCOLLINSKY/switchboard.git
 cd switchboard
-node bin/switchboard.js sim --open
+node cli.js sim --open
 ```
 
 A made-up busy morning opens in your browser, and new things arrive while you
@@ -73,18 +73,18 @@ What makes it different from a to-do list:
 In the same folder:
 
 ```sh
-node bin/switchboard.js start --open
+node cli.js start --open
 ```
 
 It prints a link with a key in it. Open the board through that link once in each
 browser you use: that is what lets the browser approve things. Any other browser,
-and any script, can read the board but not act on it. `node bin/switchboard.js link`
-prints the link again, and `node bin/switchboard.js stop` stops the board. Run `npm link` once in this folder if you would rather type `switchboard link`.
+and any script, can read the board but not act on it. `node cli.js link`
+prints the link again, and `node cli.js stop` stops the board. Run `npm link` once in this folder if you would rather type `switchboard link`.
 
 Then, in a second terminal, load the examples so you can try the buttons:
 
 ```sh
-node bin/switchboard.js demo
+node cli.js demo
 ```
 
 Your data stays on your computer, in `~/.local/share/switchboard/data.json`.
@@ -136,8 +136,8 @@ curl -X POST http://127.0.0.1:4747/api/lights \
 **From the command line:**
 
 ```sh
-node bin/switchboard.js raise --area "Shop" --title "Order more boxes" --kind todo
-node bin/switchboard.js raise --area "Shop" --title "Which size?" --kind decide --options "Small,Large"
+node cli.js raise --area "Shop" --title "Order more boxes" --kind todo
+node cli.js raise --area "Shop" --title "Which size?" --kind decide --options "Small,Large"
 ```
 
 Then your script collects what you decided, acts, and reports back:
@@ -166,7 +166,7 @@ In the bar: type several things at once and they are split up, type `I have 10 m
 
 ## Other made-up days
 
-`node bin/switchboard.js sim slammed --open` starts on another day: `morning`,
+`node cli.js sim slammed --open` starts on another day: `morning`,
 `slammed`, `comeback`, `trusted`, `clear` or `first-day`. You can also switch
 days from the bar at the top of the page. Nothing touches your real board.
 

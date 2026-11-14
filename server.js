@@ -101,7 +101,7 @@ async function start(opts = {}) {
       if (!local && p.startsWith('/api/') && p !== '/api/events' && !fromPage(req)) return json(res, 403, { error: 'Open Switchboard through its key link on this device first.' });
 
       if (req.method === 'GET' && p === '/' && url.searchParams.get('key')) {
-        if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Get the current one with: node "${path.join(__dirname, 'bin', 'switchboard.js')}" link` });
+        if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Get the current one with: node "${path.join(__dirname, 'cli.js')}" link` });
         // The page itself keeps the key (per address, port included) and takes it out of the address bar. No cookie: a cookie
         // on 127.0.0.1 is shared with every other local server, and with a simulation on another port.
         res.writeHead(200, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, SAFE));

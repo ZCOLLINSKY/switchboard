@@ -748,7 +748,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (phone && S.queue.length >= 2 && !fit) main.appendChild(h('button', { class: 'btn gothrough', type: 'button', onclick: function () { startRapid(); } }, 'Go through them, one at a time (' + S.queue.length + ')'));
     if (S.sim) main.appendChild(simBar());
     var away = sinceBlock(); if (away) main.appendChild(away);
-    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link. Your assistant can give it to you again (or in Terminal: node bin/switchboard.js link).')));
+    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link. Your assistant can give it to you again (or in Terminal: node cli.js link).')));
     var strip = heldStrip(); if (strip) main.appendChild(strip);
     S.suggest.forEach(function (g) {
       main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have said “' + g.why + '” ' + (g.times === 2 ? 'twice' : g.times + ' times') + ' in ' + g.name + '. ' }), 'Always do this? It is added to how drafts for ' + g.name + ' should sound.'),

@@ -195,3 +195,21 @@ test('with a fixed name (Claude Desktop: one connector for every chat), a projec
     assert.deepEqual((await desk.call('get_decisions', { project: 'alpha' })).decisions.map((d) => d.id), [two.id]);
   } finally { desk.close(); a.close(); }
 });
+
+test('a session working on a collected approval keeps its claim with progress, under any name it used', async () => {
+  const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  const s = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port }, home);
+  try {
+    await s.hello();
+    const l = await s.call('raise_light', { area: 'Shop', title: 'Send the quote', draft: 'Hi Dale', to: 'Dale', kind: 'approve' });
+    await tap(a, l.id, 'approve');
+    for (let i = 0; i < 40 && a.store.db.lights[0].state !== 'approved'; i++) await new Promise((ok) => setTimeout(ok, 50));
+    const got = await s.call('get_decisions');
+    assert.deepEqual(got.decisions.map((d) => d.id), [l.id]);
+    const before = a.store.db.lights[0].decision.claimUntil;
+    await new Promise((ok) => setTimeout(ok, 20));
+    const u = await s.call('update_light', { id: l.id, progress: 50, project: 'around-lex' });
+    assert.ok(!u.warnings, JSON.stringify(u.warnings));
+    assert.ok(a.store.db.lights[0].decision.claimUntil > before, 'the claim was kept, though the session now names a project');
+  } finally { s.close(); a.close(); }
+});

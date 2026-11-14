@@ -8,7 +8,7 @@ const path = require('path'), fs = require('fs'), os = require('os');
 function fuzz(SEEDS = 20, STEPS = 300) {
   const { open, rev, CLAIM_MS, HOLD_MS, OUT_HOLD_MS } = require('../lib/store');
   const AGENTS = ['claude-code:alpha~1a2b', 'claude-code:beta~3c4d', 'zachs-board', 'claude-code:around-lex'];
-  const viol = {}, samples = {}, THROWS = {}, COV = { approvals: 0, answers: 0, handed: 0, rehanded_after_claim: 0, undone: 0, completed: 0, outbound_handed: 0 };
+  const viol = {}, samples = {}, THROWS = {}, COV = { orphans: 0, approvals: 0, answers: 0, handed: 0, rehanded_after_claim: 0, undone: 0, completed: 0, outbound_handed: 0 };
   const bad = (kind, msg, seed, step) => { viol[kind] = (viol[kind] || 0) + 1; if (!samples[kind]) samples[kind] = `seed ${seed} step ${step}: ${msg}`; };
   for (let seed = 1; seed <= SEEDS; seed++) {
     let x = seed * 2654435761 >>> 0; const rnd = () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
@@ -20,6 +20,7 @@ function fuzz(SEEDS = 20, STEPS = 300) {
     const handed = new Map();   // decision id -> { to, at }
     const undone = new Set();   // decision ids taken back
     const held = new Map();     // agent -> [{ id, decision_id }]
+    const asked = {};           // agent -> last time it asked for decisions
     for (let step = 0; step < STEPS; step++) {
       const r = rnd();
       try {
@@ -45,14 +46,22 @@ function fuzz(SEEDS = 20, STEPS = 300) {
           const l = pick(mine); try { s.update(l.id, { draft: 'New ' + step, agent: l.agent }, l.agent, now); } catch (e) { /* frozen is fine */ }
         } else if (r < 0.84) {
           const agent = pick(AGENTS), only = agent === 'zachs-board' ? rnd() < 0.8 : false, all = !only && rnd() < 0.05;
-          const out = s.decisions(now, { agent, only, all });
+          const orphansMs = agent === 'zachs-board' && only && rnd() < 0.7 ? 10 * 60e3 : 0;
+          const out = s.decisions(now, { agent, only, all, orphans: orphansMs });
+          asked[agent] = now;
           for (const d of out.decisions) {
             const a = acted.get(d.decision_id), h = handed.get(d.decision_id), l = s.db.lights.find((y) => y.id === d.id);
             if (undone.has(d.decision_id)) bad('handed-after-undo', d.decision_id, seed, step);
             if (h && now < h.at + CLAIM_MS) bad('double-hand-in-claim', `${d.decision_id} to ${h.to} then ${agent}`, seed, step);
             if (a && now < a.at + (a.outbound ? OUT_HOLD_MS : HOLD_MS) - 1) bad('before-hold', `${now - a.at} ms after the tap`, seed, step);
             if (a && d.action === 'approve' && a.text != null && d.text !== a.text) bad('text-not-frozen', `approved "${a.text}" handed "${d.text}"`, seed, step);
-            if (!all && l && l.agent && (only ? l.agent !== agent : l.agent !== agent)) bad('wrong-owner', `${l.agent}'s light to ${agent}`, seed, step);
+            if (d.orphan) {
+              COV.orphans++;
+              if (!orphansMs) bad('orphan-unasked', d.id, seed, step);
+              if (l && l.outbound) bad('orphan-message', d.id, seed, step);
+              if (a && now < a.at + (a.outbound ? OUT_HOLD_MS : HOLD_MS) + orphansMs - 1) bad('orphan-too-soon', `${now - a.at} ms after the tap`, seed, step);
+              if (a && asked[d.raised_by] != null && asked[d.raised_by] >= a.at + (a.outbound ? OUT_HOLD_MS : HOLD_MS)) bad('orphan-owner-was-asking', d.raised_by, seed, step);
+            } else if (!all && l && l.agent && (only ? l.agent !== agent : l.agent !== agent)) bad('wrong-owner', `${l.agent}'s light to ${agent}`, seed, step);
             if (only && l && !l.agent) bad('only-took-unowned', d.id, seed, step);
             COV.handed++; if (h) COV.rehanded_after_claim++; if (a && a.outbound) COV.outbound_handed++;
             handed.set(d.decision_id, { to: agent, at: now });

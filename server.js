@@ -176,7 +176,8 @@ async function start(opts = {}) {
       // it, and tells the page, at most every few minutes.
       const was = store.db.seen.checkIn, firstIn = () => was == null || Date.now() - was > 5 * 60e3;
       if (p === '/api/decisions') {
-        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true });
+        const orphans = Number(body.orphans_after_minutes) > 0 ? Math.max(1, Number(body.orphans_after_minutes)) * 60e3 : 0;
+        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true, orphans });
         if (got.decisions.length || got.sent_by_you.length || firstIn()) changed();
         return json(res, 200, got);
       }

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Answers are never stranded.** Switchboard remembers when each assistant last
+  asked for decisions. A relay can ask for `orphans_after_minutes`: answers on
+  lights whose session has not asked since (it ended, or its worktree is gone),
+  after that wait, marked `orphan` with `raised_by`, so it can carry them to
+  whoever picks up the work. Never a message to a person, never a light with no
+  name, never anything collected before.
+- **A property fuzzer** (`node scripts/fuzz.js 60 500`) checks the promises about
+  decisions over thousands of random steps; a short pass runs with `npm test`.
 - **Try it in the browser.** zcollinsky.github.io/switchboard runs the real board in
   the page with a made-up morning: nothing to install, nothing sent anywhere.
   `node scripts/build-demo.js` builds it; GitHub Pages republishes it from main.

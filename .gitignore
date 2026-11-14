@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+*.log
+data.json
+data.json.*.tmp
+events.jsonl
+archive.jsonl
+page.key
+server.lock
+*.tgz
+relay/

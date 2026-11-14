@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Switchboard</title>
+<style>
+/* One dark look on purpose: the lights are the content, the rest stays quiet. */
+:root{
+  --bg:#0E1116; --panel:#141922; --panel2:#1B212C; --line:#222935; --line2:#2A3342;
+  --ink:#E8ECF2; --soft:#B4BECC; --muted:#8792A3; --dim:#6F7C8F;
+  --gold:#F5C451; --gold-ink:#2b1f00; --gold-bg:#1E1A10; --gold-line:#6B5215; --gold-soft:#B9A66E;
+  --blue:#5AA9FF; --green:#3DD68C; --red:#FF6B57; --red-bg:#2A1512; --red-line:#5E2A22;
+  --font:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--font);
+  padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:1360px;margin:0 auto}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;font-size:19px;font-weight:800;white-space:nowrap}
+.mark{display:flex;gap:4px}
+.mark i{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.mark i:nth-child(2){background:var(--blue);box-shadow:0 0 10px var(--blue)}
+.mark i:nth-child(3){background:var(--green);box-shadow:0 0 10px var(--green)}
+.cmd{flex:1 1 320px;display:flex;align-items:center;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:0 6px 0 14px;min-width:0}
+.cmd:focus-within{border-color:var(--gold)}
+.cmd input{flex:1;min-width:0;background:none;border:0;outline:0;padding:12px 0}
+.cmd input::placeholder{color:var(--dim)}
+.mic{background:none;border:0;color:var(--muted);cursor:pointer;padding:6px 8px;border-radius:8px;font-size:13px;font-weight:700}
+.mic.on{color:var(--red)}
+kbd{font:700 11px var(--font);background:rgba(0,0,0,.25);border-radius:5px;padding:1px 6px;margin-left:6px}
+.cmd kbd{background:var(--panel2);color:var(--muted);font-size:12px;padding:3px 8px}
+.pills{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 100%}
+.pill{font-size:13px;font-weight:700;padding:8px 13px;border-radius:999px;border:1px solid var(--line2);color:var(--muted);background:none;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pill.go{border-color:var(--gold-line);color:var(--gold)}
+.pill kbd{margin:0;background:var(--panel2);color:var(--muted)}
+.pill[aria-pressed="true"] kbd{background:rgba(0,0,0,.14);color:var(--bg)}
+.sw{width:9px;height:9px;border-radius:3px}
+.ct{background:var(--gold);color:var(--gold-ink);border-radius:999px;font-size:11px;padding:0 6px;line-height:17px}
+
+h1{font-size:clamp(26px,4.2vw,36px);font-weight:800;letter-spacing:-.025em;margin:24px 0 0;line-height:1.1;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+h1.zero em{color:var(--green)}
+.sub{color:var(--muted);margin-top:8px;display:flex;gap:6px 20px;flex-wrap:wrap;align-items:center}
+.dotk{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+.A{background:transparent;box-shadow:inset 0 0 0 2px var(--gold)}.L{background:#E8922E}
+.Y{background:var(--gold)}.B{background:var(--blue)}.G{background:var(--green)}.R{background:var(--red)}.D{background:var(--line2)}
+.lab{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.lab.gold{color:var(--gold)}
+.link{background:none;border:0;color:var(--blue);cursor:pointer;padding:0;font-size:12px;font-weight:700;letter-spacing:0;text-transform:none}
+
+.q{background:var(--gold-bg);border:1px solid var(--gold-line);border-radius:16px;overflow:hidden}
+.row{border-top:1px solid #3A2F12}
+.row:first-child{border-top:0}
+.row.red{background:var(--red-bg);border-top-color:var(--red-line)}
+.row.sel{box-shadow:inset 3px 0 0 var(--gold)}
+.row.red.sel{box-shadow:inset 3px 0 0 var(--red)}
+.head{display:flex;align-items:center;gap:8px 14px;padding:12px 16px;flex-wrap:wrap;cursor:pointer}
+.n{font-size:18px;font-weight:800;color:var(--gold);width:16px;flex:none}
+.red .n{color:var(--red)}
+.chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;color:#0E1116;white-space:nowrap;flex:none}
+.txt{flex:1 1 260px;min-width:0}
+.txt p{margin:0;font-weight:600;overflow-wrap:anywhere}
+.txt small{display:block;font-size:13px;color:var(--gold-soft);margin-top:3px;overflow-wrap:anywhere}
+.red .txt small{color:#E0A59B}
+.txt .next{color:#8FB4DF;font-weight:600;font-size:12px;margin-top:5px;display:block}
+.tg{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:8px;vertical-align:1px;border:1px solid var(--gold-line);color:var(--gold-soft);white-space:nowrap}
+.tg.due{border-color:var(--red);color:#FF9C8E}
+.tg.val{border-color:var(--green);color:var(--green)}
+.est{font-size:12px;color:var(--gold-soft);font-weight:600;white-space:nowrap}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btn{font-size:13px;font-weight:700;padding:8px 13px;border-radius:8px;background:var(--gold);color:var(--gold-ink);border:1px solid var(--gold);cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+.btn.gh{background:transparent;border-color:var(--gold-line);color:var(--gold)}
+.red .btn{background:var(--red);border-color:var(--red);color:#2a0803}
+.red .btn.gh{background:transparent;border-color:var(--red-line);color:#FF9C8E}
+.btn.plain{background:transparent;border-color:var(--line2);color:var(--soft)}
+.btn:disabled{opacity:.5;cursor:progress}
+.more{padding:0 16px 14px 46px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.pane{background:var(--bg);border:1px solid #3A2F12;border-radius:10px;padding:12px 14px;min-width:0}
+.pane h5{margin:0 0 7px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pane p{margin:0;font-size:14px;line-height:1.5;color:#D5DBE5;white-space:pre-wrap;overflow-wrap:anywhere}
+.pane p + p{margin-top:6px}
+.chg{font-weight:600;margin-bottom:8px}
+.chg s{color:var(--muted);font-weight:400}.chg b{color:var(--green)}
+textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(--gold-line);border-radius:8px;padding:10px;resize:vertical;line-height:1.5}
+.inline{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.inline input{flex:1 1 200px;background:var(--bg);border:1px solid var(--gold-line);border-radius:8px;padding:8px 10px;min-width:0}
+.snz input{background:var(--bg);border:1px solid var(--gold-line);border-radius:8px;padding:6px 8px}
+.snz{padding:0 16px 12px 46px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--gold-soft)}
+.chgline s{color:var(--muted)}.chgline b{color:var(--green)}
+.grouplist{max-height:220px;overflow:auto}
+.banner.held{border-style:solid;border-color:var(--gold-line);background:var(--gold-bg);align-items:flex-start}
+.heldlist{flex:1 1 100%;display:grid;gap:6px}
+.heldrow{display:flex;justify-content:space-between;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.heldrow>span{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.rest{display:block;width:100%;background:none;border:0;border-top:1px solid #3A2F12;color:var(--gold);font-weight:700;padding:13px;cursor:pointer;text-align:center}
+
+.banner{margin-top:10px;border:1px dashed #3A4658;border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:10px 14px;color:var(--soft);flex-wrap:wrap}
+.banner span{flex:1 1 260px}.banner b{color:var(--ink)}
+.banner.sim{border-style:solid;border-color:#3A4658;background:#101826;margin:14px 0 0}
+.calm{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:var(--soft)}
+.calm b{color:var(--green);display:block;font-size:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-height:140px;display:flex;flex-direction:column;text-align:left;cursor:pointer;color:inherit}
+.box[aria-pressed="true"]{border-color:var(--ink)}
+.box.sleep{opacity:.45}
+.lights{display:flex;gap:8px;align-items:center;min-height:14px;margin-bottom:11px;flex-wrap:wrap}
+.lt{width:11px;height:11px;border-radius:50%;background:var(--line2);flex:none}
+.lt.a{background:transparent;box-shadow:inset 0 0 0 2px var(--gold)}
+.lt.late{background:#E8922E}
+.tag.warn{background:#3A2A12;color:#F0B060}
+.tg a{color:inherit}
+.lt.y{background:var(--gold);box-shadow:0 0 12px 2px rgba(245,196,81,.75)}
+.lt.r{background:var(--red);box-shadow:0 0 12px 2px rgba(255,107,87,.75)}
+.lt.b{background:var(--blue);box-shadow:0 0 10px 1px rgba(90,169,255,.55)}
+.lt.g{background:var(--green);box-shadow:0 0 10px 1px rgba(61,214,140,.55)}
+.x{font-size:12px;font-weight:800;margin-left:-4px;color:var(--muted)}
+.bh{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:800}
+.bh i{width:11px;height:11px;border-radius:4px;flex:none}
+.say{font-size:13.5px;color:var(--soft);margin-top:6px}
+.addbox{border:1px dashed var(--line2);background:none;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+
+.list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.li{display:flex;gap:8px 12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.li:first-child{border-top:0}
+.li p{margin:0;flex:1 1 240px;min-width:0;font-weight:600;overflow-wrap:anywhere}
+.li small{color:var(--muted);font-size:12.5px;font-weight:400;display:block}
+.tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+.tag.b{background:#1B2B40;color:#8FC2FF}
+.bar{height:5px;border-radius:3px;background:var(--line2);overflow:hidden;flex:0 0 120px}
+.bar i{display:block;height:100%;background:var(--green)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;max-width:calc(100% - 32px);display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;z-index:30}
+.toast button{background:none;border:0;color:#1F4E8C;font-weight:800;cursor:pointer;padding:0}
+.foot{margin-top:28px;font-size:12px;color:var(--dim);display:flex;gap:6px 18px;flex-wrap:wrap;align-items:center}
+
+/* Rapid mode: one quick decision at a time, nothing else on screen. */
+#rapid{position:fixed;inset:0;background:var(--bg);z-index:20;overflow:auto;padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.rwrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+.rtop{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-weight:600;gap:12px}
+.prog{display:flex;gap:4px}
+.prog i{flex:1;height:5px;border-radius:3px;background:var(--line2)}
+.prog i.on{background:var(--gold)}
+.rcard{background:var(--gold-bg);border:1px solid var(--gold-line);border-radius:20px;padding:22px;display:grid;gap:14px}
+.rcard.red{background:var(--red-bg);border-color:var(--red-line)}
+.tg,.rcard h2,.head p,.say{overflow-wrap:anywhere}
+.tg,.tag{white-space:normal;max-width:100%}
+.pane.wide{grid-column:1/-1} .pane.wide #edit-text{width:100%;min-height:96px;font:inherit} .tellbox{margin:10px 0 6px;padding-top:10px;border-top:1px solid var(--line)} .tellbox textarea{width:100%;min-height:52px;margin:4px 0 6px;font:inherit} .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0} .chip-btn{font:inherit;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--gold-line);background:transparent;color:var(--gold-soft);cursor:pointer} .pane.wide textarea{width:100%;min-height:58px;margin:4px 0 8px;font:inherit;resize:vertical} .allview{margin:18px 0} .allbar{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px} .allbar input{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:inherit} .allgroup{margin:14px 0} .allgroup .bh{margin:6px 0} .allrow{cursor:pointer} .allnote{display:block;white-space:pre-wrap;margin-top:6px;color:var(--muted);font-size:13px} .banner.since{flex-direction:column;align-items:stretch} .sincelist p{margin:4px 0} .checkline p{margin:2px 0} .warnline{color:#FF9C8E;font-weight:600} .pane .diff{white-space:pre-wrap;line-height:1.55} .pane .diff ins{background:rgba(76,176,90,.25);color:inherit;text-decoration:none;border-radius:3px;padding:0 2px} .pane .diff del{color:#FF9C8E;opacity:.8} .askback{margin:8px 0;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(245,166,35,.06)} .askback textarea{width:100%;margin:6px 0;font:inherit} .pane.asked q{color:var(--gold-soft)} .pane.asked .before{opacity:.75;white-space:pre-wrap} .pane.asked details{margin-top:6px} .pane.asked summary{cursor:pointer;color:var(--muted)}
+@media (hover:none){ kbd,.keys{display:none} }
+@media (max-width:640px){ h1{font-size:24px;margin-top:14px} .pills{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px;scrollbar-width:none} .pills .pill{flex:0 0 auto} #sub{font-size:13px;gap:4px 12px} .grid.boxes{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px} .grid.boxes>.box{flex:0 0 78%;scroll-snap-align:start} .btn.gothrough{width:100%;justify-content:center;padding:14px;margin:10px 0;font-size:16px} .toast{top:max(10px,env(safe-area-inset-top));bottom:auto} }
+.rcard h2{margin:0;font-size:clamp(22px,4vw,28px);line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
+.rcard .more{padding:0}
+.rcard .btn{padding:13px 18px;font-size:15px}
+.rcard .snz{padding:0}
+@media (max-width:640px){ .more{padding-left:16px} .snz{padding-left:16px} .est{order:3} .head .btns{flex:1 1 100%} .btn{flex:1 1 auto;justify-content:center;padding:11px 10px} kbd{display:none} .pills{flex-wrap:wrap} }
+@media (prefers-reduced-motion:no-preference){ .lt.y,.lt.r{animation:pulse 2.4s ease-in-out infinite} @keyframes pulse{50%{opacity:.6}} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i></span>Switchboard</div>
+    <form class="cmd" id="dump"><input id="dump-text" maxlength="1000" autocomplete="off" aria-label="Add anything" placeholder="Add anything, or “I have 10 min”"><button class="mic" id="mic" type="button" hidden aria-label="Speak instead of typing">Speak</button><kbd id="kbd-k">⌘K</kbd></form>
+    <div class="pills" id="pills"></div>
+  </div>
+  <h1 id="headline">Loading…</h1>
+  <div class="sub" id="sub"></div>
+  <div id="main"></div>
+  <div class="foot" id="foot"></div>
+</div>
+<div id="rapid" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script>
+(function () {
+  'use strict';
+  var S = null, sel = null, openId = null, editId = null, noteId = null, snoozeId = null;
+  var filter = 'all', areaFilter = null, fit = null, showAll = false, expanded = {}, rapid = false, skipped = {};
+  var busy = false, mark = Date.now(), adding = false, hist = { open: false, q: '', items: [] };
+  var selAt = 0, lastSel = null, lastInput = 0, pendingNew = {}, heldTimer = null, fitIds = [], asked = {}, redoId = null, autoOpen = false, shown = {}, seenAt = {}, changedAt = {}, mine = {}, pos = {}, posAt = {}, fitAt = 0, rapidPin = null, editBase = null, renaming = null, edits = {}, heldAll = false, simOpen = false, seeAll = false, allState = 'all', allQ = '', allOpen = {};
+  var engaged = false; document.addEventListener('pointerdown', function () { engaged = true; }, true);
+  ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchmove', 'touchstart', 'scroll'].forEach(function (n) { document.addEventListener(n, function () { lastInput = Date.now(); }, true); });
+  var $ = function (id) { return document.getElementById(id); };
+  function h(tag, attrs) {
+    var n = document.createElement(tag), i, k;
+    for (k in attrs || {}) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'text') n.textContent = attrs[k];
+      else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] === true) n.setAttribute(k, '');
+      else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k]);
+    }
+    for (i = 2; i < arguments.length; i++) { var c = arguments[i]; if (c == null || c === false) continue; n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); }
+    return n;
+  }
+  function toast(msg, label, fn, ms) {
+    var t = $('toast'); t.textContent = ''; t.appendChild(document.createTextNode(msg));
+    if (label) t.appendChild(h('button', { text: label, onclick: function () { t.hidden = true; fn(); } }));
+    t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, ms || (label ? 7000 : 3200));
+  }
+  // The key from the printed link is kept by this page, for this address and port only, and leaves the address bar at once.
+  var pageKey = '';
+  try {
+    var qk = new URLSearchParams(location.search).get('key');
+    if (qk) { try { localStorage.setItem('switchboard-key', qk); } catch (e) {} pageKey = qk; history.replaceState(null, '', location.pathname); }
+    else pageKey = localStorage.getItem('switchboard-key') || '';
+  } catch (e) {}
+  function selecting() { var g = window.getSelection && window.getSelection(); return !!(g && String(g).length && $('main').contains(g.anchorNode)); }
+  var down = false;
+  function renderDown() { var el = $('downbar'); if (!el) { el = h('div', { id: 'downbar', class: 'banner', role: 'alert', style: 'position:fixed;left:12px;right:12px;bottom:12px;z-index:60' }, h('b', { text: 'Switchboard is not answering. ' }), 'Nothing you tap is saved until it is back. This page reconnects by itself.'); document.body.appendChild(el); } el.hidden = !down; }
+  // A light coming back from the person's own "Ask for changes" is what they are waiting for: it never waits behind "new".
+  function askedBack(v, id) { for (var i = 0; i < v.lights.length; i++) if (v.lights[i].id === id) return !!v.lights[i].askedFor; return false; }
+  function listen(box) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { toast('Speaking is not available in this browser.'); return; }
+    try { var r = new SR(); r.lang = navigator.language || 'en-US'; r.onresult = function (ev) { box.value = (box.value ? box.value + ' ' : '') + ev.results[0][0].transcript; box.focus(); }; r.onerror = function () { toast('Could not hear you. Type it instead.'); }; r.start(); toast('Listening…'); } catch (e) { toast('Speaking is not available here.'); }
+  }
+  function diffWords(a, b) {
+    var tok = function (t) { return String(t || '').split(/(\s+|[.,;:!?"()\u201c\u201d])/).filter(function (z) { return z !== ''; }); }, x = tok(a), y = tok(b), n = x.length, m = y.length, i, j;
+    if (n * m > 400000) return h('span', { text: b }); // very long: just show the new text
+    var L = []; for (i = 0; i <= n; i++) { L.push(new Array(m + 1).fill(0)); }
+    for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = x[i] === y[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    var out = h('span', {}); i = 0; j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && x[i] === y[j]) { out.appendChild(document.createTextNode(x[i])); i++; j++; }
+      else if (j < m && (i >= n || L[i][j + 1] >= L[i + 1][j])) { out.appendChild(/^\s+$/.test(y[j]) ? document.createTextNode(y[j]) : h('ins', { text: y[j] })); j++; }
+      else { if (!/^\s+$/.test(x[i])) out.appendChild(h('del', { text: x[i] })); i++; }
+    }
+    return out;
+  }
+  function facts(t) {
+    t = String(t || '');
+    var grab = function (re) { return (t.match(re) || []).map(function (x) { return x.replace(/\s+/g, ' ').trim(); }); };
+    return { money: grab(/[$\u20ac\u00a3]\s?\d[\d,]*(?:\.\d\d)?/g), days: grab(/\b(?:mon|tues|wednes|thurs|fri|satur|sun)day\b|\btomorrow\b|\btonight\b/gi).map(function (d) { return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase(); }),
+      times: grab(/\b\d{1,2}(?::\d\d)?\s?(?:am|pm)\b/gi).map(function (x) { return x.toLowerCase(); }), dates: grab(/\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d{1,2}\b/gi) };
+  }
+  function uniq(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+  function differs(a, b) { var A = uniq(a).sort().join('|'), B = uniq(b).sort().join('|'); return A && B && A !== B; }
+  var seenKey = 'switchboard-seen-' + location.host, lastLook = null;
+  try { lastLook = Number(localStorage.getItem(seenKey)) || null; } catch (e) {}
+  if (!lastLook) lastLook = Date.now();
+  function markSeen() { lastLook = Date.now(); try { localStorage.setItem(seenKey, String(lastLook)); } catch (e) {} }
+  setInterval(function () { if (!document.hidden && Date.now() - mark > 30000 && !sinceShown) markSeen(); }, 30000);
+  var sinceShown = false;
+  // After two hours away: what is new in each container, what went out, what broke. One glance instead of opening every box.
+  function sinceBlock() {
+    if (!S || Date.now() - lastLook < 2 * 3600e3) { sinceShown = false; return null; }
+    var by = {}, add = function (a, line) { (by[a] = by[a] || []).push(line); };
+    S.lights.forEach(function (l) {
+      if (l.lastSent && l.lastSent.at > lastLook) add(l.area, 'went out: ' + l.title);
+      else if (l.state === 'broken' && (l.goldSince || 0) > lastLook) add(l.area, 'broke: ' + l.title);
+      else if ((l.state === 'need_you') && (l.createdAt || 0) > lastLook) add(l.area, 'new: ' + l.title);
+    });
+    var areas = Object.keys(by); if (!areas.length) { markSeen(); return null; }
+    sinceShown = true;
+    var box = h('div', { class: 'banner since' }, h('span', {}, h('b', { text: 'Since you last looked (' + new Date(lastLook).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(/\b(AM|PM)\b/, function (x) { return x.toLowerCase(); }) + '). ' })));
+    var list = h('div', { class: 'sincelist' });
+    areas.forEach(function (a) { list.appendChild(h('p', {}, h('b', { text: area(a).name + ': ' }), by[a].slice(0, 4).join('; ') + (by[a].length > 4 ? '; and ' + (by[a].length - 4) + ' more' : '') + '.')); });
+    box.appendChild(list);
+    box.appendChild(h('div', { class: 'btns' }, S.queue.length ? B('Go through them', function () { markSeen(); startRapid(); }) : null, B('Got it', function () { markSeen(); sinceShown = false; render(); }, 'plain')));
+    return box;
+  }
+  var WORD = { need_you: 'needs you', broken: 'broken', approved: 'approved, not done yet', waiting_them: 'waiting on others', auto: 'running', queued: 'lined up' };
+  var DOT = { need_you: 'y', broken: 'r', approved: 'a', waiting_them: 'b', auto: 'g', queued: '' };
+  function everything() {
+    var box = h('div', { class: 'allview', id: 'all-view' });
+    var q = h('input', { id: 'all-q', placeholder: 'Find anything on the board', 'aria-label': 'Find on the board', oninput: function () { allQ = q.value; render(); var x = $('all-q'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } } }); q.value = allQ;
+    var filters = h('div', { class: 'pills' });
+    [['all', 'All'], ['need_you', 'Needs you'], ['broken', 'Broken'], ['auto', 'Running'], ['queued', 'Lined up'], ['waiting_them', 'Waiting on others'], ['approved', 'Approved']].forEach(function (f) {
+      var n = f[0] === 'all' ? S.lights.length : S.lights.filter(function (l) { return l.state === f[0]; }).length; if (!n && f[0] !== 'all') return;
+      filters.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(allState === f[0]), onclick: function () { allState = f[0]; render(); } }, f[1] + ' \u00b7 ' + n));
+    });
+    box.appendChild(h('div', { class: 'lab' }, 'Everything on the board', h('button', { class: 'link', type: 'button', onclick: function () { seeAll = false; render(); } }, 'Close')));
+    box.appendChild(h('div', { class: 'allbar' }, q, filters));
+    var words = allQ.toLowerCase().split(/\s+/).filter(Boolean);
+    var match = function (l) { if (allState !== 'all' && l.state !== allState) return false; var t = (l.title + ' ' + (l.note || '') + ' ' + (l.draft || '') + ' ' + (l.key || '')).toLowerCase(); return words.every(function (w) { return t.indexOf(w) >= 0; }); };
+    var order = ['need_you', 'broken', 'approved', 'waiting_them', 'auto', 'queued'], shownCount = 0;
+    S.areas.forEach(function (a) {
+      var ls = S.lights.filter(function (l) { return l.area === a.id && match(l); }).sort(function (x, y) { return order.indexOf(x.state) - order.indexOf(y.state); });
+      if (!ls.length) return; shownCount += ls.length;
+      var list = h('div', { class: 'list' });
+      ls.forEach(function (l) {
+        var open = allOpen[l.id], asking = l.state === 'need_you' || l.state === 'broken';
+        list.appendChild(h('div', { class: 'li allrow', onclick: function () { allOpen[l.id] = !allOpen[l.id]; render(); } },
+          h('i', { class: 'lt ' + (l.late ? 'late' : DOT[l.state] || ''), title: WORD[l.state], role: 'img', 'aria-label': WORD[l.state] }),
+          h('p', {}, l.title, h('small', { text: WORD[l.state] + (l.snoozed ? ' (snoozed)' : '') + (l.due ? ' \u00b7 ' + dueText(l.due) : '') + (l.key ? ' \u00b7 ' + l.key : '') }),
+            open && (l.note || l.draft) ? h('span', { class: 'allnote', text: (l.draft ? '\u201c' + l.draft + '\u201d\n' : '') + (l.note || '') }) : null),
+          asking ? h('span', { class: 'btns' }, B('Go to it', function () { seeAll = false; switchTo(l.area); sel = l.id; openId = l.id; render(); var r = document.getElementById('row-' + l.id); if (r) r.scrollIntoView({ block: 'center' }); }, 'plain')) : null));
+      });
+      box.appendChild(h('div', { class: 'allgroup' }, h('div', { class: 'bh' }, h('i', { style: 'background:' + a.color }), a.name + ' \u00b7 ' + ls.length), list));
+    });
+    if (!shownCount) box.appendChild(h('p', { class: 'note', text: 'Nothing matches.' }));
+    return box;
+  }
+  function typing() { var a = document.activeElement; return !!(selecting() || editId || noteId || redoId || snoozeId || adding || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.id !== 'dump-text' && a.id !== 'hist-q' && a.id !== 'all-q' && (a.value || '') !== '')); }
+  function fitLeft() { return fit ? fit - (Date.now() - fitAt) / 60000 : 0; }
+  function api(method, path, body) {
+    var hd = body ? { 'content-type': 'application/json' } : {}; if (pageKey) hd['x-switchboard-key'] = pageKey;
+    var ctl = method === 'POST' && window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 10000) : null;
+    return fetch(path, { method: method, headers: hd, signal: ctl ? ctl.signal : undefined, body: body ? JSON.stringify(body) : undefined })
+      .catch(function () { clearTimeout(tm); down = true; renderDown(); throw new Error(ctl && ctl.signal.aborted ? 'Switchboard did not answer in 10 seconds. That tap may not have been saved: check the board before tapping again.' : 'Switchboard is not answering. Nothing you tap now is saved.'); })
+      .then(function (r) { clearTimeout(tm); if (down) { down = false; renderDown(); } return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Something went wrong. Nothing was changed.'); return d; }); });
+  }
+  // While the pointer or keyboard is in use, new arrivals wait in a "new" pill. Rows never move under the hand.
+  function load(own) {
+    return api('GET', '/api/state').then(function (v) {
+      if (S && !own && !document.hidden && Date.now() - lastInput < 45000 && queueLights().length) v.queue.forEach(function (id) { if (S.queue.indexOf(id) < 0 && !mine[id] && !askedBack(v, id)) pendingNew[id] = 1; });
+      else if (!own) pendingNew = {};
+      mine = {};
+      Object.keys(pendingNew).forEach(function (id) { if (v.queue.indexOf(id) < 0) delete pendingNew[id]; });
+      // If what a light says changed while it was on screen, its buttons stop working until the person has looked again.
+      // The stopwatch for a light starts when it first appears (or changes), not at the previous tap.
+      var inQueue = {}; v.queue.forEach(function (id) { inQueue[id] = 1; });
+      v.lights.forEach(function (l) {
+        // Only what was in front of the person can have "changed while it was on screen". A light arriving from blue,
+        // green or a failure is new to them, and one still waiting behind the "new" pill has not been seen yet.
+        if (!inQueue[l.id]) { delete shown[l.id]; delete changedAt[l.id]; return; }
+        if (pendingNew[l.id] && !changedAt[l.id]) { shown[l.id] = l.rev; seenAt[l.id] = Date.now(); return; }
+        if (shown[l.id] && shown[l.id] !== l.rev) { changedAt[l.id] = Date.now(); seenAt[l.id] = Date.now(); }
+        else if (!shown[l.id]) { shown[l.id] = l.rev; seenAt[l.id] = Date.now(); }
+      });
+      S = v;
+      clearTimeout(heldTimer);
+      if (S.held.length) heldTimer = setTimeout(function again() { if (typing()) { heldTimer = setTimeout(again, 2000); return; } load(true); }, Math.min(30000, Math.max(300, Math.min.apply(null, S.held.map(function (x) { return x.until; })) - Date.now() + 250)));
+      // "I have N minutes" is answered by the same rule the tests check, on the server.
+      if (fit && fitLeft() <= 0) { toast('That was your ' + fit + (fit === 1 ? ' minute.' : ' minutes.')); fit = null; }
+      if (fit) return api('GET', '/api/fit?minutes=' + Math.max(1, Math.ceil(fitLeft()))).then(function (f) { fitIds = f.ids; render(); });
+      render();
+    }).catch(function () { $('headline').textContent = 'Switchboard is not answering.'; $('sub').textContent = 'Start it again; this page reconnects by itself.'; clearTimeout(load.retry); load.retry = setTimeout(function () { load(true); }, 3000); }); }
+  function area(id) { for (var i = 0; i < S.areas.length; i++) if (S.areas[i].id === id) return S.areas[i]; return { name: id, color: '#9AA6B8' }; }
+  function light(id) { for (var i = 0; i < S.lights.length; i++) if (S.lights[i].id === id) return S.lights[i]; return null; }
+  function sum(ls) { return ls.reduce(function (n, l) { return n + l.est; }, 0); }
+  function dur(s) { return s < 60 ? s + ' sec' : s < 5400 ? Math.round(s / 60) + ' min' : (Math.round(s / 360) / 10) + ' hr'; }
+  function about(s) { var m = Math.max(1, Math.round(s / 60)); return s < 60 ? 'a minute' : m < 90 ? m + (m === 1 ? ' minute' : ' minutes') : Math.floor(m / 60) + ' hr' + (m % 60 >= 5 ? ' ' + (Math.round(m % 60 / 5) * 5) + ' min' : ''); }
+  // The headline counts taps. Work away from the board and lights nobody has timed are named apart, never guessed in.
+  function size(l) { return l.workMinutes ? l.workMinutes * 60 : l.est; }
+  // The headline says one thing: how long the taps take. Longer jobs and untimed ones go on the line under it.
+  function shortTime(ls) { var taps = ls.filter(function (l) { return !l.chore && !l.unsized; }); return taps.length ? ' About ' + about(sum(taps)) + '.' : ''; }
+  function restLine(ls) {
+    var un = ls.filter(function (l) { return l.unsized && !l.chore; }).length, ch = ls.filter(function (l) { return l.chore; }), parts = [];
+    if (ch.length) parts.push(ch.length + (ch.length === 1 ? ' longer job' : ' longer jobs') + ' (about ' + about(ch.reduce(function (n, l) { return n + size(l); }, 0)) + ')');
+    if (un) parts.push(un + ' with no time estimate');
+    return parts.length ? 'Plus ' + parts.join(' and ') + '.' : '';
+  }
+  function timeLine(ls) {
+    var taps = ls.filter(function (l) { return !l.chore && !l.unsized; }), un = ls.filter(function (l) { return l.unsized && !l.chore; }).length, ch = ls.filter(function (l) { return l.chore; }), parts = [];
+    if (taps.length) parts.push('About ' + about(sum(taps)) + (taps.length < ls.length ? ' of taps' : ''));
+    if (un) parts.push(un + ' not timed yet');
+    if (ch.length) parts.push(ch.length + (ch.length === 1 ? ' chore' : ' chores') + ' away from the board (about ' + about(ch.reduce(function (n, l) { return n + size(l); }, 0)) + ')');
+    return parts.join(', plus ') + '.';
+  }
+  function estText(l) { return l.chore ? dur(size(l)) + ' of work' : l.unsized ? 'not timed yet' : dur(l.est); }
+  function when(t) {
+    var a = new Date(S.now), b = new Date(t), hrs = Math.round((t - S.now) / 36e5);
+    var d = Math.round((new Date(b.getFullYear(), b.getMonth(), b.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5);
+    if (hrs < 1) return 'within the hour'; if (d === 0) return 'in ' + hrs + ' h'; if (d === 1) return 'tomorrow ' + b.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    if (d < 7) return 'in ' + d + ' days'; return 'on ' + new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function since(t) { var d = Math.floor((S.now - t) / 864e5); return d < 1 ? 'today' : d === 1 ? 'since yesterday' : 'for ' + d + ' days'; }
+  function dueText(t) {
+    var a = new Date(S.now), b = new Date(t), days = Math.round((new Date(b.getFullYear(), b.getMonth(), b.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5);
+    if (t < S.now) return 'Overdue'; if (days === 0) return 'Due today'; if (days === 1) return 'Due tomorrow';
+    return 'Due ' + b.toLocaleDateString(undefined, days < 7 ? { weekday: 'short' } : { month: 'short', day: 'numeric' });
+  }
+  function pretty(type) { return type.replace(/-/g, ' '); }
+
+  /* ---------- acting ---------- */
+  function after() { mark = Date.now(); selAt = Date.now(); if (editId) delete edits[editId]; editBase = null; editId = null; noteId = null; snoozeId = null; openId = null; redoId = null; }
+  var pageBusy = false;
+  function page(path, body) { if (pageBusy) return Promise.resolve(); pageBusy = true; return api('POST', path, body).then(function (x) { pageBusy = false; return x; }, function (e) { pageBusy = false; throw e; }).catch(function (e) { toast(e.message); }).then(function () { return load(true); }); }
+  function act(l, action, extra) {
+    if (busy) { toast('Still working on the last one.'); return; }
+    // The rev says "this is the text I was looking at". The server refuses if it has changed since.
+    if (changedAt[l.id] && action !== 'snooze' && action !== 'drop') { toast('This changed. Look again.'); return; }
+    // A tap must land on what the person was looking at: not on a row that slid into that spot a moment ago.
+    if (Date.now() - (posAt[l.id] || 0) < 400) { toast('The list just moved. Tap again.'); return; }
+    busy = true;
+    mine[l.id] = 1;
+    api('POST', '/api/lights/' + l.id + '/act', Object.assign({ action: action, tookMs: Date.now() - Math.max(mark, seenAt[l.id] || 0), rev: shown[l.id] || l.rev }, extra || {})).then(function (r) {
+      after(); if (hist.open) loadHist();
+      var v = extra && extra.value, until = r && r.snoozeUntil ? new Date(r.snoozeUntil) : null;
+      var said = action === 'approve' ? (l.channel === 'agent' ? 'Approved' : 'Marked sent') : action === 'snooze' && until ? 'Snoozed until ' + until.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : action === 'answer' && v === 'Flag it' ? 'Flagged. This kind of change asks you every time again' : action === 'answer' ? 'Answered' : action === 'no' ? 'Declined' : action === 'done' ? 'Done' : action === 'drop' ? 'Dropped' : action === 'wake' ? 'Back in your list' : action === 'redo' ? (l.demo ? 'Note sent. This is an example, so nothing gets rewritten' : 'Note sent. The new draft will show up here') : 'Done';
+      toast(said + ': ' + l.title, action === 'wake' ? null : 'Undo', function () { takeBack(l.id); });
+    }, function (e) { toast(e.message); }).then(function () { busy = false; return load(true); });
+  }
+  function bulkAct(ls, action, extra) {
+    if (busy) return; busy = true;
+    var ids = ls.map(function (l) { return l.id; }), revs = {};
+    ls.forEach(function (l) { revs[l.id] = shown[l.id] || l.rev; });
+    api('POST', '/api/bulk', Object.assign({ ids: ids, action: action, revs: revs, tookMs: Date.now() - Math.max.apply(null, [mark].concat(ls.map(function (l) { return seenAt[l.id] || 0; }))) }, extra || {})).then(function () { after(); toast((action === 'approve' ? 'Approved ' : action === 'snooze' ? 'Snoozed ' : 'Done: ') + ids.length + (extra && extra.until ? ' until ' + new Date(extra.until).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '') + '.', 'Undo all', function () { takeBackAll(ids); }); })
+      .catch(function (e) { toast(e.message); }).then(function () { busy = false; return load(true); });
+  }
+  var backing = false;
+  function takeBack(id) { if (backing) return; backing = true; mine[id] = 1; api('POST', '/api/lights/' + id + '/act', { action: 'undo' }).then(function () { toast('Undone.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
+  function takeBackAll(ids) { if (backing) return; backing = true; ids.forEach(function (id) { mine[id] = 1; }); api('POST', '/api/bulk', { ids: ids, action: 'undo' }).then(function () { toast('Undid ' + ids.length + '.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
+  // Everything decided in the last few seconds, read from the server so a reload keeps it.
+  function heldStrip() {
+    if (!S.held.length) return null;
+    var later = S.held.some(function (x) { return x.until - Date.now() > 3600e3; });
+    var box = h('div', { class: 'banner held' }, h('span', {}, h('b', { text: later ? 'Held. ' : 'Just now. ' }), later ? 'Each goes at the time shown. Undo anything that should not go.' : 'You can undo these for a few more seconds.'), S.held.length >= 2 ? B('Undo all ' + S.held.length, function () { takeBackAll(S.held.map(function (x) { return x.id; })); }, 'plain') : null);
+    var list = h('div', { class: 'heldlist' });
+    var shownHeld = heldAll ? S.held : S.held.slice(0, 2);
+    shownHeld.forEach(function (x, i) {
+      var left = Math.max(0, Math.round((x.until - Date.now()) / 1000)), filed = x.what === 'Filed', l = light(x.id);
+      var text = (filed ? 'Filed under ' + area(x.area).name : x.what) + ': ' + x.title + (x.fast ? ' · approved very quickly, so you get extra time to undo' : '') + (x.release ? (left > 3600 ? ' · goes at ' + new Date(x.until).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase() : '') : '');
+      var hold = function (action, until) { api('POST', '/api/lights/' + x.id + '/act', { action: action, until: until }).catch(function (e) { toast(e.message); }).then(function () { return load(true); }); };
+      list.appendChild(h('div', { class: 'heldrow' }, h('span', {}, text, x.release && left <= 3600 ? h('span', { class: 'cd', 'data-until': String(x.until), text: ' · ' + left + ' sec to undo' }) : null),
+        filed && l && S.areas.length > 1 ? B('Move', function () { moveMenu(l); }, 'plain') : null,
+        x.release ? B('Send now', function () { hold('release'); }, 'plain') : null,
+        x.release && x.quiet && x.until < x.morning ? B('Hold until 7:45 am', function () { hold('release_at', x.morning); }, 'plain') : null,
+        B('Undo', function () { takeBack(x.id); }, 'plain', i === 0 ? 'Z' : null)));
+    });
+    if (S.held.length > shownHeld.length) list.appendChild(h('div', { class: 'heldrow' }, h('span', { text: 'and ' + (S.held.length - shownHeld.length) + ' more' }), B('Show all', function () { heldAll = true; render(); }, 'plain')));
+    else if (heldAll && S.held.length > 2) list.appendChild(h('div', { class: 'heldrow' }, h('span', { text: '' }), B('Show fewer', function () { heldAll = false; render(); }, 'plain')));
+    box.appendChild(list); return box;
+  }
+  function snoozeChoices() {
+    var n = new Date(), at = function (addDays, hr) { var d = new Date(n.getFullYear(), n.getMonth(), n.getDate() + addDays, hr, 0, 0); return d.getTime(); }, out = [];
+    if (n.getHours() < 19) out.push(['Tonight, 8 pm', at(0, 20)]);
+    if (n.getHours() < 5) out.push(['This morning, 8 am', at(0, 8)]); else out.push(['Tomorrow, 8 am', at(1, 8)]);
+    out.push(['In 2 days', Date.now() + 2 * 864e5]);
+    out.push(['Monday, 8 am', at(((8 - n.getDay()) % 7) || 7, 8)]);
+    return out;
+  }
+
+  /* ---------- what is on screen ---------- */
+  function queueLights() {
+    var ls = S.queue.map(light).filter(function (l) { return l && !pendingNew[l.id] && (!areaFilter || l.area === areaFilter) && (filter !== 'quick' || (l.est <= 120 && !l.chore && !l.unsized)); });
+    if (fit) ls = ls.filter(function (l) { return fitIds.indexOf(l.id) >= 0; });
+    return ls;
+  }
+  // Look-alike changes (same action type, nothing sent to a person) collapse into one row.
+  function items() {
+    var ls = queueLights(), by = {}, out = [], seen = {};
+    // Only changes that are word-for-word the same fold together. An odd one out stays on its own row.
+    var gk = function (l) { return !changedAt[l.id] && !l.note && l.kind === 'approve' && !l.outbound && l.actionType && l.channel === 'agent' && !l.draft && (l.changeFrom || l.changeTo) && !expanded[l.actionType] ? l.actionType + '\u0000' + l.changeFrom + '\u0000' + l.changeTo : null; };
+    ls.forEach(function (l) { var k = gk(l); if (k) (by[k] = by[k] || []).push(l); });
+    ls.forEach(function (l) {
+      var k = gk(l), g = k && by[k].length >= 3 ? by[k] : null;
+      if (!g) out.push({ key: l.id, light: l });
+      else if (!seen[k]) { seen[k] = 1; out.push({ key: 'g:' + k, type: l.actionType, lights: g }); }
+    });
+    return out;
+  }
+  // A long queue shows its top five. A deadline or a broken job that holds something up is never folded away.
+  // Chores (work away from the board) get their own list: they are not taps.
+  function visible() {
+    var apart = !fit && filter !== 'quick';
+    var its = items().filter(function (it) { return !(apart && it.light && it.light.chore); });
+    var chores = apart ? queueLights().filter(function (l) { return l.chore; }).map(function (l) { return { key: l.id, light: l }; }) : [];
+    var collapse = !showAll && !areaFilter && filter === 'all' && !fit && its.length > 7;
+    var shown = collapse ? its.filter(function (it, i) { return i < 5 || (it.light ? it.light.keep : it.lights.some(function (l) { return l.keep; })); }) : its;
+    return { all: its, shown: shown, hidden: its.length - shown.length, chores: chores, keys: shown.concat(chores) };
+  }
+  function lookAgain(l) { delete changedAt[l.id]; if (editId !== l.id) editBase = null; shown[l.id] = l.rev; seenAt[l.id] = Date.now(); openId = l.id; sel = l.id; selAt = Date.now(); render(); }
+  function primary(l) {
+    if (changedAt[l.id] || editId === l.id || redoId === l.id || noteId === l.id || l.board || l.brake || l.kind === 'sense') return null;
+    if (l.kind === 'approve') return l.channel === 'agent' && !(l.needsDraft && !l.draft) ? function () { act(l, 'approve'); } : null;
+    if (l.kind === 'todo') return function () { act(l, 'done'); };
+    if (l.options.length) return function () { act(l, 'answer', { value: l.options[0] }); };
+    return null;
+  }
+  var quietUntil = 0; // after any tap that changes the board, a second click within 400 ms is the same click, not a new one
+  function B(label, fn, cls, key) { return h('button', { class: 'btn' + (cls ? ' ' + cls : ''), type: 'button', onclick: function (e) { e.stopPropagation(); if (Date.now() < quietUntil) return; quietUntil = Date.now() + 400; fn(); }, 'aria-keyshortcuts': key && key.length === 1 && /[A-Z]/.test(key) ? key : null }, label, key ? h('kbd', { text: key, 'aria-hidden': 'true' }) : null); }
+  function A(label, href, cls) { return h('a', { class: 'btn' + (cls ? ' ' + cls : ''), href: href, target: /^http/.test(href) ? '_blank' : null, rel: 'noopener', onclick: function (e) { e.stopPropagation(); } }, label); }
+
+  function buttons(l, isSel) {
+    var b = h('div', { class: 'btns' }), enter = isSel ? '⏎' : null;
+    if (changedAt[l.id]) { b.appendChild(B('Look again', function () { lookAgain(l); })); return b; }
+    if (editId === l.id) return b; // the box below has its own Save & approve and Cancel
+    var edit = function () { editId = l.id; editBase = l.draft; openId = l.id; sel = l.id; render(); };
+    if (l.kind === 'approve') {
+      if (l.channel === 'sms' && l.phone && asked[l.id]) {
+        // They came back from Messages: ask, don't assume.
+        b.appendChild(B('Yes, it went', function () { delete asked[l.id]; act(l, 'approve'); })); b.appendChild(B('Not yet', function () { delete asked[l.id]; render(); }, 'gh'));
+      } else if (l.channel !== 'agent' && l.needsDraft && !l.draft) {
+        b.appendChild(B('Write it', edit)); b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
+      } else if (l.channel === 'sms' && l.phone) {
+        b.appendChild(h('a', { class: 'btn', href: 'sms:' + l.phone + '?&body=' + encodeURIComponent(l.draft), onclick: function (e) { e.stopPropagation(); setTimeout(function () { asked[l.id] = 1; render(); }, 500); } }, 'Open in Messages'));
+        b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
+      }
+      else if (l.channel !== 'agent') {
+        if (l.draft) b.appendChild(B('Copy text', function () { try { navigator.clipboard.writeText(l.draft).then(function () { toast('Copied.'); }, function () { openId = l.id; render(); }); } catch (e) { openId = l.id; render(); } }));
+        b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
+      }
+      else if (l.needsDraft && !l.draft) b.appendChild(B('Write it myself', edit));
+      else b.appendChild(B(l.outbound ? 'Approve & send' : 'Approve', function () { act(l, 'approve'); }, '', enter));
+      if (l.draft) b.appendChild(B('Change\u2026', edit, 'gh', isSel ? 'E' : null));
+      if (l.channel === 'agent' && !l.followUps) b.appendChild(B(l.outbound ? 'Don\u2019t send' : 'No', function () { act(l, 'no'); }, 'gh'));
+      if (l.followUps) { b.appendChild(B('They replied', function () { act(l, 'replied'); }, 'gh')); b.appendChild(B('Stop following up', function () { act(l, 'stop_followups'); }, 'gh')); }
+    } else if (l.kind === 'todo') {
+      if (l.link) b.appendChild(A('Open ↗', l.link));
+      b.appendChild(B('Done', function () { act(l, 'done'); }, l.link ? 'gh' : '', enter));
+    } else {
+      if (l.link) b.appendChild(A('Open page ↗', l.link));
+      l.options.forEach(function (o, i) { b.appendChild(B(o, function () { act(l, 'answer', { value: o }); }, i || l.link ? 'gh' : '', !i && !l.link ? enter : null)); });
+      if (l.kind !== 'fix' && !l.spot && !l.board && !l.brake) b.appendChild(B(l.kind === 'sense' ? 'Type what it says' : 'Other…', function () { noteId = l.id; openId = l.id; sel = l.id; render(); }, 'gh'));
+      if (l.kind === 'fix' && !l.options.length) b.appendChild(B('Fixed', function () { act(l, 'done'); }));
+    }
+    if (!l.spot) b.appendChild(B('Snooze', function () { snoozeId = snoozeId === l.id ? null : l.id; sel = l.id; render(); }, 'gh', isSel ? 'S' : null));
+    if (l.stale || l.kind === 'todo' || l.kind === 'fix' || l.channel !== 'agent') b.appendChild(B('Drop', function () { act(l, 'drop'); }, 'gh'));
+    return b;
+  }
+  function snoozeMenu(l) {
+    if (l.snoozes >= 2) {
+      // Third time: decide. Do it, drop it, or give it a real date.
+      var iso = function (t) { var x = new Date(t); return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); };
+      var d = h('input', { type: 'date', id: 'snz-date', 'aria-label': 'Bring it back on', min: iso(Date.now() + 864e5), max: iso(Date.now() + 365 * 864e5) });
+      return h('div', { class: 'snz' }, 'Snoozed twice. Do it now, drop it, or pick a day:', B('Do it now', function () { snoozeId = null; openId = l.id; render(); }, 'gh'), B('Drop it', function () { act(l, 'drop'); }, 'gh'), d,
+        B('Bring it back then', function () { var t = d.value ? new Date(d.value + 'T08:00:00').getTime() : 0; if (!(t > Date.now())) { toast('Pick a day after today.'); return; } act(l, 'snooze', { until: t }); }, 'gh'));
+    }
+    var m = h('div', { class: 'snz' }, 'Bring it back:');
+    snoozeChoices().forEach(function (c) { m.appendChild(B(c[0], function () { act(l, 'snooze', { until: c[1] }); }, 'gh')); });
+    return m;
+  }
+  function details(l, always) {
+    var more = h('div', { class: 'more' });
+    if (l.source) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'What came in' }), h('p', { text: l.source })));
+    if (l.askedFor && (l.state === 'need_you' || l.state === 'broken')) {
+      var same = (l.draft || '') === (l.askedFor.before || '') && (l.changeTo || '') === (l.askedFor.beforeChange || '');
+      var ask = h('div', { class: 'pane asked wide' }, h('h5', { text: 'You asked for' }), h('p', {}, h('q', { text: l.askedFor.why })));
+      if (l.changed) ask.appendChild(h('p', {}, h('b', { text: 'Your assistant: ' }), l.changed));
+      if (l.question) {
+        var reply = h('textarea', { id: 'reply-text', rows: '2', maxlength: '600', placeholder: 'Your answer', 'aria-label': 'Answer your assistant' });
+        ask.appendChild(h('div', { class: 'askback' }, h('p', {}, h('b', { text: 'Your assistant asks: ' }), l.question), reply,
+          h('div', { class: 'inline' }, h('button', { class: 'btn', type: 'button', text: 'Send your answer', onclick: function () { if (reply.value.trim()) act(l, 'redo', { why: reply.value }); else reply.focus(); } }))));
+      }
+      if (l.askedFor.noAssistant) ask.appendChild(h('p', { class: 'note', text: 'This is an example, so no assistant read your note. A real one sends a new draft here.' }));
+      else if (same) ask.appendChild(h('p', { class: 'note', text: 'The draft has not changed yet.' }));
+      else if (l.askedFor.before) ask.appendChild(h('div', {}, h('h5', { text: 'What changed' }), h('p', { class: 'diff' }, diffWords(l.askedFor.before, l.draft))));
+      else if (l.askedFor.beforeChange !== (l.changeTo || '')) ask.appendChild(h('p', { class: 'diff' }, diffWords(l.askedFor.beforeChange, l.changeTo || '')));
+      more.appendChild(ask);
+    }
+    if (l.outbound && l.draft && !(l.stuck || l.failure || l.unsure)) {
+      var now = facts(l.draft), checks = uniq(now.money.concat(now.days, now.times, now.dates));
+      var warn = [];
+      if (l.lastSent) {
+        var then = facts(l.lastSent.text);
+        if (differs(then.money, now.money)) warn.push('Earlier you said ' + uniq(then.money).join(' and ') + '; this says ' + uniq(now.money).join(' and ') + '.');
+        if (differs(then.days.concat(then.times, then.dates), now.days.concat(now.times, now.dates))) warn.push('Earlier you said ' + uniq(then.days.concat(then.times, then.dates)).join(', ') + '; this says ' + uniq(now.days.concat(now.times, now.dates)).join(', ') + '.');
+        more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'What you sent ' + new Date(l.lastSent.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + (l.to ? ' to ' + l.to : '') }), h('p', { class: 'before', text: l.lastSent.text })));
+      }
+      if (l.value && now.money.length && !now.money.some(function (m) { return Number(m.replace(/[^\d.]/g, '')) === l.value; })) warn.push('The card says $' + l.value.toLocaleString() + ', but the message says ' + uniq(now.money).join(' and ') + '.');
+      if (checks.length || warn.length) more.appendChild(h('div', { class: 'pane wide checkline' }, warn.length ? h('p', { class: 'warnline', text: warn.join(' ') }) : null, checks.length ? h('p', {}, h('b', { text: 'Check before it goes: ' }), checks.join(' \u00b7 ') + (l.to ? ' \u00b7 to ' + l.to : '')) : null));
+    }
+    var overlay = l.stuck || l.failure || l.unsure;
+    if (l.approvedText && overlay) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.unsure ? 'What you approved (it may have gone out)' : l.failure ? 'What you approved. “Try again” sends exactly this' + (l.to ? ' to ' + l.to : '') : 'What you approved (not sent yet)' }), h('p', { text: l.approvedText })));
+    if (!(overlay && l.approvedText) && (l.changeFrom || l.changeTo || l.draft || editId === l.id)) {
+      var pane = h('div', { class: 'pane' + (editId === l.id ? ' wide' : '') }, h('h5', { text: editId === l.id ? 'Change the words yourself' : l.outbound ? 'What will be sent' : 'What will change' }));
+      if (l.changeFrom || l.changeTo) pane.appendChild(h('div', { class: 'chg' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })));
+      if (editId === l.id) {
+        var ta = h('textarea', { id: 'edit-text', 'aria-label': 'Edit the draft', oninput: function () { edits[l.id] = ta.value; var go = document.getElementById('approve-mine'); if (go && l.channel === 'agent') go.firstChild.textContent = ta.value === l.draft ? 'Approve as is' : 'Approve my version'; } }); ta.value = edits[l.id] != null ? edits[l.id] : l.draft;
+        // The assistant rewrote the draft while the person was editing: keep their words, and show the new draft beside them.
+        if (editBase != null && editBase !== l.draft) pane.appendChild(h('p', { class: 'note' }, h('b', { text: 'Your assistant changed the draft while you were editing. ' }), 'Your words are kept in the box. Their new draft: ', h('q', { text: l.draft || '(empty)' })));
+        pane.appendChild(ta);
+        var sendOwn = l.channel === 'sms' && l.phone
+          ? h('a', { class: 'btn gh', href: '#', onclick: function (e) { e.preventDefault(); e.stopPropagation(); location.href = 'sms:' + l.phone + '?&body=' + encodeURIComponent(ta.value); } }, 'Open in Messages')
+          : l.channel !== 'agent' ? B('Copy text', function () { try { navigator.clipboard.writeText(ta.value).then(function () { toast('Copied your version.'); }, function () { toast('Copying is not allowed here. Select the text and copy it.'); }); } catch (e) { toast('Copying is not allowed here. Select the text and copy it.'); } }, 'gh') : null;
+        if (l.channel === 'agent' && !l.followUps) {
+          var note = h('textarea', { id: 'redo-text', rows: '2', maxlength: '600', 'aria-label': 'Tell your assistant what to change', placeholder: 'e.g. Shorter. Mention the board meeting. First names.',
+            onkeydown: function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendNote(); } } });
+          var sendNote = function () { if (!note.value.trim()) { note.focus(); return; } delete edits[l.id]; act(l, 'redo', { why: note.value }); };
+          var chips = h('div', { class: 'chips' });
+          (area(l.area).recentNotes || []).forEach(function (n) { chips.appendChild(h('button', { class: 'chip-btn', type: 'button', text: n, onclick: function () { note.value = note.value ? note.value + ' ' + n : n; note.focus(); } })); });
+          var talk2 = window.SpeechRecognition || window.webkitSpeechRecognition ? B('Speak', function () { listen(note); }, 'gh') : null;
+          pane.appendChild(h('div', { class: 'tellbox' }, h('h5', { text: 'Or tell your assistant what to change' }), chips.childNodes.length ? chips : null, note,
+            h('div', { class: 'inline' }, h('button', { class: 'btn gh', type: 'button', text: 'Send note to your assistant', onclick: sendNote }), talk2)));
+        }
+        pane.appendChild(h('div', { class: 'inline' }, sendOwn, (function (btn) { btn.id = 'approve-mine'; return btn; })(B(l.channel === 'agent' ? ((edits[l.id] != null && edits[l.id] !== l.draft) ? 'Approve my version' : 'Approve as is') : 'Save, I sent it', function () { if (!ta.value.trim()) { toast('Write the message first.'); return; } act(l, 'approve', { text: ta.value }); })), B('Cancel', function () { delete edits[l.id]; editId = null; editBase = null; render(); }, 'gh')));
+      } else if (l.draft) pane.appendChild(h('p', { text: l.draft }));
+      more.appendChild(pane);
+    }
+    if (redoId === l.id) {
+      var why = h('textarea', { id: 'redo-text', maxlength: '600', rows: '2', placeholder: 'Say it the way you would to a person: “Mention the old phone model.” “Shorter, no apology.” “Add the deposit amount.”', 'aria-label': 'What should change',
+        onkeydown: function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (why.value.trim()) act(l, 'redo', { why: why.value }); } } });
+      var talk = window.SpeechRecognition || window.webkitSpeechRecognition ? B('Speak', function () { listen(why); }, 'gh') : null;
+      more.appendChild(h('div', { class: 'pane wide' }, h('h5', { text: 'What should change?' }), why,
+        h('div', { class: 'inline' }, h('button', { class: 'btn', type: 'button', text: 'Send to your assistant', onclick: function () { if (why.value.trim()) act(l, 'redo', { why: why.value }); else why.focus(); } }), talk, B('Edit it myself instead', function () { redoId = null; editId = l.id; editBase = l.draft; render(); }, 'gh'), B('Cancel', function () { redoId = null; render(); }, 'gh'))));
+    }
+    if (noteId === l.id) {
+      var inp = h('input', { id: 'note-text', maxlength: '2000', placeholder: l.kind === 'sense' ? 'Type or paste what you saw' : 'Type your answer', 'aria-label': 'Your answer' });
+      more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'Your answer' }), h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); if (inp.value.trim()) act(l, 'answer', { text: inp.value }); } }, inp, h('button', { class: 'btn', type: 'submit', text: 'Send' }))));
+    }
+    if (l.note && (always || l.draft || l.note.length > 150 || !more.childNodes.length)) more.insertBefore(h('div', { class: 'pane' }, h('h5', { text: 'Details' }), h('p', { text: l.note })), more.firstChild);
+    return more.childNodes.length ? more : null;
+  }
+  function tags(l) {
+    var f = document.createDocumentFragment();
+    if (l.due) f.appendChild(h('span', { class: 'tg' + (l.due - S.now < 864e5 ? ' due' : ''), text: dueText(l.due) }));
+    if (l.value) f.appendChild(h('span', { class: 'tg val', text: '$' + l.value.toLocaleString() }));
+    if (l.outbound) f.appendChild(h('span', { class: 'tg', text: l.to ? 'to ' + l.to : 'goes to a person' }));
+    if (l.firstTime) f.appendChild(h('span', { class: 'tg due', text: 'first message to them' }));
+    (l.attachments || []).forEach(function (a) { f.appendChild(h('span', { class: 'tg' }, a.link ? h('a', { href: a.link, target: '_blank', rel: 'noopener', onclick: function (e) { e.stopPropagation(); } }, '📎 ' + a.name) : '📎 ' + a.name)); });
+    if (l.spot) f.appendChild(h('span', { class: 'tg', text: 'already handled' }));
+    return f;
+  }
+  function smallLine(l) {
+    // A message to a person is shown whole: you approve what you can read.
+    var preview = l.draft ? '“' + (l.outbound ? l.draft : l.draft.slice(0, 120) + (l.draft.length > 120 ? '…' : '')) + '”' : l.note.length > 150 ? l.note.slice(0, 150) + '…' : l.note, s = [];
+    if (changedAt[l.id]) s.push('This changed while it was on your screen. Look again before you decide.');
+    if (l.alert) s.push(l.alert);
+    if (l.noRecipient) s.push('No name on this yet. Check who it goes to before you send.');
+    if (asked[l.id]) s.push('Did it go out?');
+    // Say who or what is waiting. A due date speaks for itself; "still worth doing?" is only for your own old tasks.
+    if (l.stale && !l.due) {
+      var days = Math.floor((S.now - l.goldSince) / 864e5) + ' days', who = l.to ? l.to.charAt(0).toUpperCase() + l.to.slice(1) : '';
+      s.push(l.outbound && l.source ? (who ? who + ' has waited ' : 'They have waited ') + days + '.' : l.kind === 'todo' ? 'Waiting ' + days + '. Still worth doing?' : 'Waiting ' + days + '.');
+    }
+    if (l.holdsUp) s.push('Holds up: ' + l.holdsUp + '.');
+    if (l.snoozes) s.push('Snoozed ' + (l.snoozes === 1 ? 'once' : l.snoozes === 2 ? 'twice' : l.snoozes + ' times') + '.');
+    if (l.demo) s.push('Example.');
+    if (edits[l.id] != null && edits[l.id] !== l.draft && editId !== l.id) s.push('You have an unsent edit here: open Edit to finish it.');
+    if (l.askedFor && (l.state === 'need_you' || l.state === 'broken')) s.push('You asked: \u201c' + l.askedFor.why + '\u201d' + (l.question ? ' \u00b7 Your assistant asks: ' + l.question : l.changed ? ' \u00b7 Your assistant: ' + l.changed : ((l.draft || '') !== (l.askedFor.before || '') || (l.changeTo || '') !== (l.askedFor.beforeChange || '')) ? ' \u00b7 Redrafted.' : ' \u00b7 Not changed yet.'));
+    if (l.needsDraft) s.push('No reply came. Your assistant will draft the follow-up, or write it yourself.');
+    if (preview && !(openId === l.id && l.draft)) s.push(preview);
+    return s.join(' ');
+  }
+  function row(l, i) {
+    var a = area(l.area), isSel = sel === l.id, isOpen = openId === l.id, small = smallLine(l);
+    var r = h('div', { class: 'row' + (l.state === 'broken' ? ' red' : '') + (isSel ? ' sel' : ''), id: 'row-' + l.id },
+      h('div', { class: 'head', onclick: function () { if (selecting()) return; sel = l.id; openId = isOpen ? null : l.id; editId = null; noteId = null; snoozeId = null; render(); } },
+        l.state === 'broken' ? h('span', { class: 'n', text: '!' }) : null, h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+        h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)), l.changeFrom || l.changeTo ? h('small', { class: 'chgline' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })) : null,
+          small ? h('small', { text: small }) : null, l.next ? h('span', { class: 'next', text: 'After: ' + l.next }) : null),
+        h('span', { class: 'est', text: estText(l) }), buttons(l, isSel)));
+    if (snoozeId === l.id) r.appendChild(snoozeMenu(l));
+    if (isOpen) { var d = details(l); if (d) r.appendChild(d); }
+    return r;
+  }
+  function groupRow(g, i) {
+    var key = g.key, isSel = sel === key, n = g.lights.length, same = g.lights.every(function (l) { return l.area === g.lights[0].area; }), a = area(g.lights[0].area), f = g.lights[0];
+    var r = h('div', { class: 'row' + (isSel ? ' sel' : ''), id: 'row-' + g.type },
+      h('div', { class: 'head', onclick: function () { sel = key; render(); } },
+        same ? h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }) : null,
+        h('div', { class: 'txt' }, h('p', { text: n + ' × ' + pretty(g.type) + ', all the same change' }), h('small', { class: 'chgline' }, h('s', { text: f.changeFrom || '(empty)' }), ' → ', h('b', { text: f.changeTo || '(removed)' }))),
+        h('span', { class: 'est', text: dur(sum(g.lights)) }),
+        h('div', { class: 'btns' }, B('Approve all ' + n, function () { bulkAct(g.lights, 'approve'); }, '', isSel ? '⏎' : null),
+          B('One by one', function () { expanded[g.type] = true; sel = g.lights[0].id; render(); }, 'gh'), B('Snooze all', function () { bulkAct(g.lights.filter(function (l) { return l.snoozes < 2; }), 'snooze', { until: snoozeChoices().filter(function (c) { return /Tomorrow|This morning/.test(c[0]); })[0][1] }); }, 'gh'))));
+    // Every one of them is listed before the button is pressed.
+    var pane = h('div', { class: 'pane grouplist' }, h('h5', { text: 'Applies to these ' + n }));
+    g.lights.forEach(function (l) { pane.appendChild(h('p', { text: l.title + '  ·  ' + area(l.area).name })); });
+    r.appendChild(h('div', { class: 'more' }, pane));
+    return r;
+  }
+
+  function lightsRow(ls) {
+    var wrap = h('div', { class: 'lights' });
+    ls.filter(function (l) { return l.late; }).forEach(function () { wrap.appendChild(h('i', { class: 'lt late', title: 'Gone quiet' })); });
+    [['y', 'need_you'], ['r', 'broken'], ['a', 'approved'], ['b', 'waiting_them'], ['g', 'auto'], ['', 'queued']].forEach(function (p) {
+      var n = ls.filter(function (l) { return l.state === p[1] && !l.snoozed && !(p[1] === 'auto' && l.late); }).reduce(function (s, l) { return s + (l.batch || 1); }, 0);
+      if (!n) return;
+      var word = { need_you: 'needs you', broken: 'broken', approved: 'approved, not done yet', waiting_them: 'waiting on others', auto: 'running', queued: 'lined up' }[p[1]];
+      if (n > 5) { wrap.appendChild(h('i', { class: 'lt ' + p[0], title: n + ' ' + word, role: 'img', 'aria-label': n + ' ' + word })); wrap.appendChild(h('span', { class: 'x', text: '×' + n })); }
+      else for (var i = 0; i < n; i++) wrap.appendChild(h('i', { class: 'lt ' + p[0], title: word, role: 'img', 'aria-label': word }));
+    });
+    return wrap;
+  }
+  function summary(a, ls) {
+    if (a.wakeAt) return 'Paused until ' + new Date(a.wakeAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '.';
+    var c = function (s) { return ls.filter(function (l) { return l.state === s && !l.snoozed; }).reduce(function (n, l) { return n + (l.batch || 1); }, 0); }, parts = [];
+    if (c('need_you')) parts.push(c('need_you') + ' for you');
+    if (c('broken')) parts.push(c('broken') + ' broken');
+    if (c('approved')) parts.push(c('approved') + ' approved (not done yet)');
+    if (c('waiting_them')) parts.push(c('waiting_them') + ' waiting on others');
+    var quiet = ls.filter(function (l) { return l.late; }).length, running = c('auto') - quiet;
+    if (quiet) parts.push(quiet + ' late, no update');
+    if (running) parts.push(running + ' running');
+    var money = ls.filter(function (l) { return l.value && (l.state === 'need_you' || l.state === 'waiting_them' || l.state === 'approved'); }).reduce(function (n, l) { return n + l.value; }, 0);
+    // The live counts always come first: a note (anyone can write one) never hides what is waiting.
+    return (parts.length ? parts.join(', ') + '.' : 'Nothing open.') + (money ? ' $' + money.toLocaleString() + ' in play.' : '') + (a.note ? ' ' + a.note : '');
+  }
+  function switchTo(id) { if (!areaFilter && id) { try { history.pushState({ sb: 'area' }, ''); } catch (e) {} } areaFilter = areaFilter === id ? null : id; fit = null; sel = null; openId = null; editId = null; noteId = null; snoozeId = null; render(); window.scrollTo(0, 0); }
+  function simBar() {
+    var cur = S.sim.scenarios.filter(function (x) { return x.name === S.sim.current; })[0] || {};
+    var narrow = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+    if (narrow && !simOpen) return h('div', { class: 'banner sim' }, h('span', {}, h('b', { text: 'Simulation: ' }), cur.title + '.'), B('More', function () { simOpen = true; render(); }, 'plain'));
+    var bar = h('div', { class: 'banner sim' }, h('span', {}, h('b', { text: 'Simulation. ' }), 'Maya Ortiz is made up: a lighting contractor with a side app, night classes and two kids. ', h('b', { text: cur.title + ': ' }), cur.blurb + (cur.live ? ' Things will happen while you watch.' : '')));
+    var pick = h('div', { class: 'btns' });
+    S.sim.scenarios.forEach(function (x) { pick.appendChild(B(x.title, function () { areaFilter = null; filter = 'all'; fit = null; showAll = false; expanded = {}; sel = null; openId = null; pendingNew = {}; api('POST', '/api/sim', { name: x.name }).then(function () { return load(true); }); }, x.name === S.sim.current ? '' : 'plain')); });
+    bar.appendChild(pick); return bar;
+  }
+  function renderWelcome() {
+    var H = $('headline'); H.className = ''; H.textContent = 'Nothing set up yet.';
+    $('sub').textContent = 'Four ways to start. Pick any one.'; $('pills').textContent = ''; $('foot').textContent = ''; document.title = 'Switchboard';
+    var main = $('main'); main.textContent = '';
+    if (S.sim) main.appendChild(simBar());
+    var ai = h('input', { id: 'area-name', maxlength: '60', placeholder: 'A business, a project, school, family…', 'aria-label': 'New container name' });
+    var step = function (n, title, body, extra) { return h('div', { class: 'box', style: 'cursor:default' }, h('div', { class: 'bh' }, h('i', { style: 'background:var(--gold)' }), n + '. ' + title), h('div', { class: 'say', text: body }), extra || null); };
+    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To set things up here, open your Switchboard link. Your assistant can give it to you again.')));
+    main.appendChild(h('div', { class: 'lab' }, 'Getting started'));
+    main.appendChild(h('div', { class: 'grid' },
+      step(1, 'Name what you juggle', 'Each one gets its own box on the board.',
+        h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); if (!ai.value.trim()) return; api('POST', '/api/areas', { name: ai.value }).then(load).catch(function (er) { toast(er.message); }); } }, ai, h('button', { class: 'btn', type: 'submit', text: 'Add' }))),
+      step(2, 'Or just type a thought', 'Use the bar at the top. Several things in one sentence become separate items.'),
+      step(3, 'Or let your assistant do it', 'Open Claude Code in the Switchboard folder and say: “Set up Switchboard for me. Follow SETUP.md.”'),
+      step(4, 'Want to see it full first?', 'Load a set of examples you can clear later.', h('div', { class: 'inline' }, B('Show me examples', function () { api('POST', '/api/demo', {}).then(function () { return load(true); }, function (e) { toast(e.message); }); }, 'gh')))));
+  }
+
+  function render() {
+    if (!S) return;
+    if (rapid) { renderRapid(); return; }
+    $('rapid').hidden = true;
+    if (!S.areas.length && !S.lights.length) return renderWelcome();
+    var v = visible(), mine = queueLights(), all = mine.length;
+    if (!v.keys.some(function (it) { return it.key === sel; })) sel = v.keys.length ? v.keys[0].key : null;
+    if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
+    var H = $('headline'); H.textContent = ''; H.className = all ? '' : 'zero';
+    if (fit) { var fl = Math.max(1, Math.ceil(fitLeft())); H.appendChild(document.createTextNode(fl >= fit ? 'You have ' + fit + (fit === 1 ? ' minute. ' : ' minutes. ') : fl + ' of your ' + fit + ' minutes left. ')); }
+    else if (areaFilter) H.appendChild(document.createTextNode(area(areaFilter).name + ': '));
+    if (fit && !all) { H.textContent = 'Nothing fits in ' + Math.max(1, Math.ceil(fitLeft())) + (Math.ceil(fitLeft()) === 1 ? ' minute.' : ' minutes.'); } else H.appendChild(h('em', { text: all + (all === 1 ? ' light' : ' lights') }));
+    if (!(fit && !all)) H.appendChild(document.createTextNode(fit ? (all === 1 ? ' fits. About ' : ' fit. About ') + about(mine.reduce(function (n, l) { return n + size(l); }, 0)) + (mine.some(function (l) { return l.unsized; }) ? ' (partly a guess: ' + mine.filter(function (l) { return l.unsized; }).length + ' not timed yet).' : '.') : all ? (all === 1 ? ' needs you.' : ' need you.') + shortTime(mine) : areaFilter ? ' need you here.' : ' need you right now.'));
+    document.title = (S.queue.length ? '(' + S.queue.length + ') ' : '') + 'Switchboard';
+    var sub = $('sub'); sub.textContent = '';
+    var rest = !fit && all ? restLine(mine) : ''; if (rest) sub.appendChild(h('span', { class: 'restline', text: rest }));
+    [['Y', S.counts.need_you, 'to decide'], ['R', S.counts.broken, 'broken'], ['A', S.counts.approved, 'approved, not done yet'], ['B', S.counts.waiting_them, 'waiting on other people'], ['G', S.counts.auto, 'jobs running'], ['L', S.counts.late, 'late, no update'], ['L', S.counts.unreported, 'picked up, no word back'], ['L', S.counts.uncollected, 'answers not picked up yet'], ['D', S.counts.queued, 'lined up'], ['D', S.counts.snoozed, 'snoozed']]
+      .forEach(function (p) { if (p[1] || p[0] === 'Y') sub.appendChild(h('span', {}, h('i', { class: 'dotk ' + p[0] }), p[1] + ' ' + p[2])); });
+    if (!S.queue.length && S.nextLightAt) sub.appendChild(h('span', { text: 'Next light expected ' + when(S.nextLightAt) + '.' }));
+    var fresh = Object.keys(pendingNew).length;
+    if (fresh) {
+      var urgent = Object.keys(pendingNew).map(light).filter(function (l) { return l && l.tier === 0; }).length;
+      H.appendChild(document.createTextNode(' Plus ' + fresh + ' new.'));
+      sub.appendChild(h('button', { class: 'pill go', id: 'newpill', type: 'button', onclick: function () { showPending(); } }, fresh + ' new' + (urgent ? ', ' + (urgent === fresh ? '' : urgent + ' ') + 'due soon' : '') + ' · show'));
+    }
+
+    var pills = $('pills'); pills.textContent = '';
+    var quick = S.queue.map(light).filter(function (l) { return l && l.est <= 120 && !l.chore && !l.unsized && !l.board && !l.brake && (!areaFilter || l.area === areaFilter); });
+    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(filter === 'all' && !areaFilter && !fit), onclick: function () { filter = 'all'; areaFilter = null; fit = null; render(); } }, h('kbd', { text: '0' }), 'Everything'));
+    S.areas.forEach(function (a, i) {
+      var n = S.queue.map(light).filter(function (l) { return l && l.area === a.id; }).length;
+      pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(areaFilter === a.id), title: 'Switch to ' + a.name, onclick: function () { switchTo(a.id); } },
+        i < 9 ? h('kbd', { text: String(i + 1) }) : null, h('i', { class: 'sw', style: 'background:' + a.color }), a.name, n ? h('b', { class: 'ct', text: String(n) }) : null));
+    });
+    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(seeAll), onclick: function () { seeAll = !seeAll; render(); if (seeAll) { var x = $('all-view'); if (x) x.scrollIntoView({ block: 'start' }); } } }, 'See everything \u00b7 ' + S.lights.length));
+    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(filter === 'quick'), onclick: function () { filter = filter === 'quick' ? 'all' : 'quick'; render(); } }, 'Under 2 min · ' + quick.length));
+    if (S.queue.length >= 2) pills.appendChild(h('button', { class: 'pill go', type: 'button', onclick: function () { startRapid(); } }, h('kbd', { text: 'R' }), 'Go through them'));
+
+    var main = $('main'), kept = keepFields(main);
+    var phone = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+    document.querySelector('.wrap').inert = false;
+    v.keys.forEach(function (it, i) { if (pos[it.key] !== i) { pos[it.key] = i; posAt[it.light ? it.light.id : it.key] = Date.now(); } });
+    main.textContent = '';
+    if (phone && S.queue.length >= 2 && !fit) main.appendChild(h('button', { class: 'btn gothrough', type: 'button', onclick: function () { startRapid(); } }, 'Go through them, one at a time (' + S.queue.length + ')'));
+    if (S.sim) main.appendChild(simBar());
+    var away = sinceBlock(); if (away) main.appendChild(away);
+    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link. Your assistant can give it to you again (or in Terminal: node bin/switchboard.js link).')));
+    var strip = heldStrip(); if (strip) main.appendChild(strip);
+    S.suggest.forEach(function (g) {
+      main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have said “' + g.why + '” ' + (g.times === 2 ? 'twice' : g.times + ' times') + ' in ' + g.name + '. ' }), 'Always do this? It is added to how drafts for ' + g.name + ' should sound.'),
+        B('Yes, every draft', function () { page('/api/learn', { area: g.area, why: g.why, yes: true }); }), B('No', function () { page('/api/learn', { area: g.area, why: g.why, yes: false }); }, 'plain')));
+    });
+    if (S.hasDemo) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'These are examples. ' }), 'Try the buttons, then clear them and add your own.'), B('Clear the examples', function () { api('POST', '/api/demo', { clear: true }).then(function () { return load(true); }, function (e) { toast(e.message); }); }, 'plain')));
+    if (v.shown.length) {
+      main.appendChild(h('div', { class: 'lab gold' }, fit ? 'What fits in ' + fit + ' minutes' : areaFilter ? 'Yours in ' + area(areaFilter).name : filter === 'quick' ? 'Quick ones' : v.hidden ? 'Start with these ' + v.shown.length : 'Needs you now',
+        fit || filter === 'quick' ? h('button', { class: 'link', type: 'button', onclick: function () { fit = null; filter = 'all'; render(); } }, 'Show everything') : null));
+      var box = h('div', { class: 'q' });
+      v.shown.forEach(function (it, i) { box.appendChild(it.light ? row(it.light, i) : groupRow(it, i)); });
+      if (v.hidden) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = true; render(); } }, 'Show ' + (function () { return v.all.filter(function (it) { return v.shown.indexOf(it) < 0; }).reduce(function (k, it) { return k + (it.light ? 1 : it.lights.length); }, 0); })() + ' more', h('small', { text: 'Order: due soon, people waiting, broken jobs that block something, then the rest by age.' })));
+      else if (showAll && v.all.length > 7) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = false; render(); window.scrollTo(0, 0); } }, 'Back to the short list'));
+      main.appendChild(box);
+    }
+    if (v.chores.length) {
+      main.appendChild(h('div', { class: 'lab gold' }, 'Chores · work away from the board, not counted in the minutes above'));
+      var cbox = h('div', { class: 'q' }); v.chores.forEach(function (it, i) { cbox.appendChild(row(it.light, i)); }); main.appendChild(cbox);
+    }
+    if (v.shown.length || v.chores.length) { /* something is showing */ } else if (S.queue.length) {
+      main.appendChild(h('div', { class: 'lab' }, fit ? 'Nothing fits in ' + fit + ' minutes' : 'Nothing matches', h('button', { class: 'link', type: 'button', onclick: function () { filter = 'all'; areaFilter = null; fit = null; render(); } }, 'Show everything')));
+    } else {
+      main.appendChild(h('div', { class: 'lab' }, ''));
+      main.appendChild(h('div', { class: 'calm' }, h('b', { text: S.clearedToday ? 'Cleared ' + S.clearedToday + ' today' + (S.spentToday >= 5 ? ' in about ' + (S.spentToday < 90 ? S.spentToday + ' seconds' : about(S.spentToday)) : '') : 'All clear' }),
+        S.counts.late ? S.counts.late + (S.counts.late === 1 ? ' job is' : ' jobs are') + ' late with no update. See below.' : S.counts.approved ? S.counts.approved + ' approved and waiting for your assistant. The rest is moving without you.' : S.counts.auto || S.counts.waiting_them ? 'Everything else is moving without you.' : 'Nothing is waiting. Type something in the bar above, or let your assistants add things.'));
+    }
+    S.promote.forEach(function (p) {
+      main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have approved ' + p.streak + ' “' + pretty(p.type) + '” changes in ' + p.area + ', one at a time, without changing a word. ' }), 'Let that kind of change run by itself in ' + p.area + '? You approved changes like ' + (p.samples || []).map(function (x) { return '\u201c' + x + '\u201d'; }).join(', ') + '. Money amounts, removals, free text and anything with a recipient still ask you. The first five all come back for a look, then one now and then.'),
+        B('Let it run', function () { page('/api/promote', { key: p.key, yes: true }); }), B('Keep asking me', function () { page('/api/promote', { key: p.key, yes: false }); }, 'plain')));
+    });
+
+    if (seeAll) main.appendChild(everything());
+    main.appendChild(h('div', { class: 'lab' }, 'Everything you have going', areaFilter ? h('button', { class: 'link', type: 'button', onclick: function () { areaFilter = null; render(); } }, 'Show everything') : null));
+    var grid = h('div', { class: 'grid boxes' });
+    S.areas.forEach(function (a) {
+      var ls = S.lights.filter(function (l) { return l.area === a.id; });
+      grid.appendChild(h('button', { class: 'box' + (a.wakeAt ? ' sleep' : ''), type: 'button', 'aria-pressed': String(areaFilter === a.id), onclick: function () { switchTo(a.id); } },
+        lightsRow(ls), h('div', { class: 'bh' }, h('i', { style: 'background:' + a.color }), a.name), h('div', { class: 'say', text: summary(a, ls) })));
+    });
+    if (adding) {
+      var ai = h('input', { id: 'area-name', maxlength: '60', placeholder: 'Name it: a business, school, family…', 'aria-label': 'New container name' });
+      grid.appendChild(h('form', { class: 'box', onsubmit: function (e) { e.preventDefault(); if (!ai.value.trim()) return; api('POST', '/api/areas', { name: ai.value }).then(function () { adding = false; return load(); }).catch(function (er) { toast(er.message); }); } },
+        h('div', { class: 'bh', text: 'New container' }), h('div', { class: 'inline' }, ai, h('button', { class: 'btn', type: 'submit', text: 'Add' }))));
+    } else grid.appendChild(h('button', { class: 'box addbox', type: 'button', onclick: function () { adding = true; render(); var x = $('area-name'); if (x) x.focus(); } }, '+ Add a container'));
+    main.appendChild(grid);
+
+    var stuckOut = areaFilter ? [] : S.lights.filter(function (l) { return !S.held.some(function (x) { return x.id === l.id; }) && (l.canTakeBack || l.late || l.redraftWaiting); });
+    if (stuckOut.length) {
+      main.appendChild(h('div', { class: 'lab' }, 'Waiting on an assistant'));
+      var sl = h('div', { class: 'list' });
+      stuckOut.forEach(function (l) {
+        sl.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.late ? 'late' : 'a'), title: l.late ? 'Gone quiet' : 'Approved, not yet sent' }), h('p', {}, l.title, h('small', { text: area(l.area).name + ' · ' + (l.late ? 'Gone quiet: no word since it was due.' : l.redraftWaiting ? 'You asked for changes: \u201c' + (l.askedFor ? l.askedFor.why : '') + '\u201d. Waiting for your assistant to redraft.' : 'Approved, no assistant has picked it up yet. You can still take it back.') })),
+          h('span', { class: 'btns' }, l.late ? B('Dismiss', function () { act(l, 'drop'); }, 'plain') : l.redraftWaiting && l.canTakeBack ? h('span', {}, B('Write it myself', function () { takeBack(l.id); editId = l.id; editBase = l.draft; openId = l.id; }, 'plain'), B('Undo', function () { takeBack(l.id); }, 'plain')) : l.redraftWaiting ? null : B('Undo', function () { takeBack(l.id); }, 'plain'))));
+      });
+      main.appendChild(sl);
+    }
+    if (areaFilter) {
+      var fa = area(areaFilter), openHere = S.lights.filter(function (l) { return l.area === areaFilter; }).length;
+      main.appendChild(h('div', { class: 'lab' }, fa.name, S.canAct ? h('span', {}, B('Rename', function () { renaming = areaFilter; render(); var x = $('rename-area'); if (x) x.focus(); }, 'plain'), !openHere ? B('Remove', function () { page('/api/areas/remove', { id: areaFilter }).then(function () { areaFilter = null; }); }, 'plain') : null) : null));
+      if (renaming === areaFilter) {
+        var rn = h('input', { id: 'rename-area', maxlength: '60', 'aria-label': 'New name' }); rn.value = fa.name;
+        main.appendChild(h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); page('/api/areas/rename', { id: areaFilter, name: rn.value }).then(function () { renaming = null; }); } }, rn, h('button', { class: 'btn', type: 'submit', text: 'Save' }), B('Cancel', function () { renaming = null; render(); }, 'gh')));
+      }
+      var rest = S.lights.filter(function (l) { return l.area === areaFilter && (l.state === 'approved' || l.state === 'waiting_them' || l.state === 'auto' || l.state === 'queued' || l.snoozed); });
+      if (rest.length) {
+        main.appendChild(h('div', { class: 'lab' }, 'Moving without you in ' + area(areaFilter).name));
+        var list = h('div', { class: 'list' });
+        rest.forEach(function (l) {
+          var tag = l.snoozed ? h('span', { class: 'tag', text: 'Snoozed, back ' + when(l.snoozeUntil) }) : l.state === 'approved' ? h('span', { class: 'tag warn', text: 'Approved, not yet sent' })
+            : l.state === 'waiting_them' ? h('span', { class: 'tag b', text: l.followUpAt ? 'Follow-up comes due ' + when(l.followUpAt) : 'Waiting on them' })
+            : l.state === 'auto' ? h('span', { class: 'tag' + (l.late ? ' warn' : ''), text: l.late ? 'Gone quiet: no word since it was due' : 'Running' }) : h('span', { class: 'tag', text: 'Queued' });
+          var chase = l.state === 'waiting_them' && !l.snoozed ? h('span', { class: 'btns' }, B('They replied', function () { act(l, 'replied'); }, 'plain'), l.followUpAt ? B('Stop following up', function () { act(l, 'stop_followups'); }, 'plain') : null)
+            : l.snoozed ? h('span', { class: 'btns' }, B('Bring it back now', function () { act(l, 'wake'); }, 'plain'))
+            : l.canTakeBack ? h('span', { class: 'btns' }, B('Undo', function () { takeBack(l.id); }, 'plain'))
+            : l.late || l.state === 'queued' ? h('span', { class: 'btns' }, B(l.late ? 'Dismiss' : 'Cancel it', function () { act(l, 'drop'); }, 'plain')) : null;
+          list.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.snoozed ? '' : l.state === 'approved' ? 'a' : l.state === 'waiting_them' ? 'b' : l.state === 'auto' ? (l.late ? 'late' : 'g') : '') }),
+            h('p', {}, l.title + (l.batch > 1 ? ' (' + l.batch + ')' : ''), l.value ? h('span', { class: 'tg val', text: '$' + l.value.toLocaleString() }) : null, l.note ? h('small', { text: l.note }) : null),
+            l.state === 'auto' && l.progress != null ? h('span', { class: 'bar' }, h('i', { style: 'width:' + l.progress + '%' })) : null, tag, chase));
+        });
+        main.appendChild(list);
+      }
+    }
+    if (hist.open) {
+      var hq = h('input', { id: 'hist-q', maxlength: '100', placeholder: 'Search what you decided: “insurance”, “quote”…', 'aria-label': 'Search past decisions', oninput: function () { hist.q = hq.value; loadHist(); } }); hq.value = hist.q;
+      main.appendChild(h('div', { class: 'lab' }, 'What you decided', h('button', { class: 'link', type: 'button', onclick: function () { hist.open = false; render(); } }, 'Close')));
+      var hl = h('div', { class: 'list' }, h('div', { class: 'li' }, h('form', { class: 'inline', style: 'margin:0;flex:1', onsubmit: function (e) { e.preventDefault(); } }, hq)));
+      hist.items.forEach(function (r) { hl.appendChild(h('div', { class: 'li' }, h('p', {}, r.title, h('small', { text: r.area + (r.to ? ' · to ' + r.to : '') + ' · ' + r.what + (r.sentAt ? ' ' + new Date(r.sentAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '') + (r.text && r.what.indexOf('answered') < 0 && r.what.indexOf(r.text) < 0 ? ' · “' + r.text.slice(0, 90) + (r.text.length > 90 ? '…' : '') + '”' : '') })), h('span', { class: 'tag', text: new Date(r.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }))); });
+      if (hist.items.length >= 60) hl.appendChild(h('div', { class: 'li' }, h('p', {}, h('small', { text: 'Showing the latest 60. Search to find older ones.' }))));
+      if (!hist.items.length) hl.appendChild(h('div', { class: 'li' }, h('p', {}, h('small', { text: hist.q ? 'Nothing matches that.' : 'Nothing decided yet.' }))));
+      main.appendChild(hl);
+    }
+    if (autoOpen) {
+      var A = S.autonomy;
+      main.appendChild(h('div', { class: 'lab' }, 'Your rules', h('button', { class: 'link', type: 'button', onclick: function () { autoOpen = false; render(); } }, 'Close')));
+      var al = h('div', { class: 'list' });
+      al.appendChild(h('div', { class: 'li' }, h('p', {}, A.enabled ? 'On. A kind of change you have approved ten times, one at a time, on three different days, can be offered to run by itself.' : 'Off. Nothing runs without your tap, and no offer will appear.', h('small', { text: 'Only typed changes (a from and a to) qualify. Messages to people, free text and anything with a recipient always ask you.' })),
+        B(A.enabled ? 'Switch it off' : 'Switch it on', function () { page('/api/settings', { autonomy: !A.enabled }); }, A.enabled ? 'plain' : '')));
+      A.rules.forEach(function (r) {
+        al.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (r.paused || !A.enabled ? 'late' : 'g') }), h('p', {}, pretty(r.type) + ' in ' + r.area, h('small', { text: (r.paused ? 'Paused: it ran far more than usual. ' : !A.enabled ? 'Not running while the switch is off. ' : '') + r.runs + ' run' + (r.runs === 1 ? '' : 's') + ' since ' + new Date(r.since).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + (r.recent.length ? '. Latest: ' + r.recent.slice(0, 3).map(function (x) { return x.title; }).join(' · ') : '') })),
+          B('Stop this one', function () { page('/api/demote', { key: r.key }); }, 'plain')));
+      });
+      S.areas.forEach(function (a) { (a.rules || []).forEach(function (r) { al.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt' }), h('p', {}, 'Draft rule for ' + a.name + ': “' + r + '”', h('small', { text: 'Your assistants follow it when they write for ' + a.name + '.' })), B('Remove', function () { page('/api/unlearn', { area: a.id, why: r }); }, 'plain'))); }); });
+      (A.declined || []).forEach(function (r) { al.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt' }), h('p', {}, pretty(r.type) + ' in ' + r.area, h('small', { text: 'You said “Keep asking me”. It still asks every time.' })), B('Offer it again', function () { page('/api/reoffer', { key: r.key }); }, 'plain'))); });
+      A.earning.forEach(function (r) { al.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt' }), h('p', {}, pretty(r.type) + ' in ' + r.area, h('small', { text: r.streak + ' approved in a row, on ' + r.days + (r.days === 1 ? ' day' : ' days') + '. Still asks you every time.' })))); });
+      main.appendChild(al);
+    }
+    var foot = $('foot'); foot.textContent = '';
+    foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { autoOpen = !autoOpen; render(); if (autoOpen) window.scrollTo(0, document.body.scrollHeight); } }, 'Your rules' + (S.autonomy.rules.length ? ' (' + S.autonomy.rules.length + ')' : '')));
+    foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { hist.open = !hist.open; if (hist.open) loadHist(); else render(); } }, hist.open ? 'Hide past decisions' : 'Past decisions'));
+    foot.appendChild(h('span', { class: 'keys', text: '1–9 pick a container · 0 everything · ← → next container · ↑ ↓ move · Space open · Enter does the gold button · E change · S snooze · Z undo · R one at a time' }));
+    putFields(kept);
+    if (editId && !$('edit-text')) { editId = null; editBase = null; } if (noteId && !$('note-text')) noteId = null; if (redoId && !$('redo-text')) redoId = null;
+    // A box that has just opened takes the keyboard. One that was already there keeps whatever it had.
+    ['note-text', 'redo-text', 'edit-text'].forEach(function (id) { var on = id === 'note-text' ? noteId : id === 'redo-text' ? redoId : editId; if (on && $(id) && !kept[id]) $(id).focus(); });
+  }
+  // Every field in the list, by id and by the row it sits in: its text, whether it had the keyboard, and where the caret was.
+  function keepFields(root) {
+    var out = {}, els = root.querySelectorAll('input[id], textarea[id]');
+    for (var i = 0; i < els.length; i++) { var el = els[i], row = el.closest('.row, .rcard, .snz'); out[el.id] = { v: el.value, f: document.activeElement === el, s: el.selectionStart, e: el.selectionEnd, row: row ? row.id : '' }; }
+    return out;
+  }
+  function putFields(kept) {
+    Object.keys(kept).forEach(function (id) {
+      var el = $(id), k = kept[id]; if (!el) return;
+      var row = el.closest('.row, .rcard, .snz'); if ((row ? row.id : '') !== k.row) { delete kept[id]; return; } // the same box on another light is a new box
+      if (el.type !== 'checkbox') el.value = k.v;
+      if (k.f) { el.focus(); try { el.setSelectionRange(k.s, k.e); } catch (e) {} }
+    });
+  }
+  function loadHist() { api('GET', '/api/history?q=' + encodeURIComponent(hist.q)).then(function (d) { hist.items = d.items; render(); }); }
+
+  /* ---------- rapid mode ---------- */
+  function rapidCur() { var ls = rapidList(); for (var i = 0; i < ls.length; i++) if (ls[i].id === rapidPin) return ls[i]; return ls[0]; }
+  function rapidList() { var ls = S.queue.map(light).filter(function (l) { return l && !pendingNew[l.id] && !skipped[l.id] && (!areaFilter || l.area === areaFilter); }); return ls.filter(function (l) { return !l.chore; }).concat(ls.filter(function (l) { return l.chore; })); }
+  function startRapid() { try { history.pushState({ sb: 'rapid' }, ''); } catch (e) {} rapid = true; skipped = {}; rapidPin = null; startRapid.total = rapidList().length; editId = null; noteId = null; snoozeId = null; render(); }
+  function stopRapid() { if (history.state && history.state.sb === 'rapid') { ignorePop = true; history.back(); } rapid = false; editId = null; noteId = null; snoozeId = null; render(); }
+  function renderRapid() {
+    var el = $('rapid'), ls = rapidList(), l = rapidCur(), skippedN = Object.keys(skipped).filter(function (id) { return S.queue.indexOf(id) >= 0; }).length;
+    var total = Math.max(startRapid.total || 0, ls.length + skippedN), done = Math.max(0, total - ls.length - skippedN);
+    if (l && rapidPin !== l.id) { rapidPin = l.id; posAt[l.id] = Date.now(); }
+    var kept = keepFields(el);
+    document.querySelector('.wrap').inert = true;
+    el.hidden = false; el.textContent = '';
+    var wrap = h('div', { class: 'rwrap' });
+    wrap.appendChild(h('div', { class: 'rtop' }, h('span', { text: l ? 'One at a time · ' + ls.length + ' left' + (skippedN ? ' · ' + skippedN + ' skipped' : '') : 'Quick ones' }), B('Close', stopRapid, 'plain', 'Esc')));
+    var pr = h('div', { class: 'prog' });
+    if (total <= 40) for (var i = 0; i < total; i++) pr.appendChild(h('i', { class: i < done ? 'on' : '' }));
+    else pr.appendChild(h('i', { class: 'on', style: 'flex:none;width:' + Math.round(100 * done / total) + '%' }));
+    wrap.appendChild(pr);
+    if (!l) {
+      var longer = S.queue.length;
+      wrap.appendChild(h('div', { class: 'calm' }, h('b', { text: done || skippedN ? 'That was everything' : 'Nothing waiting right now' }), (done || skippedN ? 'Decided ' + done + (skippedN ? ', skipped ' + skippedN : '') + '. ' : '') + (longer ? longer + (longer === 1 ? ' is' : ' are') + ' still on the board.' : '') || 'Nothing else needs you.'));
+    } else {
+      var a = area(l.area);
+      sel = l.id; if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
+      var card = h('div', { class: 'rcard' + (l.state === 'broken' ? ' red' : ''), id: 'card-' + l.id }, h('div', {}, h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }), tags(l)), h('h2', { text: l.title }));
+      var d = details(l, true); if (d) card.appendChild(d);
+      if (l.next) card.appendChild(h('span', { class: 'next', style: 'color:#8FB4DF;font-weight:600;font-size:13px', text: 'After: ' + l.next }));
+      card.appendChild(buttons(l, true));
+      if (snoozeId === l.id) card.appendChild(snoozeMenu(l));
+      wrap.appendChild(card);
+      wrap.appendChild(h('div', { class: 'rtop' }, h('span', { class: 'keys', text: 'Enter does the gold button · E change · S snooze · Z undo' }), B('Skip', function () { skipped[l.id] = 1; render(); }, 'plain', '→')));
+    }
+    var rs = heldStrip(); if (rs) wrap.appendChild(rs);
+    el.appendChild(wrap);
+    putFields(kept);
+    ['note-text', 'redo-text', 'edit-text'].forEach(function (id) { var on = id === 'note-text' ? noteId : id === 'redo-text' ? redoId : editId; if (on && $(id) && !kept[id]) $(id).focus(); });
+  }
+
+  /* ---------- the bar ---------- */
+  $('dump').addEventListener('submit', function (e) {
+    e.preventDefault(); var t = $('dump-text'), text = t.value.trim(); if (!text) return;
+    var m = text.match(/^(?:i(?:'ve| have)(?: got)? |got |only )?(?:about )?(\d{1,3}|an?|half an?|one|two|three|five|ten|fifteen|twenty|thirty|forty|forty-five|fifty)\s*(m|min|mins|minutes?|h|hr|hrs|hours?)(?:\s+(?:free|left|now|spare|to spare|(?:before|until|till) .{1,40}))?\.?$/i);
+    if (m) { var words = { a: 1, an: 1, one: 1, two: 2, three: 3, five: 5, ten: 10, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'forty-five': 45, fifty: 50 }, q = /^half/i.test(m[1]) ? 0.5 : words[m[1].toLowerCase()] || +m[1]; fit = Math.max(1, Math.round(q * (/^h/i.test(m[2]) ? 60 : 1))); fitAt = Date.now(); fitIds = []; areaFilter = null; filter = 'all'; t.value = ''; t.blur(); load(true); return; }
+    if (text[0] === '?') { hist.open = true; hist.q = text.slice(1).trim(); t.value = ''; api('GET', '/api/history?q=' + encodeURIComponent(hist.q)).then(function (d) { hist.items = d.items; if (!d.items.length) toast('Nothing you decided matches \u201c' + hist.q + '\u201d. (A line starting with ? searches; it is not filed.)'); render(); }); return; }
+    api('POST', '/api/dump', { text: text }).then(function (d) {
+      t.value = ''; return load(true).then(function () {
+        var ls = d.lights, l = ls[0];
+        toast(ls.length > 1 ? 'Added ' + ls.length + ' things. Undo or move them above.' : 'Added to ' + area(l.area).name + '.');
+      });
+    }).catch(function (er) { toast(er.message); });
+  });
+  function moveMenu(l) {
+    var t = $('toast'); t.textContent = ''; t.appendChild(document.createTextNode('Move to: '));
+    S.areas.forEach(function (a) { if (a.id !== l.area) t.appendChild(h('button', { text: a.name, onclick: function () { t.hidden = true; api('POST', '/api/lights/' + l.id + '/act', { action: 'move', area: a.name }).then(load); } })); });
+    t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 12000);
+  }
+  // Speaking instead of typing, where the browser can do it.
+  (function () {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition, mic = $('mic'); if (!SR) return;
+    var rec = null; mic.hidden = false;
+    mic.addEventListener('click', function () {
+      if (rec) { rec.stop(); return; }
+      try {
+        rec = new SR(); rec.interimResults = false; rec.lang = navigator.language || 'en-US';
+        rec.onresult = function (ev) { var t = $('dump-text'); t.value = (t.value ? t.value + ' ' : '') + ev.results[0][0].transcript; t.focus(); };
+        rec.onend = function () { rec = null; mic.classList.remove('on'); mic.textContent = 'Speak'; };
+        rec.onerror = function () { toast('Could not hear you. Type it instead.'); };
+        rec.start(); mic.classList.add('on'); mic.textContent = 'Listening…';
+      } catch (e) { rec = null; toast('Speaking is not available here.'); }
+    });
+  })();
+
+  // A letter shortcut waits 250 ms. Another letter in that time means the person is typing: the letters go to the bar.
+  var pend = null;
+  function later(ch, fn) { if (pend) { typed(ch); return; } pend = { text: ch, t: setTimeout(function () { var p = pend; pend = null; if (p.text.length === 1) fn(); }, 250) }; }
+  function typed(ch) { pend.text += ch; clearTimeout(pend.t); var bar = $('dump-text'), p = pend; pend = null; bar.focus(); bar.value = (bar.value || '') + p.text; }
+  document.addEventListener('keydown', function (e) {
+    if (pend && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && !/INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); e.stopImmediatePropagation(); typed(e.key); }
+  }, true);
+  var ignorePop = false;
+  window.addEventListener('popstate', function () { if (ignorePop) { ignorePop = false; return; } if (rapid) { rapid = false; editId = null; noteId = null; snoozeId = null; render(); } else if (areaFilter) { areaFilter = null; render(); } });
+  function follow() { var el = sel && document.getElementById('row-' + sel); if (el) el.scrollIntoView({ block: 'nearest' }); }
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (rapid) stopRapid(); $('dump-text').focus(); return; }
+    var tag = (document.activeElement && document.activeElement.tagName) || '', typing = /INPUT|TEXTAREA|SELECT/.test(tag);
+    if (e.key === 'Escape') { if (typing) { var was = document.activeElement.id; document.activeElement.blur(); if (was === 'edit-text') { editId = null; editBase = null; } if (was === 'note-text') noteId = null; if (was === 'redo-text') redoId = null; if (was !== 'dump-text') render(); } else if (rapid) stopRapid(); else { editId = null; noteId = null; snoozeId = null; fit = null; render(); } return; }
+    if (typing || e.metaKey || e.ctrlKey || e.altKey || !S) return;
+    var k = e.key.toLowerCase(), nav = /^Arrow/.test(e.key) || k === 'j' || k === 'k';
+    // A held key must never act twice, and Enter waits a beat after a new row or card takes the selection.
+    if (e.repeat && !nav) { e.preventDefault(); return; }
+    var settled = Date.now() - selAt >= 400;
+    // A key that decides something (Enter, S, E) only works once the person has touched this tab, and only on a row they can see.
+    var deciding = e.key === 'Enter' || k === 's' || k === 'e';
+    var onControl = /^(BUTTON|A|SUMMARY|DETAILS|LABEL|SELECT)$/.test(tag) || (document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('tabindex') != null);
+    if ((e.key === 'Enter' || e.key === ' ') && onControl) return; // the browser's own meaning wins: Enter opens a toggle or presses that button
+    if (deciding && !rapid) {
+      var rowEl = sel && document.getElementById('row-' + sel), box = rowEl && rowEl.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight, seen = box && box.top < vh && box.bottom > 0 && ((box.top >= 0 && box.bottom <= vh) || box.height > vh * 0.8);
+      if (!engaged || !seen) { e.preventDefault(); engaged = true; if (rowEl) rowEl.scrollIntoView({ block: 'center' }); selAt = Date.now(); if (!seen) toast('That one was off screen. Here it is: press the key again.'); return; }
+    }
+    engaged = true;
+    if (k === 'z') { if (S.held.length) { e.preventDefault(); takeBack(S.held[0].id); } return; }
+    var its = rapid ? [] : visible().keys, i = its.map(function (x) { return x.key; }).indexOf(sel), it = rapid ? null : its[i], l = rapid ? rapidCur() : it && it.light;
+    if (rapid) {
+      if (e.key === 'ArrowRight' && l) { e.preventDefault(); skipped[l.id] = 1; render(); return; }
+    } else {
+      if (k === 'r') { e.preventDefault(); later(e.key, startRapid); return; }
+      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); if (e.key === '0') { areaFilter = null; filter = 'all'; fit = null; render(); } else if (S.areas[+e.key - 1]) switchTo(S.areas[+e.key - 1].id); return; }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var ids = [null].concat(S.areas.map(function (a) { return a.id; })), at = ids.indexOf(areaFilter); areaFilter = ids[(at + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]; fit = null; sel = null; openId = null; render(); return; }
+      if (e.key === 'ArrowDown' || k === 'j') { e.preventDefault(); if (its.length) { sel = its[Math.min(i + 1, its.length - 1)].key; snoozeId = null; render(); follow(); } return; }
+      if (e.key === 'ArrowUp' || k === 'k') { e.preventDefault(); if (its.length) { sel = its[Math.max(i - 1, 0)].key; snoozeId = null; render(); follow(); } return; }
+      if (it && !it.light) {
+        if (e.key === 'Enter' && tag !== 'BUTTON') { e.preventDefault(); if (settled) bulkAct(it.lights, 'approve'); }
+        return;
+      }
+      if (l && e.key === ' ' && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); openId = openId === l.id ? null : l.id; render(); return; }
+    }
+    if (!l) return;
+    if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') {
+      var p = primary(l); if (!p) return; e.preventDefault(); if (!settled) return;
+      // In the list, the first Enter on a message to a person opens it. The second one sends it.
+      if (l.firstTime) { if (!rapid && openId !== l.id) { openId = l.id; render(); } toast('First time writing to them: use the button, not Enter.'); return; }
+      if (!rapid && l.kind === 'approve' && (l.outbound || (l.draft || '').length > 120) && openId !== l.id) { openId = l.id; selAt = Date.now(); render(); return; }
+      p();
+    }
+    else if (k === 'e' && l.kind === 'approve' && l.draft) { e.preventDefault(); later(e.key, function () { editId = l.id; editBase = l.draft; openId = l.id; render(); }); }
+    else if (k === 's' && !l.spot) { e.preventDefault(); later(e.key, function () { if (l.snoozes >= 2) { snoozeId = l.id; render(); } else act(l, 'snooze', { until: snoozeChoices().filter(function (c) { return /Tomorrow|This morning/.test(c[0]); })[0][1] }); }); }
+  });
+  document.addEventListener('visibilitychange', function () { live(!document.hidden); if (!document.hidden) { mark = Date.now(); load(); } });
+  if (!/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) $('kbd-k').textContent = 'Ctrl K';
+  var es = null;
+  var bc = null; try { bc = new BroadcastChannel('switchboard-' + location.host); bc.onmessage = function (e) { if (e.data === 'change') onChange(); }; } catch (e) { bc = null; }
+  var leading = false;
+  function lead() {
+    // Browsers allow about six connections per address. One tab holds the live feed and tells the others.
+    if (!bc || !navigator.locks) return false;
+    navigator.locks.request('switchboard-live-' + location.host, function () { leading = true; var src = new EventSource('/api/events'); src.addEventListener('change', function () { onChange(); bc.postMessage('change'); }); src.addEventListener('open', function () { if (S) load(true); bc.postMessage('change'); }); return new Promise(function () {}); });
+    return true;
+  }
+  function live(on) { if (leading || (bc && navigator.locks)) return; if (on && !es) { try { es = new EventSource('/api/events'); es.addEventListener('change', onChange); es.addEventListener('open', function () { if (S) load(true); }); } catch (e) {} } else if (!on && es) { es.close(); es = null; } }
+  var chT = null, loading = false;
+  function onChange() { if (chT) return; chT = setTimeout(function later() { chT = null; if (loading || busy || typing()) { if (typing()) chT = setTimeout(later, 1500); return; } loading = true; load().then(function () { loading = false; }, function () { loading = false; }); }, 300); }
+  if (!lead()) live(!document.hidden);
+  function showPending() { Object.keys(pendingNew).forEach(function (id) { seenAt[id] = Date.now(); }); pendingNew = {}; render(); }
+  setInterval(function () { if (Object.keys(pendingNew).length && Date.now() - lastInput >= 45000 && !typing()) showPending(); }, 5000);
+  setInterval(function () { var c = document.querySelectorAll('.cd'); for (var i = 0; i < c.length; i++) { var left2 = Math.max(0, Math.round((+c[i].getAttribute('data-until') - Date.now()) / 1000)); c[i].textContent = left2 ? ' · ' + left2 + ' sec to undo' : ' · with your assistant now'; } }, 1000);
+  setInterval(function () { if (!document.hidden && !typing()) load(); }, 60000);
+  load();
+})();
+</script>
+</body>
+</html>

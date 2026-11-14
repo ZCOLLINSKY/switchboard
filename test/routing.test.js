@@ -108,3 +108,21 @@ test('the session-start hook counts for the repository\'s name from a worktree',
     assert.match(out, /1 decision is ready for this session/);
   } finally { a.close(); }
 });
+
+test('waiting on a light another session raised returns at once and says whose it is', async () => {
+  const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  const env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port };
+  const alpha = mcp(env, home), beta = mcp(env, home);
+  try {
+    await Promise.all([alpha.hello(), beta.hello()]);
+    const l = await alpha.call('raise_light', { project: 'alpha', area: 'Shop', title: 'Alpha: which size?', kind: 'decide', options: ['Small', 'Large'] });
+    await tap(a, l.id, 'answer', { value: 'Small' });
+    const t0 = Date.now(), w = await beta.call('wait_for_decision', { id: l.id, seconds: 20, project: 'beta' });
+    assert.deepEqual(w, { decided: false, reason: 'raised by t:alpha; only that session can collect it' });
+    assert.ok(Date.now() - t0 < 5000, 'it did not wait');
+    const r = await fetch(a.url + '/api/wait', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: l.id, seconds: 20, agent: 'someone' }) });
+    assert.deepEqual(await r.json(), { decided: false, reason: 'raised by t:alpha; only that session can collect it' });
+    assert.equal(a.store.db.lights[0].decision.collectedAt, null, 'nothing was collected');
+    assert.equal((await alpha.call('wait_for_decision', { id: l.id, seconds: 2 })).decided, true);
+  } finally { alpha.close(); beta.close(); a.close(); }
+});

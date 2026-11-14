@@ -146,6 +146,8 @@ async function start(opts = {}) {
       if (p === '/api/wait') {
         // An assistant that is mid-task can wait here for one light's answer instead of polling.
         const id = String(body.id || ''), who = { agent: String(body.agent || '') };
+        // Someone else's light would never be handed over: say so now, instead of waiting out the seconds for nothing.
+        const why = store.notYours(id, who); if (why) return json(res, 200, { decided: false, reason: why });
         const until = Date.now() + Math.min(Math.max(Number(body.seconds) || 30, 1), 50) * 1000;
         let over = false, busy = false;
         const check = () => { if (busy) return null; busy = true; try { const d = store.decisionFor(id, Date.now(), who); if (d) { over = true; changed(); } return d; } finally { busy = false; } };

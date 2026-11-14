@@ -318,3 +318,39 @@ test('pending counts what is waiting for an assistant without collecting it', ()
   assert.equal(p.decisions, 1, 'a lapsed claim is waiting again');
 });
 }
+
+test('waiting on another session\'s light says whose it is instead of waiting for nothing', () => {
+  const s = open(fs.mkdtempSync(path.join(os.tmpdir(), 'sb-')), { holdMs: 0 });
+  const l = s.raise({ area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'], agent: 'claude-code:shop~1a2b' }, T0);
+  assert.equal(s.notYours(l.id, { agent: 'claude-code:home~9f9f' }), 'raised by claude-code:shop~1a2b; only that session can collect it');
+  assert.equal(s.notYours(l.id, { agent: 'claude-code:shop~1a2b' }), '');
+  assert.equal(s.notYours(l.id, { agent: 'other', all: true }), '', 'one told to take over may');
+  const anyone = s.raise({ area: 'Shop', title: 'Pick a color', kind: 'decide', options: ['Red', 'Blue'] }, T0);
+  assert.equal(s.notYours(anyone.id, { agent: 'other' }), '', 'a light raised with no name is anyone\'s');
+});
+
+test('raising the same thing again with no key returns the open light instead of a second one', () => {
+  const s = fresh();
+  const a = s.raise({ area: 'Shop', title: 'Send the Henderson quote', draft: 'Hi Dale, the quote is $1,200.', to: 'Dale', value: 1200, agent: '' }, T0);
+  const b = s.raise({ area: 'Shop', title: 'Send the Henderson quote', draft: 'Hi Dale, the quote is $1,200.', to: 'Dale', value: 1200, agent: '' }, T0 + 1000);
+  assert.equal(b.id, a.id);
+  assert.match(s.warnings.join(' '), new RegExp(`already open \\(${a.id}\\)`));
+  assert.equal(s.db.lights.length, 1, 'one light, so "$1,200 in play", not $2,400');
+  // Different words, another container, or a finished light: a new light.
+  assert.notEqual(s.raise({ area: 'Shop', title: 'Send the Henderson quote', draft: 'Hi Dale, the quote is $1,300.', to: 'Dale' }, T0).id, a.id);
+  assert.notEqual(s.raise({ area: 'Side', title: 'Send the Henderson quote', draft: 'Hi Dale, the quote is $1,200.', to: 'Dale' }, T0).id, a.id);
+  const c = s.raise({ area: 'Shop', title: 'Order boxes', kind: 'todo', agent: 'bot' }, T0);
+  s.update(c.id, { state: 'done' }, 'bot', T0);
+  assert.notEqual(s.raise({ area: 'Shop', title: 'Order boxes', kind: 'todo', agent: 'bot' }, T0).id, c.id);
+  // Another assistant's identical light stays its own; the new one is separate, and says so.
+  const d = s.raise({ area: 'Shop', title: 'Renew the domain', kind: 'todo', agent: 'one' }, T0);
+  const e = s.raise({ area: 'Shop', title: 'Renew the domain', kind: 'todo', agent: 'two' }, T0);
+  assert.notEqual(e.id, d.id);
+  assert.match(s.warnings.join(' '), /another assistant \(one\)/);
+  // The person typing the same note twice gets two notes: only assistants' raises are matched.
+  assert.equal(s.dump('Call the dentist').length + s.dump('Call the dentist').length, 2);
+  assert.equal(s.db.lights.filter((l) => l.title === 'Call the dentist').length, 2);
+  // A kind of job that repeats (an action_type) is never matched: eight identical fixes are eight.
+  const f1 = s.raise({ area: 'Site', title: 'Fix a listing', change_from: 'a', change_to: 'b', action_type: 'listing-fix' }, T0);
+  assert.notEqual(s.raise({ area: 'Site', title: 'Fix a listing', change_from: 'a', change_to: 'b', action_type: 'listing-fix' }, T0).id, f1.id);
+});

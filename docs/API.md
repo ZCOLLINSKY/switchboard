@@ -8,7 +8,7 @@ Base: `http://127.0.0.1:4747`. Writes are `POST` with `content-type: application
 
 | Call | What it does |
 |---|---|
-| `GET /api/state` | Everything the screen shows: areas, lights, queue order, counts, total seconds |
+| `GET /api/state` | Everything the screen shows: areas, lights, queue order, counts, total seconds. Also `lastCheckIn` (when an assistant last asked for decisions), `connected` (whether a light has ever come in through the assistant connector, which sends `x-switchboard-client: mcp`) and `connect`, how to connect an assistant: `plugin` (the two Claude Code lines), `mcp` (the `claude mcp add` line for this board, with its folder and port when they are not the usual ones), `desktop` (the release page with the `.mcpb` file) and `folder`. `connect` is `null` in a simulation |
 | `POST /api/lights` | Raise a light (fields below) |
 | `POST /api/lights/:id` | Update a light: any field below, plus `state` and `reason`. `{"adopt":true,"agent":"NAME"}` takes over a light that was raised with no `agent` (see the state rules) |
 | `POST /api/lights/:id/act` | What the person does: `{"action":"approve"|"no"|"answer"|"done"|"snooze"|"wake"|"drop"|"move"|"redo"|"replied"|"stop_followups"|"release"|"release_at"|"undo"}` with `rev`, `text`, `value`, `days`, `until`, `why` or `area`, and `tookMs` (how long the person looked, which the reading-speed rule uses) |

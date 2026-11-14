@@ -43,3 +43,40 @@ test('setup_guide tells Claude Desktop users to start a chat with "check my Swit
     assert.match(g.note, /check my Switchboard/);
   } finally { m.close(); }
 });
+
+test('the state carries how to connect an assistant: the plugin lines, the terminal line for this board, the Desktop file', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir });
+  try {
+    const c = (await state(a)).connect, port = new URL(a.url).port;
+    assert.equal(c.folder, root);
+    assert.deepEqual(c.plugin, ['/plugin marketplace add ZCOLLINSKY/switchboard', '/plugin install switchboard@zcollinsky']);
+    // This board's own folder and port go in, after the server's name and before "--".
+    assert.equal(c.mcp, `claude mcp add --scope user switchboard -e SWITCHBOARD_HOME="${dir}" -e SWITCHBOARD_PORT=${port} -- node "${path.join(root, 'mcp.js')}"`);
+    assert.match(c.desktop, /^https:\/\/github\.com\/ZCOLLINSKY\/switchboard\/releases\/latest$/);
+  } finally { a.close(); }
+  const sim = await start({ port: 0, dir: tmp(), sim: true, live: false });
+  try { assert.equal((await state(sim)).connect, null, 'a simulation is never connected to'); } finally { sim.close(); }
+});
+
+test('"connected" turns on with the first light raised through the connector, not through a script', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir });
+  const m = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port });
+  try {
+    assert.equal((await state(a)).connected, false);
+    await post(a, '/api/lights', { area: 'Shop', title: 'From a script', agent: 'cron' });
+    assert.equal((await state(a)).connected, false, 'a script is not an assistant connector');
+    await m.hello();
+    await m.call('raise_light', { area: 'Shop', title: 'From an assistant', kind: 'todo' });
+    assert.equal((await state(a)).connected, true);
+  } finally { m.close(); a.close(); }
+});
+
+test('the page offers to connect an assistant until one is connected, with copy buttons, and its script is sound', () => {
+  const html = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+  const code = html.slice(html.lastIndexOf('<script>') + 8, html.lastIndexOf('</script>'));
+  assert.doesNotThrow(() => new (require('vm').Script)(code), 'the page script parses');
+  assert.match(code, /Connect an assistant/);
+  assert.match(code, /S\.connected/);
+  assert.match(code, /S\.connect\.mcp/);
+  assert.match(code, /navigator\.clipboard\.writeText/);
+});

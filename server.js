@@ -31,6 +31,17 @@ async function start(opts = {}) {
     }
   }
   const page = path.join(__dirname, 'public', 'index.html');
+  // How to connect an assistant to this board, for the page's first-run guidance. The terminal line names this board's
+  // folder and port when they are not the usual ones (each -e after the server's name and before --).
+  const connectInfo = () => {
+    if (sim) return null;
+    const port = server.address().port, env = [];
+    if (path.resolve(store.dir) !== path.resolve(os.homedir(), '.local', 'share', 'switchboard')) env.push(`-e SWITCHBOARD_HOME="${store.dir}"`);
+    if (port !== 4747) env.push(`-e SWITCHBOARD_PORT=${port}`);
+    return { folder: __dirname, plugin: ['/plugin marketplace add ZCOLLINSKY/switchboard', '/plugin install switchboard@zcollinsky'],
+      mcp: ['claude mcp add --scope user switchboard'].concat(env, ['--', `node "${path.join(__dirname, 'mcp.js')}"`]).join(' '),
+      desktop: 'https://github.com/ZCOLLINSKY/switchboard/releases/latest' };
+  };
   const clients = new Set();
 
   const changed = () => { store.save(); for (const res of clients) res.write('event: change\ndata: 1\n\n'); for (const w of waiters) w(); };
@@ -119,7 +130,7 @@ async function start(opts = {}) {
         res.writeHead(200, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, SAFE));
         return fs.createReadStream(page).on('error', () => res.end('The page file is missing. Reinstall Switchboard.')).pipe(res);
       }
-      if (req.method === 'GET' && p === '/api/state') return json(res, 200, Object.assign(store.view(), { canAct: fromPage(req) }, sim ? { sim: { current: sim.current, live: sim.live, scenarios: Object.keys(sim.list).map((k) => ({ name: k, title: sim.list[k].title, blurb: sim.list[k].blurb, live: !!(sim.list[k].live && sim.live) })) } } : {}));
+      if (req.method === 'GET' && p === '/api/state') return json(res, 200, Object.assign(store.view(), { canAct: fromPage(req), connect: connectInfo() }, sim ? { sim: { current: sim.current, live: sim.live, scenarios: Object.keys(sim.list).map((k) => ({ name: k, title: sim.list[k].title, blurb: sim.list[k].blurb, live: !!(sim.list[k].live && sim.live) })) } } : {}));
       if (req.method === 'GET' && (p === '/api/decisions' || p === '/api/wait')) return json(res, 405, { error: 'Collecting decisions is a write. Send a JSON POST.' });
       // Counts only, collecting nothing: a relay looks here before it starts any work.
       if (req.method === 'GET' && p === '/api/pending') return json(res, 200, store.pending(Date.now(), { agent: url.searchParams.get('agent') || '', only: url.searchParams.get('only') === '1' }));
@@ -175,7 +186,7 @@ async function start(opts = {}) {
       }
       let out;
       let m;
-      if (p === '/api/lights') out = store.raise(body);
+      if (p === '/api/lights') { out = store.raise(body); if (req.headers['x-switchboard-client'] === 'mcp') store.connectorSeen(); }
       else if (p === '/api/complete') {
         if (typeof body.decision_id !== 'string' || !body.decision_id) return json(res, 400, { error: 'Send the decision_id you were handed, so the report lands on the right decision.' });
         out = store.complete(body.id, body.outcome, body.detail, Date.now(), body.decision_id);

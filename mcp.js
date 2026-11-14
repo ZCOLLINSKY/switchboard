@@ -28,7 +28,8 @@ function call(base, method, route, body, signal, ms) {
   const ac = new AbortController(), t = setTimeout(() => ac.abort(new Error('timeout')), ms);
   const stop = () => ac.abort(new Error('cancelled'));
   if (signal) { if (signal.aborted) stop(); else signal.addEventListener('abort', stop, { once: true }); }
-  return fetch(base + route, { method, signal: ac.signal, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
+  // The header tells the board an assistant connector is in use, so it stops offering to connect one.
+  return fetch(base + route, { method, signal: ac.signal, headers: Object.assign({ 'x-switchboard-client': 'mcp' }, body ? { 'content-type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined })
     .catch((e) => { if (ac.signal.aborted) throw Object.assign(new Error(signal && signal.aborted ? 'cancelled' : `Switchboard at ${base} did not answer within ${Math.round(ms / 1000)} seconds. It may be busy or frozen; nothing is known to have changed.`), { code: signal && signal.aborted ? 'CANCELLED' : 'TIMEOUT' }); throw e; })
     .finally(() => { clearTimeout(t); if (signal) signal.removeEventListener('abort', stop); });
 }

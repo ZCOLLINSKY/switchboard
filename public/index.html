@@ -127,6 +127,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
 .bh{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:800}
 .bh i{width:11px;height:11px;border-radius:4px;flex:none}
 .say{font-size:13.5px;color:var(--soft);margin-top:6px}
+.connect{min-width:0} .li .connect{flex:1 1 100%;margin-top:0} .say.connect p{margin:10px 0 0;font-weight:400;flex:none} .connect a{color:var(--blue)} .cmd{display:flex;gap:8px;align-items:center;margin-top:6px} .cmd code{flex:1 1 auto;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--ink)}
 .addbox{border:1px dashed var(--line2);background:none;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
 
 .list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -184,7 +185,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   var S = null, sel = null, openId = null, editId = null, noteId = null, snoozeId = null;
   var filter = 'all', areaFilter = null, fit = null, showAll = false, expanded = {}, rapid = false, skipped = {};
   var busy = false, mark = Date.now(), adding = false, hist = { open: false, q: '', items: [] };
-  var selAt = 0, lastSel = null, lastInput = 0, pendingNew = {}, heldTimer = null, fitIds = [], asked = {}, redoId = null, autoOpen = false, shown = {}, seenAt = {}, changedAt = {}, mine = {}, pos = {}, posAt = {}, fitAt = 0, rapidPin = null, editBase = null, renaming = null, edits = {}, heldAll = false, simOpen = false, seeAll = false, allState = 'all', allQ = '', allOpen = {};
+  var selAt = 0, lastSel = null, lastInput = 0, pendingNew = {}, heldTimer = null, fitIds = [], asked = {}, redoId = null, autoOpen = false, shown = {}, seenAt = {}, changedAt = {}, mine = {}, pos = {}, posAt = {}, fitAt = 0, rapidPin = null, editBase = null, renaming = null, edits = {}, heldAll = false, simOpen = false, seeAll = false, allState = 'all', allQ = '', allOpen = {}, connectOpen = false;
   var engaged = false; document.addEventListener('pointerdown', function () { engaged = true; }, true);
   ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchmove', 'touchstart', 'scroll'].forEach(function (n) { document.addEventListener(n, function () { lastInput = Date.now(); }, true); });
   var $ = function (id) { return document.getElementById(id); };
@@ -685,6 +686,18 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     S.sim.scenarios.forEach(function (x) { pick.appendChild(B(x.title, function () { areaFilter = null; filter = 'all'; fit = null; showAll = false; expanded = {}; sel = null; openId = null; pendingNew = {}; api('POST', '/api/sim', { name: x.name }).then(function () { return load(true); }); }, x.name === S.sim.current ? '' : 'plain')); });
     bar.appendChild(pick); return bar;
   }
+  // How to connect an assistant: the two plugin lines, the terminal line for this board, the Desktop file. Each line copies.
+  function copyText(t) { var no = function () { toast('Copying is not allowed here. Select the line and copy it.'); }; try { navigator.clipboard.writeText(t).then(function () { toast('Copied.'); }, no); } catch (e) { no(); } }
+  function connectGuide() {
+    if (!S.connect) return null;
+    var line = function (t) { return h('div', { class: 'cmd' }, h('code', { text: t }), B('Copy', function () { copyText(t); }, 'plain')); };
+    var box = h('div', { class: 'say connect' }, h('p', { text: 'Claude Code: paste these two lines into a session, then start a new one.' }));
+    S.connect.plugin.forEach(function (t) { box.appendChild(line(t)); });
+    box.appendChild(h('p', { text: 'Or paste this into a terminal:' })); box.appendChild(line(S.connect.mcp));
+    box.appendChild(h('p', {}, 'Claude Desktop: ', h('a', { href: S.connect.desktop, target: '_blank', rel: 'noopener', text: 'download the .mcpb file' }), ' from the latest release and double-click it.'));
+    box.appendChild(h('p', { text: 'Then say: \u201cOpen my Switchboard, then set it up for me.\u201d' }));
+    return box;
+  }
   function renderWelcome() {
     var H = $('headline'); H.className = ''; H.textContent = 'Nothing set up yet.';
     $('sub').textContent = 'Four ways to start. Pick any one.'; $('pills').textContent = ''; $('foot').textContent = ''; document.title = 'Switchboard';
@@ -698,7 +711,9 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       step(1, 'Name what you juggle', 'Each one gets its own box on the board.',
         h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); if (!ai.value.trim()) return; api('POST', '/api/areas', { name: ai.value }).then(load).catch(function (er) { toast(er.message); }); } }, ai, h('button', { class: 'btn', type: 'submit', text: 'Add' }))),
       step(2, 'Or just type a thought', 'Use the bar at the top. Several things in one sentence become separate items.'),
-      step(3, 'Or let your assistant do it', 'Open Claude Code in the Switchboard folder and say: “Set up Switchboard for me. Follow SETUP.md.”'),
+      S.connected ? step(3, 'Or let your assistant do it', 'Your assistant is connected. Ask it: \u201cSet up my Switchboard.\u201d')
+        : S.connect ? step(3, 'Or connect an assistant', 'It puts things on the board for you, with the drafts attached.', connectGuide())
+        : step(3, 'Or let your assistant do it', 'Open Claude Code in the Switchboard folder and say: \u201cSet up Switchboard for me. Follow SETUP.md.\u201d'),
       step(4, 'Want to see it full first?', 'Load a set of examples you can clear later.', h('div', { class: 'inline' }, B('Show me examples', function () { api('POST', '/api/demo', {}).then(function () { return load(true); }, function (e) { toast(e.message); }); }, 'gh')))));
   }
 
@@ -855,7 +870,13 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       A.earning.forEach(function (r) { al.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt' }), h('p', {}, pretty(r.type) + ' in ' + r.area, h('small', { text: r.streak + ' approved in a row, on ' + r.days + (r.days === 1 ? ' day' : ' days') + '. Still asks you every time.' })))); });
       main.appendChild(al);
     }
+    // Until the first light comes in through an assistant, the way to connect one stays a click away.
+    if (connectOpen && S.connect && !S.connected) {
+      main.appendChild(h('div', { class: 'lab' }, 'Connect an assistant', h('button', { class: 'link', type: 'button', onclick: function () { connectOpen = false; render(); } }, 'Close')));
+      main.appendChild(h('div', { class: 'list' }, h('div', { class: 'li' }, connectGuide())));
+    }
     var foot = $('foot'); foot.textContent = '';
+    if (S.connect && !S.connected) foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { connectOpen = !connectOpen; render(); if (connectOpen) window.scrollTo(0, document.body.scrollHeight); } }, 'Connect an assistant'));
     foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { autoOpen = !autoOpen; render(); if (autoOpen) window.scrollTo(0, document.body.scrollHeight); } }, 'Your rules' + (S.autonomy.rules.length ? ' (' + S.autonomy.rules.length + ')' : '')));
     foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { hist.open = !hist.open; if (hist.open) loadHist(); else render(); } }, hist.open ? 'Hide past decisions' : 'Past decisions'));
     foot.appendChild(h('span', { class: 'keys', text: '1–9 pick a container · 0 everything · ← → next container · ↑ ↓ move · Space open · Enter does the gold button · E change · S snooze · Z undo · R one at a time' }));

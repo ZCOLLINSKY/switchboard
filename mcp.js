@@ -5,6 +5,12 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
+// A launcher that could not fill in a setting (an empty value, or "${user_config.port}" left as written) means "not set",
+// here and in the board this process may start.
+for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWITCHBOARD_AGENT']) {
+  const v = process.env[k]; if (v != null && (!v.trim() || v.includes('${') || (k === 'SWITCHBOARD_PORT' && !/^\d{1,5}$/.test(v.trim())))) delete process.env[k];
+}
+const VERSION = require('./package.json').version; // the one place the version is written
 let AGENT = process.env.SWITCHBOARD_AGENT || ''; // who this assistant is on the board; set at initialize if not given
 const os = require('os'), fs = require('fs');
 const HOME = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|\/)/, os.homedir());
@@ -21,13 +27,24 @@ function call(base, method, route, body, signal, ms) {
     .catch((e) => { if (ac.signal.aborted) throw Object.assign(new Error(signal && signal.aborted ? 'cancelled' : `Switchboard at ${base} did not answer within ${Math.round(ms / 1000)} seconds. It may be busy or frozen; nothing is known to have changed.`), { code: signal && signal.aborted ? 'CANCELLED' : 'TIMEOUT' }); throw e; })
     .finally(() => { clearTimeout(t); if (signal) signal.removeEventListener('abort', stop); });
 }
+// Claude Desktop's built-in Node is not a real node binary and refuses to start one (SelfExecBlockedError,
+// ERR_MCP_NODE_HOST_NOT_NODE). There, and when SWITCHBOARD_IN_PROCESS=1, the board runs inside this connector: it is on
+// while the app is open and stops with it.
+const IN_PROCESS = !!process.versions.electron || process.env.SWITCHBOARD_IN_PROCESS === '1';
+let here = null; // the board, when it runs in this process
+async function startHere() {
+  if (!here) here = require('./server').start({ dir: HOME });
+  try { BASE = (await here).url; } catch (e) { here = null; throw new Error(`Switchboard could not start: ${e.code === 'EADDRINUSE' ? 'another program uses its port. Pick another port in its settings.' : e.message}`); }
+}
 // Start the board and wait for it. If it refuses to start, its own reason is passed on, not swallowed.
 async function startBoard() {
-  const child = spawn(process.execPath, [path.join(__dirname, 'server.js')], { detached: true, stdio: ['ignore', 'ignore', 'pipe'], env: process.env });
-  let err = '', exited = null;
-  child.stderr.on('data', (d) => { err += d; }); child.on('exit', (code) => { exited = code; });
+  if (IN_PROCESS) return startHere();
+  const child = spawn(process.execPath, [path.join(__dirname, 'server.js')], { detached: true, windowsHide: true, stdio: ['ignore', 'ignore', 'pipe'], env: process.env });
+  let err = '', exited = null, refused = null;
+  child.stderr.on('data', (d) => { err += d; }); child.on('exit', (code) => { exited = code; }); child.on('error', (e) => { refused = e; });
   for (let i = 0; i < 24; i++) {
     await sleep(250);
+    if (refused) return startHere(); // this runtime cannot start a second Node process: run the board here instead
     if (exited != null) throw new Error(`Switchboard could not start: ${err.trim() || 'it stopped at once (exit ' + exited + ')'}`);
     try { const r = await call(BASE, 'GET', '/api/health', null, null, 1000); if (r.ok) { child.stderr.destroy(); child.unref(); return; } } catch (_) { /* still starting */ }
   }
@@ -125,7 +142,21 @@ const TOOLS = [
     inputSchema: { type: 'object', required: ['name'], properties: { name: S('Container name.'), note: S('One line shown under the name.'), voice: S('How drafts for this container should sound, in the person\'s own words. Read it from list_lights before you write a draft.'), color: S('Hex color like #4C8DF6.'), wake_at: S('ISO date. Until then the container is dimmed; on that date it raises one light asking for its focus.') } } },
   { name: 'get_light', description: 'Read one light in full: its draft, what came in, note, recipient, attachments, due date, and what the person asked to change. Use it before redrafting.', inputSchema: { type: 'object', required: ['id'], properties: { id: S('The light id.') } } },
   { name: 'clear_examples', description: 'Remove the example lights and example containers once the person has real ones.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'open_board', description: 'Open the person\'s Switchboard in their web browser, ready to approve. Use it the first time on a computer, when they ask to see the board, or when the board says "View only in this browser". The link carries their key, so it is opened for them and never shown to you: you still cannot approve anything.', inputSchema: { type: 'object', properties: {} } },
+  { name: 'setup_guide', description: 'Read this before setting up the person\'s board for the first time, or when they ask you to set Switchboard up: the questions to ask and how to put their real life on the board.', inputSchema: { type: 'object', properties: {} } },
 ];
+
+// Opens the key link in the person's browser. The key goes from the board's data folder straight to the browser.
+function openInBrowser(link) {
+  const b = process.env.BROWSER; // the usual override, also used by the tests
+  const [cmd, args, extra] = b ? [b, [link], {}] : process.platform === 'darwin' ? ['open', [link], {}]
+    : process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', link], { windowsVerbatimArguments: true }] : ['xdg-open', [link], {}];
+  return new Promise((resolve, reject) => {
+    const c = spawn(cmd, args, Object.assign({ stdio: 'ignore', detached: true, windowsHide: true }, extra));
+    c.on('error', () => reject(new Error(`Could not open a browser from here. Ask the person to run this in their own terminal and open what it prints: node "${path.join(__dirname, 'cli.js')}" link`)));
+    c.on('spawn', () => { c.unref(); resolve(); });
+  });
+}
 
 async function callTool(name, a, signal) {
   const need = (k) => { if (typeof a[k] !== 'string' || !a[k]) throw new Error(`${k} is required (text).`); };
@@ -139,6 +170,19 @@ async function callTool(name, a, signal) {
   if (name === 'add_area') return api('POST', '/api/areas', a, signal);
   if (name === 'get_light') { need('id'); const v = await api('GET', '/api/state', null, signal), l = v.lights.find((x) => x.id === a.id); if (!l) throw new Error('No light with that id is open. Finished lights are not listed.'); const keep = ['id', 'title', 'state', 'kind', 'draft', 'source', 'note', 'to', 'attachments', 'options', 'link', 'due', 'value', 'key', 'changeFrom', 'changeTo', 'askedFor', 'changed', 'question', 'followUpDays', 'lastSent']; const out = {}; keep.forEach((k) => { if (l[k] != null && l[k] !== '' && !(Array.isArray(l[k]) && !l[k].length)) out[k] = l[k]; }); out.area = (v.areas.find((x) => x.id === l.area) || {}).name; if (out.due) out.due = new Date(out.due).toISOString(); return out; }
   if (name === 'clear_examples') return api('POST', '/api/demo', { clear: true }, signal);
+  if (name === 'setup_guide') {
+    const md = fs.readFileSync(path.join(__dirname, 'SETUP.md'), 'utf8');
+    const part = (from, to) => { const a = md.indexOf(from); if (a < 0) return ''; const b = to ? md.indexOf(to, a) : -1; return md.slice(a, b < 0 ? md.length : b).trim(); };
+    return { guide: [part('## 5.', '## 7.'), part('## Rules that always apply')].filter(Boolean).join('\n\n'),
+      note: 'You are already connected, so skip installing anything. Wherever the guide says to give the person the link, call open_board instead.' };
+  }
+  if (name === 'open_board') {
+    const h = await api('GET', '/api/health', null, signal); // starts the board if it is not running
+    let key = ''; try { key = fs.readFileSync(path.join(path.dirname(h.data || ''), 'page.key'), 'utf8').trim(); } catch (e) { /* none */ }
+    if (!h.data || !/^[a-f0-9]{32}$/.test(key)) throw new Error('The board did not give a key for this computer. Restart it, then try again.');
+    await openInBrowser(`${BASE}/?key=${key}`);
+    return { opened: true, board: BASE, note: 'Opened in their browser. The link is theirs and was not shown to you.' };
+  }
   if (name === 'list_lights') {
     const v = await api('GET', '/api/state', null, signal);
     const areaName = (id) => (v.areas.find((x) => x.id === id) || {}).name || id;
@@ -165,8 +209,9 @@ async function handle(msg) {
   try {
     // The folder's name plus a short fingerprint of its full path: two projects both called "app" are two names.
     if (method === 'initialize' && !AGENT) AGENT = `${(params && params.clientInfo && typeof params.clientInfo.name === 'string' && params.clientInfo.name) || 'assistant'}:${path.basename(process.cwd())}~${require('crypto').createHash('sha1').update(process.cwd()).digest('hex').slice(0, 4)}`;
-    if (method === 'initialize') return send({ jsonrpc: '2.0', id, result: { protocolVersion: VERSIONS.includes(params && params.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'switchboard', version: '0.1.0' },
-      instructions: 'Switchboard is the person\'s one screen for everything waiting on them. Raise a light instead of stopping to ask; always attach the draft; check get_decisions when you start work and between jobs.' } });
+    if (method === 'initialize' && IN_PROCESS) setImmediate(() => api('GET', '/api/health').catch((e) => console.error('switchboard:', e.message)));
+    if (method === 'initialize') return send({ jsonrpc: '2.0', id, result: { protocolVersion: VERSIONS.includes(params && params.protocolVersion) ? params.protocolVersion : VERSIONS[0], capabilities: { tools: {} }, serverInfo: { name: 'switchboard', version: VERSION },
+      instructions: 'Switchboard is the person\'s one screen for everything waiting on them. Raise a light instead of stopping to ask; always attach the draft; check get_decisions when you start work and between jobs. If they have not opened the board on this computer yet, call open_board.' } });
     if (method === 'ping') return send({ jsonrpc: '2.0', id, result: {} });
     if (method === 'tools/list') return send({ jsonrpc: '2.0', id, result: { tools: TOOLS } });
     if (method === 'tools/call') {
@@ -199,4 +244,4 @@ process.stdin.on('data', (chunk) => {
   }
 });
 // The session ended: whatever was waiting stops, so an abandoned wait collects nothing.
-process.stdin.on('end', () => { for (const c of inflight.values()) c.abort(); setTimeout(() => process.exit(0), 200).unref(); });
+process.stdin.on('end', () => { for (const c of inflight.values()) c.abort(); if (here) here.then((b) => b.close(), () => {}); setTimeout(() => process.exit(0), 200).unref(); });

@@ -137,6 +137,9 @@ it to `broken` with a one-line fix.
   Outbound lights are never auto-approved.
 - You cannot approve, undo or promote: those calls only work from the person's
   own page. Don't look for a way around that.
+- When the person wants to see the board, or it says "View only in this
+  browser", call `open_board`. It opens the board in their browser with their
+  key, which you never see.
 - Never approve on the person's behalf, and never send before their decision
   comes back from `get_decisions` or `wait_for_decision`.
 - You cannot change a light the person has approved until you have collected

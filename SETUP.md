@@ -8,6 +8,13 @@ All paths below are relative to this folder. Wherever a command needs its
 absolute path, it is shown as `REPO`. Keep the quotes: the path may contain
 spaces.
 
+## 0. Already connected?
+
+If you already have the Switchboard tools (`open_board`, `raise_light`), the
+person installed the Claude Code plugin or the Claude Desktop extension. Skip
+steps 1 to 4: call `open_board` (it starts the board and opens it in their
+browser with their key, which you never see), then go to step 5.
+
 ## 1. Check Node
 
 Run `node --version`. It must be 18 or newer. If it is missing or older, stop

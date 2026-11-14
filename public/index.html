@@ -692,7 +692,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (S.sim) main.appendChild(simBar());
     var ai = h('input', { id: 'area-name', maxlength: '60', placeholder: 'A business, a project, school, family…', 'aria-label': 'New container name' });
     var step = function (n, title, body, extra) { return h('div', { class: 'box', style: 'cursor:default' }, h('div', { class: 'bh' }, h('i', { style: 'background:var(--gold)' }), n + '. ' + title), h('div', { class: 'say', text: body }), extra || null); };
-    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To set things up here, open your Switchboard link. Your assistant can give it to you again.')));
+    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To set things up here, open your Switchboard link. Ask your assistant to open Switchboard for you.')));
     main.appendChild(h('div', { class: 'lab' }, 'Getting started'));
     main.appendChild(h('div', { class: 'grid' },
       step(1, 'Name what you juggle', 'Each one gets its own box on the board.',
@@ -748,7 +748,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (phone && S.queue.length >= 2 && !fit) main.appendChild(h('button', { class: 'btn gothrough', type: 'button', onclick: function () { startRapid(); } }, 'Go through them, one at a time (' + S.queue.length + ')'));
     if (S.sim) main.appendChild(simBar());
     var away = sinceBlock(); if (away) main.appendChild(away);
-    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link. Your assistant can give it to you again (or in Terminal: node cli.js link).')));
+    if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link. Ask your assistant to open Switchboard for you (or in Terminal: node cli.js link).')));
     var strip = heldStrip(); if (strip) main.appendChild(strip);
     S.suggest.forEach(function (g) {
       main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have said “' + g.why + '” ' + (g.times === 2 ? 'twice' : g.times + ' times') + ' in ' + g.name + '. ' }), 'Always do this? It is added to how drafts for ' + g.name + ' should sound.'),

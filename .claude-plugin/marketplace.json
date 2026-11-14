@@ -1,0 +1,13 @@
+{
+  "name": "zcollinsky",
+  "description": "Switchboard: one local screen for everything your AI assistants are waiting on you for.",
+  "owner": { "name": "Zach Collins", "url": "https://github.com/ZCOLLINSKY" },
+  "plugins": [
+    {
+      "name": "switchboard",
+      "source": "./",
+      "description": "One local screen for everything your AI assistants are waiting on you for, with the draft attached.",
+      "category": "productivity"
+    }
+  ]
+}

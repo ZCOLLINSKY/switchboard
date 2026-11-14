@@ -1,0 +1,119 @@
+{
+  "manifest_version": "0.3",
+  "name": "switchboard",
+  "display_name": "Switchboard",
+  "version": "0.1.0",
+  "description": "One local screen for everything your AI assistants are waiting on you for, with the draft attached.",
+  "long_description": "Switchboard runs on this computer and shows everything your assistants need from you: drafts to approve, choices to make, jobs that broke. Claude puts each one on the board with the draft attached; you approve, edit or decline on the board, and Claude picks up exactly what you decided. Only the board page can approve: Claude cannot approve on your behalf. Say \"open my Switchboard\" to see it. The board and its data stay on this computer.",
+  "author": {
+    "name": "Zach Collins",
+    "url": "https://github.com/ZCOLLINSKY"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZCOLLINSKY/switchboard.git"
+  },
+  "homepage": "https://github.com/ZCOLLINSKY/switchboard",
+  "documentation": "https://github.com/ZCOLLINSKY/switchboard#readme",
+  "support": "https://github.com/ZCOLLINSKY/switchboard/issues",
+  "license": "MIT",
+  "keywords": [
+    "approvals",
+    "human-in-the-loop",
+    "local-first",
+    "inbox",
+    "mcp"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "mcp.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/mcp.js"
+      ],
+      "env": {
+        "SWITCHBOARD_PORT": "${user_config.port}",
+        "SWITCHBOARD_HOME": "${user_config.data_folder}",
+        "SWITCHBOARD_AGENT": "claude-desktop"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "raise_light",
+      "description": "Put one thing on your Switchboard, with the draft attached."
+    },
+    {
+      "name": "update_light",
+      "description": "Move a light along as its thread progresses, or mark it done."
+    },
+    {
+      "name": "list_lights",
+      "description": "See what is on the board now."
+    },
+    {
+      "name": "get_light",
+      "description": "Read one light in full."
+    },
+    {
+      "name": "get_decisions",
+      "description": "Collect what you decided on the board."
+    },
+    {
+      "name": "wait_for_decision",
+      "description": "Wait up to 50 seconds for your answer on one light."
+    },
+    {
+      "name": "complete_decision",
+      "description": "Report what happened after acting on your decision."
+    },
+    {
+      "name": "ack_decisions",
+      "description": "Report several handled answers at once (not messages)."
+    },
+    {
+      "name": "add_area",
+      "description": "Create or update a container: a business, a project, school, family."
+    },
+    {
+      "name": "clear_examples",
+      "description": "Remove the example lights."
+    },
+    {
+      "name": "open_board",
+      "description": "Open your board in your browser. The link is never shown to Claude."
+    },
+    {
+      "name": "setup_guide",
+      "description": "The first-run questions and steps for setting up your board."
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "port": {
+      "type": "number",
+      "title": "Port",
+      "description": "Where the board listens on this computer. Leave it at 4747 unless another program uses that port.",
+      "default": 4747,
+      "min": 1024,
+      "max": 65535,
+      "required": false
+    },
+    "data_folder": {
+      "type": "directory",
+      "title": "Data folder",
+      "description": "Where the board keeps its data. Leave it as it is unless you already keep Switchboard data somewhere else.",
+      "default": "${HOME}/.local/share/switchboard",
+      "required": false
+    }
+  }
+}

@@ -1,12 +1,14 @@
 'use strict';
-// Packaging: the connector works where Claude Desktop runs it, and the board's key reaches the person's browser
-// without ever reaching the assistant.
+// Packaging: the Claude Code plugin, the Claude Desktop bundle and the session-start hook agree with the code, the
+// connector works where Claude Desktop runs it, and the board's key reaches the person's browser without ever reaching
+// the assistant.
 const { childEnv, freePort } = require('./fixtures/env');
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');
 const { spawn } = require('child_process');
 const { start } = require('../server');
+const { rev } = require('../lib/store');
 const root = path.join(__dirname, '..');
 const json = (f) => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sbpk-'));
@@ -80,4 +82,59 @@ test('where Node cannot start Node (Claude Desktop\'s built-in runtime), the boa
     assert.ok(fs.existsSync(path.join(dir, 'server.lock')), 'the board is running on this data');
   } finally { await m.ended(); }
   assert.ok(!fs.existsSync(path.join(dir, 'server.lock')), 'the board stopped with the connector and left no lock');
+});
+
+test('the plugin points at files that exist and runs the connector by its own path', () => {
+  const p = json('.claude-plugin/plugin.json'), m = json('.claude-plugin/marketplace.json'), h = json('hooks/hooks.json');
+  assert.deepEqual(p.mcpServers.switchboard, { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/mcp.js'] });
+  assert.ok(fs.existsSync(path.join(root, p.skills, 'switchboard', 'SKILL.md')));
+  assert.equal(m.plugins[0].name, p.name); assert.equal(m.plugins[0].source, './');
+  const cmd = h.hooks.SessionStart[0].hooks[0];
+  assert.equal(cmd.command, 'node'); assert.ok(fs.existsSync(cmd.args[0].replace('${CLAUDE_PLUGIN_ROOT}', root)));
+  // A .mcp.json at the top would also load as a project setting for anyone working in this folder, unfilled.
+  assert.ok(!fs.existsSync(path.join(root, '.mcp.json')));
+  assert.ok(!fs.existsSync(path.join(root, 'bin')), 'no top-level bin/: it keeps a plugin out of Claude Desktop chat and Cowork');
+});
+
+test('the Desktop bundle lists exactly the tools the connector offers, and runs the same file', async () => {
+  const man = json('manifest.json');
+  assert.equal(man.server.entry_point, 'mcp.js');
+  assert.deepEqual(man.server.mcp_config.args, ['${__dirname}/mcp.js']);
+  for (const k of Object.keys(man.server.mcp_config.env)) assert.match(k, /^SWITCHBOARD_(PORT|HOME|AGENT)$/);
+  const m = mcp({ SWITCHBOARD_HOME: tmp() }); // tools/list never contacts a board
+  try {
+    const r = await m.req('tools/list', {});
+    assert.deepEqual(man.tools.map((t) => t.name).sort(), r.result.tools.map((t) => t.name).sort());
+  } finally { m.close(); }
+});
+
+test('the Desktop bundle leaves out tests, notes, the relay and git, and keeps what the connector reads', () => {
+  const ignore = fs.readFileSync(path.join(root, '.mcpbignore'), 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+  for (const p of ['test/', 'docs/', 'relay/', '.git', 'hooks/', '.claude-plugin/', 'page.key', 'data.json']) assert.ok(ignore.includes(p), `${p} is left out`);
+  for (const p of ['package.json', 'SETUP.md', 'mcp.js', 'server.js', 'cli.js', 'lib/', 'public/', 'scenarios/', 'LICENSE']) assert.ok(!ignore.some((x) => x === p || x === '*' + path.extname(p)), `${p} stays in`);
+});
+
+// The board runs in this process, so the hook must run without blocking it.
+const runHook = (input, env) => new Promise((ok) => {
+  const c = spawn(process.execPath, [path.join(root, 'hooks', 'session-start.js')], { env: childEnv(env), stdio: ['pipe', 'pipe', 'inherit'] });
+  let out = ''; c.stdout.on('data', (d) => { out += d; }); c.on('close', () => ok(out)); c.stdin.end(input);
+});
+
+test('session-start hook: counts what is ready for this folder, collects nothing, silent without a board', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir, holdMs: 0 }), work = path.join(tmp(), 'my-shop');
+  fs.mkdirSync(work);
+  const hook = (cwd) => runHook(JSON.stringify({ cwd }), { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port });
+  try {
+    const agent = `claude-code:my-shop~${require('crypto').createHash('sha1').update(work).digest('hex').slice(0, 4)}`;
+    const l = a.store.raise({ area: 'Shop', title: 'Which size?', kind: 'decide', options: ['Small', 'Large'], agent });
+    assert.equal(await hook(work), '');
+    a.store.act(l.id, 'answer', { value: 'Large', rev: rev(l) });
+    assert.match(await hook(work), /1 decision is ready for this session/);
+    assert.equal(await hook(path.dirname(work)), '', 'another folder\'s session is not told');
+    assert.match(await hook(work), /1 decision is ready/, 'asking twice collected nothing');
+    assert.equal(a.store.db.lights[0].decision.collectedAt, null, 'nothing was collected');
+  } finally { a.close(); }
+  const t0 = Date.now();
+  assert.equal(await runHook('{}', { SWITCHBOARD_HOME: tmp() }), '');
+  assert.ok(Date.now() - t0 < 3500, 'no board: quick and silent');
 });

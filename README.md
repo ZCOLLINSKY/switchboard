@@ -89,6 +89,26 @@ node cli.js demo
 
 Your data stays on your computer, in `~/.local/share/switchboard/data.json`.
 
+## Install
+
+**Claude Code** (needs [Node.js](https://nodejs.org) 18 or newer). In your terminal:
+
+```sh
+claude plugin install switchboard --marketplace ZCOLLINSKY/switchboard
+```
+
+or, inside a session: `/plugin install switchboard --marketplace ZCOLLINSKY/switchboard`.
+Start a new session and say "Open my Switchboard, then set it up for me."
+
+**Claude Desktop** on a Mac or Windows PC (nothing else to install): download
+the `.mcpb` file from the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
+double-click it, and click Install. In a new chat, say "Open my Switchboard, then set it up for me."
+Claude Desktop starts the board for you; keep the app open while you use it.
+
+**Claude on the web or on a phone** cannot use Switchboard: those chats run in
+Anthropic's cloud and cannot reach a board on your computer. You can still open
+the board itself on your phone ([SETUP.md](SETUP.md), step 8).
+
 ## Let your AI assistant set it up
 
 If you use Claude Code (or any assistant that can run commands), open it in this

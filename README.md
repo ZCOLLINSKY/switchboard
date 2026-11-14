@@ -107,7 +107,9 @@ To connect Claude Code by hand, from this folder:
 
 ```sh
 claude mcp add --scope user switchboard -- node "$PWD/mcp.js"
-``` It may ask you to approve, or paste, two commands that change
+```
+
+It may ask you to approve, or paste, two commands that change
 its own settings (connecting the board and copying its skill), and the new tools
 load in its next session. Setup is done once you have tapped one light on the
 board and it has picked up your answer.

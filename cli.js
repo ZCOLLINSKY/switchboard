@@ -52,7 +52,16 @@ if (words.length > 1) fail(`Give one scenario name, not "${words.join(' ')}".`);
 
 const port = flags.port || process.env.SWITCHBOARD_PORT || 4747;
 const BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${port}`).replace(/\/+$/, '');
-const notRunning = () => fail(`Switchboard is not running at ${BASE}. Start it with: ${SELF} start${flags.port ? ' --port ' + flags.port : ''}`);
+// A simulation follows SWITCHBOARD_PORT too, and keeps its data next to the data folder (switchboard-sim/<port>).
+const simPort = String(flags.port || process.env.SWITCHBOARD_PORT || 4750);
+const simHome = path.join(HOME.replace(/[\\/]+$/, '') + '-sim', simPort);
+// A printed command must reach the board that is in use: the port goes in whenever it is not the usual one, whatever set
+// it (--port, SWITCHBOARD_PORT or SWITCHBOARD_URL). A start command also needs the data folder, or it starts another board.
+const portOf = (url) => { try { const u = new URL(url); return u.port || (u.protocol === 'https:' ? '443' : '80'); } catch (e) { return ''; } };
+const onPort = (url, usual = '4747') => { const p = portOf(url); return p && p !== usual ? ' --port ' + p : ''; };
+const withHome = () => (!process.env.SWITCHBOARD_HOME ? '' : process.platform === 'win32' ? `set "SWITCHBOARD_HOME=${HOME}" && ` : `SWITCHBOARD_HOME="${HOME}" `);
+const startHint = (sim) => `${withHome()}${SELF} ${sim ? 'sim' + onPort('http://x:' + simPort, '4750') : 'start' + onPort(BASE)}`;
+const notRunning = () => fail(`Switchboard is not running at ${BASE}. Start it with: ${startHint(false)}`);
 // Find the running board and its data folder: ask it, then fall back to the lock file it leaves beside its data.
 async function board(home) {
   // A port or address the person named is the only place to look. Without one, the lock file may point to another port.
@@ -82,10 +91,13 @@ function openLink(link) {
 async function startBoard(opts, label) {
   try { return await require('./server').start(opts); }
   catch (e) {
-    if (e.code === 'ELOCKED') { const b = await board(opts.dir || HOME); const k = b && keyIn(b.dir); fail(`Switchboard is already running${b ? ' at ' + b.url : ''}.${k ? `\nOpen it with: ${b.url}/?key=${k}` : ''}\nTo stop it: ${SELF} stop${b && b.url !== 'http://127.0.0.1:4747' ? ' --port ' + new URL(b.url).port : ''}`); }
+    if (e.code === 'ELOCKED') { const b = await board(opts.dir || HOME); const k = b && keyIn(b.dir); fail(`Switchboard is already running${b ? ' at ' + b.url : ''}.${k ? `\nOpen it with: ${b.url}/?key=${k}` : ''}\nTo stop it: ${SELF} stop${onPort(b ? b.url : e.url || BASE)}`); }
     if (e.code === 'EADDRINUSE') {
       const b = await board(opts.dir || HOME);
-      fail(b ? `Switchboard (${label}) is already using port ${opts.port}.` : `Port ${opts.port} is used by another program, not Switchboard. Pick another one with --port.`);
+      if (b) fail(`Switchboard (${label}) is already using port ${opts.port}.`);
+      // Another board (your own, say, when a simulation was pointed at its port) is not "another program".
+      let other = false; try { const h = await (await fetch(`http://127.0.0.1:${opts.port}/api/health`, { signal: AbortSignal.timeout(1500) })).json(); other = !!h && h.name === 'switchboard'; } catch (e2) { /* not a board */ }
+      fail(other ? `Another Switchboard is using port ${opts.port}. Pick another one with --port.` : `Port ${opts.port} is used by another program, not Switchboard. Pick another one with --port.`);
     }
     throw e;
   }
@@ -94,7 +106,7 @@ async function startBoard(opts, label) {
 (async () => {
   if (cmd === 'start') {
     const s = await startBoard({ port: port, host: flags.host, signals: true }, 'your board');
-    console.log(`Switchboard is on.\nOpen it with this link (once per browser; it lets that browser approve things):\n  ${s.link}\nData file: ${s.store.file}\nStop with Ctrl+C, or from another terminal: ${SELF} stop${flags.port ? ' --port ' + flags.port : ''}`);
+    console.log(`Switchboard is on.\nOpen it with this link (once per browser; it lets that browser approve things):\n  ${s.link}\nData file: ${s.store.file}\nStop with Ctrl+C, or from another terminal: ${SELF} stop${onPort(s.url)}`);
     if (flags.open) openLink(s.link);
   } else if (cmd === 'stop') {
     const b = await board(HOME); if (!b) notRunning();
@@ -105,16 +117,16 @@ async function startBoard(opts, label) {
     console.log('Asked it to stop, but something answers again (a login item with KeepAlive restarts it). Remove that login item to stop it for good.');
   } else if (cmd === 'link') {
     // The link that lets a browser act on the board. The key lives beside the data of the board that is running.
-    const home = flags.sim ? path.join(os.homedir(), '.local', 'share', 'switchboard-sim', String(flags.port || 4750)) : HOME;
+    const home = flags.sim ? simHome : HOME;
     const b = await board(home);
-    if (!b) { const k = keyIn(home); fail(`Switchboard is not running${flags.sim ? ' (no simulation on that port)' : ` at ${BASE}`}.${k ? ' The link will work again once it is started.' : ''} Start it with: ${SELF} ${flags.sim ? 'sim' : 'start'}${flags.port ? ' --port ' + flags.port : ''}`); }
+    if (!b) { const k = keyIn(home); fail(`Switchboard is not running${flags.sim ? ' (no simulation on that port)' : ` at ${BASE}`}.${k ? ' The link will work again once it is started.' : ''} Start it with: ${startHint(flags.sim)}`); }
     const k = keyIn(b.dir); if (!k) fail(`The board at ${b.url} has no page key yet. Restart it.`);
     console.log(`${b.url}/?key=${k}`);
   } else if (cmd === 'sim') {
     // A throwaway board with made-up data. Never touches your real one.
-    const p = flags.port || 4750, name = words[0] || 'morning';
+    const name = words[0] || 'morning';
     const known = Object.keys(require('./scenarios').scenarios); if (!known.includes(name)) fail(`No scenario "${name}". Try: ${known.join(', ')}`);
-    const s = await startBoard({ port: p, host: flags.host, dir: path.join(os.homedir(), '.local', 'share', 'switchboard-sim', String(p)), sim: true, scenario: name, live: !flags['no-live'], signals: true }, 'a simulation');
+    const s = await startBoard({ port: simPort, host: flags.host, dir: simHome, sim: true, scenario: name, live: !flags['no-live'], signals: true }, 'a simulation');
     console.log(`Simulation "${name}" is on. Open it with this link:\n  ${s.link}\nMade-up data only. Switch scenarios from the bar at the top of the page.\nStop with Ctrl+C.`);
     if (flags.open) openLink(s.link);
   } else if (cmd === 'mcp') {
@@ -124,7 +136,9 @@ async function startBoard(opts, label) {
     const b = await board(HOME); if (!b) notRunning();
     const r = await fetch(b.url + '/api/demo', { method: 'POST', headers: { 'content-type': 'application/json', 'x-switchboard-key': keyIn(b.dir) }, body: JSON.stringify({ clear: !!flags.clear }) });
     if (!r.ok) fail((await r.json()).error);
-    console.log(flags.clear ? 'Examples removed.' : `Examples added. Open ${b.url}`);
+    // The key link, not the bare address: a browser opened on the bare address can only look.
+    const k = keyIn(b.dir);
+    console.log(flags.clear ? 'Examples removed.' : k ? `Examples added. Open them with this link: ${b.url}/?key=${k}` : `Examples added. Get the link that can approve with: ${SELF} link${onPort(b.url)}`);
   } else if (cmd === 'raise') {
     if (!flags.area || !flags.title) fail('Usage: raise --area "Name" --title "What you need" [--kind ...] [--draft "..."] [--options "Yes,No"]');
     const b = await board(HOME); if (!b) notRunning();

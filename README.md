@@ -218,7 +218,9 @@ days from the bar at the top of the page. Nothing touches your real board.
   messages, the button opens your own Messages app with the draft filled in.
 - **Nothing is erased.** Every change is appended to `events.jsonl` next to the
   data file, and "Past decisions" reads from that log. Finished lights move
-  to `archive.jsonl` after 30 days.
+  to `archive.jsonl` after 30 days. A copy of the data file is kept for each of the last 14
+  days in `backups/` (to go back: stop the board, copy one over `data.json`,
+  start it).
 - **It listens only on your own computer** unless you start it with `--host`.
   There is no login, so don't put it on the open internet.
 - **Only your page can approve.** Approving, undoing and switching autonomy need

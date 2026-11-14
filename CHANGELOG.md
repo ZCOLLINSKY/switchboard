@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Daily backups.** The first save each day copies the data file to
+  `backups/data-YYYY-MM-DD.json`; the newest 14 are kept.
 - **Answers are never stranded.** Switchboard remembers when each assistant last
   asked for decisions. A relay can ask for `orphans_after_minutes`: answers on
   lights whose session has not asked since (it ended, or its worktree is gone),

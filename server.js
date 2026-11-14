@@ -18,7 +18,7 @@ async function start(opts = {}) {
   // be told apart from this computer: SETUP.md says so.
   const PROXY = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-real-ip', 'tailscale-user-login', 'tailscale-user-name', 'tailscale-user-profile-pic',
     'via', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-server', 'cf-connecting-ip', 'true-client-ip', 'x-client-ip', 'fastly-client-ip'];
-  const store = open(opts.dir, { holdMs: opts.holdMs, collectMs: opts.collectMs });
+  const store = open(opts.dir, { holdMs: opts.holdMs, collectMs: opts.collectMs, sim: !!opts.sim });
   const waiters = new Set();
   // Simulation mode: made-up days you can switch between, with events that happen while you watch.
   const sim = opts.sim ? { list: require('./scenarios').scenarios, current: null, live: opts.live !== false, timers: [] } : null;

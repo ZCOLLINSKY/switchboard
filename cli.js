@@ -15,6 +15,8 @@ const HELP = `Switchboard
   stop [--port N]                                     stop the board that is running
   link [--open] [--sim] [--port N]                    the link that lets a browser act on the board (printed only
                                                       in a terminal; --open opens it in the browser instead)
+  link --copy [--at https://name:port]                put the link on the clipboard instead, for this computer or,
+                                                      with --at, for a phone on your private network (SETUP step 8)
   sim [scenario] [--port 4750] [--open] [--no-live]   a made-up busy day (morning, slammed, comeback, trusted, clear, first-day)
   demo [--clear] [--port N]                           load or remove the example lights
   raise --area "Name" --title "What you need" [--kind approve|decide|sense|todo|fix]
@@ -26,7 +28,7 @@ Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`
 
 // Which flags each command takes. true = takes a value, false = a switch.
 const FLAGS = {
-  start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false },
+  start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false, copy: false, at: true },
   sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, mcp: {},
   raise: { port: true, area: true, title: true, kind: true, draft: true, options: true, state: true, due: true, to: true, note: true, link: true, source: true, agent: true, key: true, value: true, 'follow-up-days': true, outbound: false },
 };
@@ -88,6 +90,15 @@ const api = async (url, method, route, body) => {
 // shell) or a log file it would reach a reader it was never meant for. There, `link --open` opens it in the browser.
 const toPerson = (stream = process.stdout) => !!stream.isTTY;
 const openHint = (url) => `${SELF} link --open${onPort(url)}`;
+// The clipboard, so a link can go to another device (an iPhone through Universal Clipboard) without ever being printed.
+function copyLink(text) {
+  const tries = process.platform === 'darwin' ? [['pbcopy', []]] : process.platform === 'win32' ? [['clip', []]] : [['wl-copy', []], ['xclip', ['-selection', 'clipboard']]];
+  return tries.reduce((p, [cmd, args]) => p.catch(() => new Promise((ok, no) => {
+    const c = spawn(cmd, args, { stdio: ['pipe', 'ignore', 'ignore'] });
+    c.on('error', no); c.on('exit', (code) => (code ? no(new Error(`exit ${code}`)) : ok()));
+    c.stdin.end(text);
+  })), Promise.reject(new Error('start'))).catch(() => fail('Could not reach the clipboard from here. Run this in your own terminal.'));
+}
 // open, xdg-open and start exit once they have handed the link over; an error exit means nothing opened. A browser named
 // by BROWSER may keep running: still running after a few seconds counts as open.
 function openLink(link) {
@@ -133,6 +144,19 @@ async function startBoard(opts, label) {
     const b = await board(home);
     if (!b) { const k = keyIn(home); fail(`Switchboard is not running${flags.sim ? ' (no simulation on that port)' : ` at ${BASE}`}.${k ? ' The link will work again once it is started.' : ''} Start it with: ${startHint(flags.sim)}`); }
     const k = keyIn(b.dir); if (!k) fail(`The board at ${b.url} has no page key yet. Restart it.`);
+    if (flags.at !== undefined && !flags.copy) fail('--at goes with --copy: the link for another device goes on the clipboard, never into a terminal log.');
+    if (flags.copy) {
+      // The link for this computer, or for another device that reaches the board at another address (tailscale serve).
+      let base = b.url;
+      if (flags.at !== undefined) {
+        let u = null; try { u = new URL(String(flags.at)); } catch (e) { /* not a web address */ }
+        if (!u || !/^https?:$/.test(u.protocol) || u.pathname.length > 1 || u.search || u.hash) fail(`--at needs the address the other device opens, like https://your-machine.your-tailnet.ts.net:8443`);
+        base = u.origin;
+      }
+      await copyLink(`${base}/?key=${k}`);
+      console.log(`Copied the key link${flags.at !== undefined ? ` for ${base}` : ''} to your clipboard. Paste it into the browser on that device once; it is remembered there.`);
+      return;
+    }
     // A simulation's key opens made-up data only, so it is printed wherever it is asked for.
     if (flags.open) { console.log(`Opening Switchboard at ${b.url} in the browser.`); await openLink(`${b.url}/?key=${k}`); }
     else if (flags.sim || toPerson()) console.log(`${b.url}/?key=${k}`);

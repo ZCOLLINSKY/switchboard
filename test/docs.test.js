@@ -18,7 +18,7 @@ test('every "claude mcp add" line puts each -e after the server\'s name and befo
 test('the phone step gives the board its own HTTPS port and never takes over the root of tailscale serve', () => {
   const s = read('SETUP.md');
   assert.match(s, /tailscale serve --bg --https=8443 4747/);
-  assert.match(s, /https:\/\/your-machine\.your-tailnet\.ts\.net:8443\/\?key=/);
+  assert.match(s, /link --copy --at https:\/\/your-machine\.your-tailnet\.ts\.net:8443/, 'the phone gets its link through the clipboard, never printed');
   assert.doesNotMatch(s, /tailscale serve --bg 4747/);
 });
 

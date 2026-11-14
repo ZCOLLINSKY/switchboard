@@ -98,3 +98,26 @@ test('sim follows SWITCHBOARD_PORT and keeps its data next to SWITCHBOARD_HOME',
     assert.equal(link.out.trim(), s.out.match(/http:\S+/)[0]);
   } finally { await stop(s.c); }
 });
+
+// A phone or a second computer reaches the board through a private network at another address. `link --copy --at` puts
+// that address's key link on the clipboard (Universal Clipboard carries it to an iPhone), and prints no key, so it is
+// safe from an assistant's shell too.
+test('link --copy --at puts the other device\'s key link on the clipboard and prints no key', async () => {
+  const dir = tmp(), bin = tmp(), clip = path.join(bin, 'clip.txt');
+  for (const name of ['pbcopy', 'wl-copy', 'xclip', 'clip']) { fs.writeFileSync(path.join(bin, name), `#!/bin/sh\ncat > "${clip}"\n`); fs.chmodSync(path.join(bin, name), 0o755); }
+  const a = await start({ port: 0, dir });
+  try {
+    const port = new URL(a.url).port, key = fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim();
+    const env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port, PATH: `${bin}:${process.env.PATH}` };
+    const r = await run(['link', '--copy', '--at', 'https://box.tailnet.ts.net:8443'], env);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(fs.readFileSync(clip, 'utf8'), `https://box.tailnet.ts.net:8443/?key=${key}`);
+    assert.ok(!r.out.includes(key), 'the key is never printed');
+    assert.match(r.out, /clipboard/);
+    const plain = await run(['link', '--copy'], env);
+    assert.equal(fs.readFileSync(clip, 'utf8'), `${a.url}/?key=${key}`, 'without --at it is this computer\'s link');
+    assert.ok(!plain.out.includes(key));
+    const bad = await run(['link', '--copy', '--at', 'box.tailnet.ts.net'], env);
+    assert.notEqual(bad.code, 0); assert.match(bad.out, /https:\/\//);
+  } finally { a.close(); }
+});

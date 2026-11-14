@@ -306,7 +306,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     var ctl = method === 'POST' && window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function () { ctl.abort(); }, 10000) : null;
     return fetch(path, { method: method, headers: hd, signal: ctl ? ctl.signal : undefined, body: body ? JSON.stringify(body) : undefined })
       .catch(function () { clearTimeout(tm); down = true; renderDown(); throw new Error(ctl && ctl.signal.aborted ? 'Switchboard did not answer in 10 seconds. That tap may not have been saved: check the board before tapping again.' : 'Switchboard is not answering. Nothing you tap now is saved.'); })
-      .then(function (r) { clearTimeout(tm); if (down) { down = false; renderDown(); } return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Something went wrong. Nothing was changed.'); return d; }); });
+      .then(function (r) { clearTimeout(tm); if (down) { down = false; renderDown(); } return r.json().then(function (d) { if (!r.ok) { var e = new Error(d.error || 'Something went wrong. Nothing was changed.'); e.status = r.status; throw e; } return d; }); });
   }
   // While the pointer or keyboard is in use, new arrivals wait in a "new" pill. Rows never move under the hand.
   function load(own) {
@@ -333,7 +333,11 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       if (fit && fitLeft() <= 0) { toast('That was your ' + fit + (fit === 1 ? ' minute.' : ' minutes.')); fit = null; }
       if (fit) return api('GET', '/api/fit?minutes=' + Math.max(1, Math.ceil(fitLeft()))).then(function (f) { fitIds = f.ids; render(); });
       render();
-    }).catch(function () { $('headline').textContent = 'Switchboard is not answering.'; $('sub').textContent = 'Start it again; this page reconnects by itself.'; clearTimeout(load.retry); load.retry = setTimeout(function () { load(true); }, 3000); }); }
+    }).catch(function (e) {
+      // Reached from another device (a phone through tailscale serve) without the key: the board answers, it just will not
+      // show anything until this browser has opened the key link once.
+      if (e && e.status === 403) { $('headline').textContent = 'This device needs your key link.'; $('sub').textContent = 'Open your Switchboard key link here once and it is remembered. To get it onto a phone, on your computer run: node cli.js link --copy --at ' + location.origin + ', then paste it here.'; clearTimeout(load.retry); load.retry = setTimeout(function () { load(true); }, 15000); return; }
+      $('headline').textContent = 'Switchboard is not answering.'; $('sub').textContent = 'Start it again; this page reconnects by itself.'; clearTimeout(load.retry); load.retry = setTimeout(function () { load(true); }, 3000); }); }
   function area(id) { for (var i = 0; i < S.areas.length; i++) if (S.areas[i].id === id) return S.areas[i]; return { name: id, color: '#9AA6B8' }; }
   function light(id) { for (var i = 0; i < S.lights.length; i++) if (S.lights[i].id === id) return S.lights[i]; return null; }
   function sum(ls) { return ls.reduce(function (n, l) { return n + l.est; }, 0); }

@@ -243,9 +243,17 @@ tailscale serve --bg --https=8443 4747
 Without `--bg` it stops when its terminal closes. Then start the board with
 that address allowed: `SWITCHBOARD_ALLOWED_HOSTS=your-machine.your-tailnet.ts.net`.
 Put the same variable in the MCP server's settings (`-e` in step 3) and in the
-login item, or a board they start will refuse the phone. Open the key link once
-on the phone, as `https://your-machine.your-tailnet.ts.net:8443/?key=…`. Never
-put it on the open internet. Anything that comes through `tailscale serve` (or any other proxy)
+login item, or a board they start will refuse the phone. To get the key link
+onto the phone, ask the person to run this in their own terminal (it puts the
+link on the clipboard and prints no key; on a Mac, Universal Clipboard carries
+it to an iPhone):
+
+```sh
+node "REPO/cli.js" link --copy --at https://your-machine.your-tailnet.ts.net:8443
+```
+
+They paste it into the phone's browser once; the phone remembers it. Never
+put the board on the open internet. Anything that comes through `tailscale serve` (or any other proxy)
 counts as another device, so even reading the board from there needs the key
 link; assistants on this computer are not affected. The board can tell only by
 the headers a proxy adds, so use `tailscale serve` as shown. A proxy that adds

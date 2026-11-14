@@ -40,7 +40,9 @@ Install it in the app you use, and decisions reach the right session.
   back to the usual board or "HTTP 404". A node removed by an upgrade asks for
   a restart instead of running the board inside the session.
 - **From another device:** anything that reaches the board through a proxy such
-  as `tailscale serve` needs the key link, reading included. A plain port
+  as `tailscale serve` needs the key link, reading included. `link --copy --at
+  https://…` puts that device's key link on the clipboard without printing it,
+  and a device without the key is told so instead of "not answering". A plain port
   forward cannot be told apart from this computer; SETUP.md says so.
 - **Claude Desktop gets the habits:** setup_guide returns the skill, and the
   hard rules come with the connection.

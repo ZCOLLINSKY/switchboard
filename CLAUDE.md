@@ -9,3 +9,4 @@ Changing the code:
 - `server.js` is the only writer of the data file. `mcp.js` and the CLI go through its HTTP API.
 - `public/index.html` is the whole screen. Dark only, on purpose.
 - Never commit a `data.json` or anything from a real board.
+- Tests get their settings from `test/fixtures/env.js`: require it first in a new test file, and start programs with `childEnv({...})`, naming the port or address of the test's own board.

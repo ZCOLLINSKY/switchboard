@@ -24,8 +24,39 @@ cd switchboard
 node cli.js sim --open
 ```
 
+No git? On the GitHub page, click **Code**, then **Download ZIP**, unzip it,
+and run `node cli.js sim --open` in that folder.
+
 A made-up busy morning opens in your browser, and new things arrive while you
 watch. It keeps its own data and never touches a real board. Ctrl+C stops it.
+
+## Install
+
+You need Claude Code or Claude Desktop on your own computer: a Mac or a Windows
+PC (Claude Code also runs on Linux). Claude on the web or on a phone cannot use
+Switchboard: those chats run in Anthropic's cloud and cannot reach a board on
+your computer. You can still open the board itself on your phone
+([SETUP.md](SETUP.md), step 8).
+
+**Claude Code** (needs [Node.js](https://nodejs.org) 18 or newer). Paste these
+two lines into a session:
+
+```
+/plugin marketplace add ZCOLLINSKY/switchboard
+/plugin install switchboard@zcollinsky
+```
+
+Start a new session and say "Open my Switchboard, then set it up for me."
+
+**Claude Desktop** (nothing else to install): download the `.mcpb` file from
+the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
+double-click it, and click Install. In a new chat, say "Open my Switchboard,
+then set it up for me." Claude Desktop starts the board for you; keep the app
+open while you use it. Nothing checks the board between chats, so after you
+answer on the board, start a chat and say "check my Switchboard".
+
+**Any other assistant, or no plugin:** get the folder (`git clone` as above, or
+**Download ZIP**) and follow [Let your AI assistant set it up](#let-your-ai-assistant-set-it-up).
 
 ## The idea
 
@@ -89,28 +120,6 @@ node cli.js demo
 
 Your data stays on your computer, in `~/.local/share/switchboard/data.json`.
 
-## Install
-
-**Claude Code** (needs [Node.js](https://nodejs.org) 18 or newer). In your terminal:
-
-```sh
-claude plugin install switchboard --marketplace ZCOLLINSKY/switchboard
-```
-
-or, inside a session: `/plugin install switchboard --marketplace ZCOLLINSKY/switchboard`.
-Start a new session and say "Open my Switchboard, then set it up for me."
-
-**Claude Desktop** on a Mac or Windows PC (nothing else to install): download
-the `.mcpb` file from the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
-double-click it, and click Install. In a new chat, say "Open my Switchboard, then set it up for me."
-Claude Desktop starts the board for you; keep the app open while you use it.
-Nothing checks the board between chats, so after you answer on the board,
-start a chat and say "check my Switchboard".
-
-**Claude on the web or on a phone** cannot use Switchboard: those chats run in
-Anthropic's cloud and cannot reach a board on your computer. You can still open
-the board itself on your phone ([SETUP.md](SETUP.md), step 8).
-
 ## Let your AI assistant set it up
 
 If you use Claude Code (or any assistant that can run commands), open it in this
@@ -131,10 +140,11 @@ To connect Claude Code by hand, from this folder:
 claude mcp add --scope user switchboard -- node "$PWD/mcp.js"
 ```
 
-It may ask you to approve, or paste, two commands that change
-its own settings (connecting the board and copying its skill), and the new tools
-load in its next session. Setup is done once you have tapped one light on the
-board and it has picked up your answer.
+Along the way it asks you to approve (or paste) up to three changes to its own
+settings: connecting the board, copying its skill, and one line in your
+`~/.claude/CLAUDE.md`. The new tools load in its next session, so you start one
+more. Setup is done once you have tapped one light on the board and it has
+picked up your answer.
 
 ## How anything turns on a light
 

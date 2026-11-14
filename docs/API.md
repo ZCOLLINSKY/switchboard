@@ -22,7 +22,7 @@ Base: `http://127.0.0.1:4747`. Writes are `POST` with `content-type: application
 | `POST /api/ack` | `{"ids":[...],"agent"}`: short for `complete` with `done` on each, only for decisions this agent collected. Messages to people are skipped (they need `sent`, `failed` or `unsure`); what was skipped comes back in `warnings` |
 | `POST /api/areas` | Create or update a container: `name`, `note`, `voice` (how its drafts should sound; rules the person set with "Always" are kept), `color`, `wake_at` (a date: the container's lights stay out of the queue until then) |
 | `POST /api/areas/rename`, `/api/areas/remove` | `{"id","name"}` / `{"id"}`. Page only. Remove only works on a container with no open lights |
-| `GET /api/health` | `{"ok":true,"name":"switchboard","data","lock"}`: whether a board answers here, where its data is, and the id of its lock |
+| `GET /api/health` | `{"ok":true,"name":"switchboard","data","lock"}`: whether a board answers here, where its data is (told only to this computer), and the id of its lock. Open without the key, from any device |
 | `POST /api/dump` | `{"text":"..."}` files a quick note under the best-matching container. Several things in one sentence become several lights; returns `{"lights":[...]}` |
 | `POST /api/settings` | `{"autonomy":true}` switches the "runs by itself" offer on or off. Off by default |
 | `POST /api/promote` | `{"key":"<container id>|<action type>","yes":true}`. Refused unless autonomy is on and that key has a real streak |

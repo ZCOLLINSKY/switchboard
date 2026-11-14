@@ -1,5 +1,6 @@
 'use strict';
 // Batch 7: the deep dig (ten lanes, Nov 13-14). Ids are the lanes' own: F fuzzing, B newest code, U a day of use, G page, K docs.
+require('./fixtures/env'); // the same result whatever SWITCHBOARD_* settings the caller has
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');

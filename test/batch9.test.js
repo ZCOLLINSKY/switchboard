@@ -1,5 +1,6 @@
 'use strict';
 // Batch 9: what the rerun of every repro still reproduced after batch 8.
+require('./fixtures/env'); // the same result whatever SWITCHBOARD_* settings the caller has
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');

@@ -1,5 +1,6 @@
 'use strict';
 // Batch 6: the medium and low findings left open by the first adversarial run (docs/ADVERSARIAL-2026-11-13.md).
+const { childEnv } = require('./fixtures/env');
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -173,8 +174,9 @@ test('X7 a lock left by a dead or unrelated process is taken over; a live board 
 });
 test('X7 a real stop (SIGTERM) removes the lock', async () => {
   const dir = tmp(), { spawn } = require('child_process');
-  const child = spawn(process.execPath, [path.join(__dirname, '..', 'cli.js'), 'start', '--port', '0'], { env: Object.assign({}, process.env, { SWITCHBOARD_HOME: dir }), stdio: ['ignore', 'pipe', 'inherit'] });
-  await new Promise((ok) => child.stdout.once('data', ok));
+  const child = spawn(process.execPath, [path.join(__dirname, '..', 'cli.js'), 'start', '--port', '0'], { env: childEnv({ SWITCHBOARD_HOME: dir }), stdio: ['ignore', 'pipe', 'inherit'] });
+  const started = await new Promise((ok) => { child.stdout.once('data', () => ok(true)); child.once('exit', () => ok(false)); });
+  assert.ok(started, 'the board started');
   assert.equal(fs.existsSync(path.join(dir, 'server.lock')), true);
   child.kill('SIGTERM'); await new Promise((ok) => child.once('exit', ok));
   assert.equal(fs.existsSync(path.join(dir, 'server.lock')), false);

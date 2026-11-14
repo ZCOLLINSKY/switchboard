@@ -1,5 +1,6 @@
 'use strict';
 // Batch 8: the deep dig's medium and low findings in the rules, the server and the assistant connector.
+const { childEnv, freePort } = require('./fixtures/env');
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -216,7 +217,7 @@ test('server: replies never carry the decision; callers cannot mark examples (B9
 
 // The assistant connector, spoken to over stdio as a client would.
 function mcp(env) {
-  const c = spawn(process.execPath, [path.join(__dirname, '..', 'mcp.js')], { env: Object.assign({}, process.env, env), stdio: ['pipe', 'pipe', 'inherit'] });
+  const c = spawn(process.execPath, [path.join(__dirname, '..', 'mcp.js')], { env: childEnv(env), stdio: ['pipe', 'pipe', 'inherit'] });
   let buf = ''; const waiting = new Map(), lines = [];
   c.stdout.on('data', (d) => { buf += d; let n; while ((n = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, n); buf = buf.slice(n + 1); lines.push(line); const m = JSON.parse(line); if (waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); } } });
   let id = 0;
@@ -256,7 +257,7 @@ test('MCP: a cancelled wait collects nothing (M3, H1)', async () => {
 });
 test('MCP: when the board will not start, its own reason is passed on (D17, M9)', async () => {
   const dir = tmp(); fs.writeFileSync(path.join(dir, 'data.json'), '{ damaged');
-  const m = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: '5299', SWITCHBOARD_AGENT: 'bot' });
+  const m = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: String(await freePort()), SWITCHBOARD_AGENT: 'bot' });
   try {
     await m.req('initialize', { protocolVersion: '2025-06-18', clientInfo: { name: 't' } });
     const r = await m.req('tools/call', { name: 'list_lights', arguments: {} });
@@ -284,11 +285,11 @@ test('bulk over 200 is refused, not cut (K13); dropping "Keep going?" switches t
 test('command line: with a data folder named, it never talks to a board serving other data', async () => {
   const other = await start({ port: 0, dir: tmp() });
   const { execFileSync } = require('child_process');
-  const run = (args, env) => { try { return execFileSync(process.execPath, [path.join(__dirname, '..', 'cli.js')].concat(args), { env: Object.assign({}, process.env, env), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return String(e.stdout) + String(e.stderr); } };
+  const run = (args, env) => { try { return execFileSync(process.execPath, [path.join(__dirname, '..', 'cli.js')].concat(args), { env: childEnv(env), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { return String(e.stdout) + String(e.stderr); } };
   try {
     const out = run(['link'], { SWITCHBOARD_HOME: tmp(), SWITCHBOARD_URL: '', SWITCHBOARD_PORT: String(new URL(other.url).port) });
     assert.doesNotMatch(out, new RegExp(other.key), 'the other board\'s key is never printed');
-    assert.match(run(['raise', '--area', 'A', '--title', 'T', '-draft', 'x'], { SWITCHBOARD_PORT: '5998' }), /two dashes/);
-    assert.match(run(['start', '--help'], { SWITCHBOARD_PORT: '5998' }), /^Switchboard/);
+    assert.match(run(['raise', '--area', 'A', '--title', 'T', '-draft', 'x'], {}), /two dashes/);
+    assert.match(run(['start', '--help'], {}), /^Switchboard/);
   } finally { other.close(); }
 });

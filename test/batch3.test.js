@@ -1,5 +1,6 @@
 'use strict';
 // Review batch 3: order and numbers.
+require('./fixtures/env'); // the same result whatever SWITCHBOARD_* settings the caller has
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');

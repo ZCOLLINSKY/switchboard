@@ -1,4 +1,5 @@
 'use strict';
+require('./fixtures/env'); // the same result whatever SWITCHBOARD_* settings the caller has
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');

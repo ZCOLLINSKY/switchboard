@@ -1,5 +1,6 @@
 'use strict';
 // The relay's view of the board over HTTP: adopt and the read-only pending count. Rules are tested in store.test.js.
+require('./fixtures/env'); // the same result whatever SWITCHBOARD_* settings the caller has
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');

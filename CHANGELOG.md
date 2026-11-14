@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Receipts.** `node cli.js report [--days 7]`: what came in and from whom,
+  what you decided and how fast (from when it asked you to your answer), what
+  assistants picked up and reported, and what has waited longest. Counted from
+  the board's own log, nothing estimated.
 - **Ports browsers refuse** (6000, 5060, 10080 and the rest of the Fetch standard's
   list above 1024) are refused with a plain reason by the board and the
   connector, instead of a board that starts and can never be reached. Found by

@@ -121,7 +121,7 @@ node cli.js start --open
 It prints a link with a key in it. Open the board through that link once in each
 browser you use: that is what lets the browser approve things. Any other browser,
 and any script, can read the board but not act on it. `node cli.js link`
-prints the link again, and `node cli.js stop` stops the board. Run `npm link` once in this folder if you would rather type `switchboard link`.
+prints the link again, and `node cli.js stop` stops the board. `node cli.js report` shows the week's receipts: what came in, what you decided and how fast, and what has waited longest. Run `npm link` once in this folder if you would rather type `switchboard link`.
 
 Then, in a second terminal, in the same folder, load the examples so you can try the buttons:
 

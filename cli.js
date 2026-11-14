@@ -18,6 +18,8 @@ const HELP = `Switchboard
   link --copy [--at https://name:port]                put the link on the clipboard instead, for this computer or,
                                                       with --at, for a phone on your private network (SETUP step 8)
   sim [scenario] [--port 4750] [--open] [--no-live]   a made-up busy day (morning, slammed, comeback, trusted, clear, first-day)
+  report [--days 7]                                   receipts: what came in, what you decided and how fast, what
+                                                      was picked up and reported, what still waits (from the log)
   demo [--clear] [--port N]                           load or remove the example lights
   raise --area "Name" --title "What you need" [--kind approve|decide|sense|todo|fix]
         [--draft "..."] [--options "Yes,No"] [--state need_you|waiting_them|auto|queued|broken] [--due 2026-12-01] [--port N]
@@ -29,7 +31,7 @@ Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`
 // Which flags each command takes. true = takes a value, false = a switch.
 const FLAGS = {
   start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false, copy: false, at: true },
-  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, mcp: {},
+  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, report: { port: true, days: true }, mcp: {},
   raise: { port: true, area: true, title: true, kind: true, draft: true, options: true, state: true, due: true, to: true, note: true, link: true, source: true, agent: true, key: true, value: true, 'follow-up-days': true, outbound: false },
 };
 const fail = (msg) => { console.error(msg); process.exit(1); };
@@ -161,6 +163,15 @@ async function startBoard(opts, label) {
     if (flags.open) { console.log(`Opening Switchboard at ${b.url} in the browser.`); await openLink(`${b.url}/?key=${k}`); }
     else if (flags.sim || toPerson()) console.log(`${b.url}/?key=${k}`);
     else console.log(`Switchboard is running at ${b.url}. Its link is printed only in a terminal, for the person: ${SELF} link${onPort(b.url)}. To open it in the browser on this computer: ${openHint(b.url)}`);
+  } else if (cmd === 'report') {
+    // Receipts from the board's own log, read where the board keeps it; what is open now comes from the board itself.
+    const b = await board(HOME);
+    if (!b) fail(`Switchboard is not running at ${BASE}. Start it with: ${startHint()}`);
+    const days = flags.days != null ? Number(flags.days) : 7;
+    if (!(days > 0 && days <= 365)) fail('--days takes a number of days from 1 to 365.');
+    let events = [];
+    try { events = fs.readFileSync(path.join(b.dir, 'events.jsonl'), 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean); } catch (e) { /* no log yet */ }
+    console.log(require('./lib/report').report(events, await api(b.url, 'GET', '/api/state'), { days }));
   } else if (cmd === 'sim') {
     // A throwaway board with made-up data. Never touches your real one.
     const name = words[0] || 'morning';

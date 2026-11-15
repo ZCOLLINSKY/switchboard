@@ -27,7 +27,7 @@ function fuzz(SEEDS = 20, STEPS = 300) {
         if (r < 0.25) {
           const agent = pick(AGENTS.concat([''])), outbound = rnd() < 0.4, decide = !outbound && rnd() < 0.4;
           s.raise(Object.assign({ area: pick(['Shop', 'Code', 'Home']), title: 'T' + Math.floor(rnd() * 40), agent: agent || undefined },
-            decide ? { kind: 'decide', options: ['Yes', 'No'] } : { kind: 'approve', draft: 'Draft ' + Math.floor(rnd() * 1e6), outbound, to: outbound ? 'Dale' : undefined },
+            decide ? Object.assign({ kind: 'decide', options: ['Yes', 'No'] }, rnd() < 0.5 ? { recommended: pick(['Yes', 'No']) } : {}) : { kind: 'approve', draft: 'Draft ' + Math.floor(rnd() * 1e6), outbound, to: outbound ? 'Dale' : undefined },
             rnd() < 0.5 ? { key: 'k' + Math.floor(rnd() * 15) } : {}), now);
         } else if (r < 0.50) {
           const gold = s.db.lights.filter((l) => l.state === 'need_you'); if (!gold.length) continue;
@@ -37,7 +37,13 @@ function fuzz(SEEDS = 20, STEPS = 300) {
             : s.act(l.id, 'no', { rev: rev(l) }, now);
           const d = s.db.lights.find((y) => y.id === l.id).decision;
           if (d) { COV[kind === 'decide' ? 'answers' : 'approvals']++; } if (d) acted.set(d.id, { at: now, outbound: !!l.outbound && d.action === 'approve', text: d.text, light: l.id, agent: l.agent || '' });
-        } else if (r < 0.56) {
+        } else if (r < 0.53) {
+        const recs = s.db.lights.filter((l) => l.state === 'need_you' && l.recommended && !l.outbound);
+        if (recs.length < 2) continue;
+        const take = recs.slice(0, 2 + Math.floor(rnd() * Math.min(4, recs.length - 1)));
+        s.bulk(take.map((l) => l.id), 'recommended', { revs: Object.fromEntries(take.map((l) => [l.id, rev(l)])) }, now);
+        for (const l of take) { const d = s.db.lights.find((y) => y.id === l.id).decision; if (d) { COV.answers++; COV.recommended = (COV.recommended || 0) + 1; acted.set(d.id, { at: now, outbound: false, text: d.text, light: l.id, agent: l.agent || '' }); if (d.value !== l.recommended) bad('recommended-wrong-value', `${d.value} vs ${l.recommended}`, seed, step); } }
+      } else if (r < 0.56) {
           const withUndo = s.db.lights.filter((l) => l.decision && !l.decision.collectedAt && !l.decision.outcome && l.undo); if (!withUndo.length) continue;
           const l = pick(withUndo), did = l.decision.id;
           try { s.act(l.id, 'undo', {}, now); undone.add(did); COV.undone++; } catch (e) { /* refused is fine */ }

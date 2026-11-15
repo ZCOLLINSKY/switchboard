@@ -37,7 +37,7 @@ const scenarios = {
         next: 'waits 5 days for their reply' }, now - 6 * H);
       s.raise({ area: 'Ortiz Lighting', title: 'Text the supplier: is the brass order shipping Thursday?', kind: 'approve', phone: '+15555550142', follow_up_days: 1,
         draft: 'Morning Sam, checking that the 24 brass path lights are still on the truck for Thursday. I have an install Saturday that needs them.' }, now - 3 * H);
-      s.raise({ area: 'TrailFork app', title: 'Two trail reports look like the same closure. Which one stays?', kind: 'decide', options: ['Keep the ranger post', 'Keep the user photo', 'Keep both'],
+      s.raise({ area: 'TrailFork app', title: 'Two trail reports look like the same closure. Which one stays?', kind: 'decide', options: ['Keep the ranger post', 'Keep the user photo', 'Keep both'], recommended: 'Keep the ranger post',
         note: 'Recommended: keep the ranger post. It names the reopening date; the photo does not.' }, now - 5 * H);
       s.raise({ area: 'TrailFork app', title: 'Fix the misspelled trailhead name on 3 pages', kind: 'approve', action_type: 'listing-fix', change_from: 'Cumberlnd Gap Trailhead', change_to: 'Cumberland Gap Trailhead', seconds: 8 }, now - 4 * H);
       s.raise({ area: 'TrailFork app', title: 'Read the state park alert page for me (it blocks robots)', kind: 'sense', link: 'https://example.com/park-alerts', options: ['No new alerts', 'New closure'],
@@ -75,7 +75,7 @@ const scenarios = {
         source: `Website form: ${n} household asked about ${i % 2 ? 'roofline' : 'landscape'} lighting and timing.`,
         draft: `Hi, thanks for reaching out. I can come by ${i % 2 ? 'Thursday' : 'Friday'} afternoon for a free estimate. Does 4 pm work?` }, now - (50 - i * 4) * H));
       for (let i = 1; i <= 8; i++) s.raise({ area: 'TrailFork app', title: `Approve trail listing fix ${i} of 8`, kind: 'approve', action_type: 'listing-fix', change_from: 'Open year-round', change_to: 'Closed Dec to Mar', seconds: 8 }, now - (40 - i) * H);
-      for (let i = 1; i <= 4; i++) s.raise({ area: 'TrailFork app', title: `Duplicate report ${i}: which stays?`, kind: 'decide', options: ['Keep the first', 'Keep the second'] }, now - (30 - i) * H);
+      for (let i = 1; i <= 4; i++) s.raise({ area: 'TrailFork app', title: `Duplicate report ${i}: which stays?`, kind: 'decide', options: ['Keep the first', 'Keep the second'], recommended: 'Keep the first' }, now - (30 - i) * H);
       s.raise({ area: 'TrailFork app', title: 'Read 3 park alert pages (they block robots)', kind: 'sense', link: 'https://example.com/park-alerts', options: ['No changes', 'Something changed'] }, now - 28 * H);
       s.raise({ area: 'TrailFork app', title: 'App store review reply needs your OK', kind: 'approve', outbound: true, draft: 'Thanks for the report. The map freeze on older phones is fixed in version 4.1, out this week.' }, now - 20 * H);
       s.raise({ area: 'Night classes', title: 'Midterm study guide: pick 2 of 4 essay topics', kind: 'todo', work_minutes: 30 }, now - 3 * D);

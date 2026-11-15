@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Take every recommendation.** `recommended` on a question (one of its
+  options) marks the answer the assistant recommends; the page offers "Take all
+  N recommendations" when there are two or more, lists each answer first, and
+  keeps each on its own undo hold. Never for a message to a person, never for a
+  light that changed after it was seen.
 - **An icon** for the plugin listing and the Claude Desktop extension: the
   board's three lights on its dark tile (`npm run icon` redraws it, no
   dependencies).

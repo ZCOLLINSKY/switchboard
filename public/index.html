@@ -398,7 +398,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (busy) return; busy = true;
     var ids = ls.map(function (l) { return l.id; }), revs = {};
     ls.forEach(function (l) { revs[l.id] = shown[l.id] || l.rev; });
-    api('POST', '/api/bulk', Object.assign({ ids: ids, action: action, revs: revs, tookMs: Date.now() - Math.max.apply(null, [mark].concat(ls.map(function (l) { return seenAt[l.id] || 0; }))) }, extra || {})).then(function () { after(); toast((action === 'approve' ? 'Approved ' : action === 'snooze' ? 'Snoozed ' : 'Done: ') + ids.length + (extra && extra.until ? ' until ' + new Date(extra.until).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '') + '.', 'Undo all', function () { takeBackAll(ids); }); })
+    api('POST', '/api/bulk', Object.assign({ ids: ids, action: action, revs: revs, tookMs: Date.now() - Math.max.apply(null, [mark].concat(ls.map(function (l) { return seenAt[l.id] || 0; }))) }, extra || {})).then(function () { after(); toast((action === 'approve' ? 'Approved ' : action === 'snooze' ? 'Snoozed ' : action === 'recommended' ? 'Took the recommendation on ' : 'Done: ') + ids.length + (extra && extra.until ? ' until ' + new Date(extra.until).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '') + '.', 'Undo all', function () { takeBackAll(ids); }); })
       .catch(function (e) { toast(e.message); }).then(function () { busy = false; return load(true); });
   }
   var backing = false;
@@ -504,7 +504,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       b.appendChild(B('Done', function () { act(l, 'done'); }, l.link ? 'gh' : '', enter));
     } else {
       if (l.link) b.appendChild(A('Open page ↗', l.link));
-      l.options.forEach(function (o, i) { b.appendChild(B(o, function () { act(l, 'answer', { value: o }); }, i || l.link ? 'gh' : '', !i && !l.link ? enter : null)); });
+      l.options.forEach(function (o, i) { var rec = l.recommended === o; b.appendChild(B(rec ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, (l.recommended ? !rec : i || l.link) ? 'gh' : '', (l.recommended ? rec : !i && !l.link) ? enter : null)); });
       if (l.kind !== 'fix' && !l.spot && !l.board && !l.brake) b.appendChild(B(l.kind === 'sense' ? 'Type what it says' : 'Other…', function () { noteId = l.id; openId = l.id; sel = l.id; render(); }, 'gh'));
       if (l.kind === 'fix' && !l.options.length) b.appendChild(B('Fixed', function () { act(l, 'done'); }));
     }
@@ -765,6 +765,14 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     v.keys.forEach(function (it, i) { if (pos[it.key] !== i) { pos[it.key] = i; posAt[it.light ? it.light.id : it.key] = Date.now(); } });
     main.textContent = '';
     if (phone && S.queue.length >= 2 && !fit) main.appendChild(h('button', { class: 'btn gothrough', type: 'button', onclick: function () { startRapid(); } }, 'Go through them, one at a time (' + S.queue.length + ')'));
+    // Questions whose assistant recommended an answer: all of them in one tap, each listed first, each on its own hold.
+    var recs = S.queue.map(function (id) { return S.lights.find(function (l) { return l.id === id; }); }).filter(function (l) { return l && l.state === 'need_you' && l.recommended && !l.outbound && l.options.indexOf(l.recommended) >= 0 && !changedAt[l.id]; });
+    if (S.canAct && recs.length >= 2 && !fit) {
+      var rp = h('div', { class: 'pane grouplist' }, h('h5', { text: 'Takes these ' + recs.length + ' answers' }));
+      recs.forEach(function (l) { rp.appendChild(h('p', { text: l.recommended + ': ' + l.title + '  \u00b7  ' + area(l.area).name })); });
+      main.appendChild(h('div', { class: 'row recs' }, h('div', { class: 'head' }, h('div', { class: 'txt' }, h('p', { text: recs.length + ' questions have a recommended answer' }), h('small', { text: 'Each still waits on its own hold, so any one can be taken back.' })),
+        h('div', { class: 'btns' }, B('Take all ' + recs.length + ' recommendations', function () { bulkAct(recs, 'recommended'); }))), h('div', { class: 'more' }, rp)));
+    }
     if (S.sim) main.appendChild(simBar());
     var away = sinceBlock(); if (away) main.appendChild(away);
     if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link: ask your assistant to open Switchboard for you.')));

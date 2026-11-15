@@ -133,6 +133,7 @@ const lightFields = {
   change_from: S('For a change to a record: the current value.'),
   change_to: S('For a change to a record: the new value.'),
   options: { type: 'array', items: { type: 'string' }, description: 'Answer buttons for kind "decide", "sense" or "fix". Up to 6 short labels.' },
+  recommended: { type: 'string', description: 'The answer you recommend: exactly one of options. Say why in note. The person sees it marked, and can take every recommendation on the board in one tap (each still on its undo hold), so recommend only what you would act on.' },
   link: S('A page the person should open (http or https).'),
   seconds: { type: 'integer', description: 'Honest estimate of the tap itself in seconds: reading and deciding at the board. Leave out to use their measured average. For work away from the board, use work_minutes.' },
   work_minutes: { type: 'integer', description: 'For a job the person must go and do (a call, a form, a drive): minutes of work, 1 to 600. Listed apart from the quick taps.' },

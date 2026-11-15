@@ -75,7 +75,9 @@ whatever doesn't depend on the answer.
 - **Pick the right kind:**
   - `approve`: a draft to send or a change to apply
   - `decide`: a choice; put 2 to 4 short labels in `options`, your
-    recommendation first, and say why in `note`
+    recommendation first, name it in `recommended` (exactly one of the
+    options), and say why in `note`. The person can take every recommendation
+    on the board in one tap, so recommend only an answer you would act on
   - `sense`: you cannot open or see something and need them to look; give the
     `link` and likely answers as `options`
   - `todo`: something only they can do

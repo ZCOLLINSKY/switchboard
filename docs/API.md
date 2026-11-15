@@ -50,6 +50,7 @@ Base: `http://127.0.0.1:4747`. Writes are `POST` with `content-type: application
 | `source` | What came in that triggered this |
 | `change_from`, `change_to` | For a change to a record |
 | `options` | Up to 6 answer buttons |
+| `recommended` | The answer the assistant recommends: exactly one of `options` (otherwise ignored, with a warning). Marked on the card; `POST /api/bulk` with `"action":"recommended"` (page only) answers each listed light with its own recommendation, on its own hold, and refuses the whole batch if any has none, changed since it was seen, or is a message to a person |
 | `link` | Page to open |
 | `phone` | Recipient for a text the person sends from their own phone |
 | `channel` | `agent` (default), `sms`, `copy` |

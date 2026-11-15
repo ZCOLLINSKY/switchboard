@@ -101,6 +101,10 @@ What makes it different from a to-do list:
 - **Rules are watched.** The first five automatic runs all come back for a look, then one now and then at random. "Your rules" lists every rule with an off switch, and a sudden spike pauses a rule and asks.
 - **Nothing goes stale quietly.** An old reply says who has been waiting ("Dale has waited 2 days"). A job that goes quiet past the time it promised turns amber and breaks "All clear". The third snooze asks you to do it, drop it, or give it a date.
 - **Slammed days stay calm.** The queue is ordered by meaning: what is due within a day, then messages to people waiting on you (the bigger quote first among those), then broken jobs that hold something up, then the rest by age. Identical changes collapse into one "Approve all 8" row. A long queue shows the top five, and never folds away a deadline or a blocker.
+- **Take the recommendations.** An assistant can mark the answer it recommends.
+  When several questions have one, a single button takes them all, after listing
+  every answer it will give; each still waits on its own hold, so any one can be
+  taken back.
 - **The minutes are honest.** The headline counts taps, using the middle of your last ten for each job type. Work away from the board ("chores") and anything not timed yet are counted apart, never guessed in.
 - **Change… in one place.** Edit the words yourself, or tell your assistant what to change (by typing, one-tap notes you have used before, or speaking). The new version comes back with your request, the assistant's own line on what it changed, and the changed words marked. Ask for the same thing twice and Switchboard offers to make it a standing rule for that container.
 - **It remembers what you told them.** A reply or follow-up shows the last message you sent that person, and flags a different price, day or time ("Earlier you said $1,450; this says $1,350"). Every message gets a one-line check: amounts, days, times and who it goes to.

@@ -36,8 +36,8 @@ test('two sessions started in one folder that name different projects are never 
   const alpha = mcp(env, home), beta = mcp(env, home), plain = mcp(env, home);
   try {
     await Promise.all([alpha.hello(), beta.hello(), plain.hello()]);
-    const la = await alpha.call('raise_light', { project: 'alpha', area: 'Shop', title: 'Alpha: which size?', kind: 'decide', options: ['Small', 'Large'] });
-    const lb = await beta.call('raise_light', { project: 'beta', area: 'Shop', title: 'Beta: which size?', kind: 'decide', options: ['Small', 'Large'] });
+    const la = await alpha.call('raise_light', { project: 'alpha', area: 'Shop', title: 'Alpha: which size?', kind: 'decide', options: ['Small', 'Large'], recommended: 'Small' });
+    const lb = await beta.call('raise_light', { project: 'beta', area: 'Shop', title: 'Beta: which size?', kind: 'decide', options: ['Small', 'Large'], recommended: 'Small' });
     assert.ok(!la.warnings, JSON.stringify(la.warnings)); // project is not passed on to the board as a field
     assert.equal(la.agent, 't:alpha'); assert.equal(lb.agent, 't:beta');
     await tap(a, la.id, 'answer', { value: 'Small' }); await tap(a, lb.id, 'answer', { value: 'Large' });

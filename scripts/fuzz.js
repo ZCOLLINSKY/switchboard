@@ -47,6 +47,14 @@ function fuzz(SEEDS = 20, STEPS = 300) {
           const withUndo = s.db.lights.filter((l) => l.decision && !l.decision.collectedAt && !l.decision.outcome && l.undo); if (!withUndo.length) continue;
           const l = pick(withUndo), did = l.decision.id;
           try { s.act(l.id, 'undo', {}, now); undone.add(did); COV.undone++; } catch (e) { /* refused is fine */ }
+        } else if (r < 0.58) {
+          // A session closing its own light: allowed only when no decision on it is out.
+          const open = s.db.lights.filter((l) => l.state !== 'done' && l.state !== 'dropped'); if (!open.length) continue;
+          const l = pick(open), d = l.decision, out = !!(d && !d.outcome) || l.unsure || l.unreported;
+          let ok = true; try { s.update(l.id, { state: pick(['done', 'dropped']), closing: true, agent: l.agent || undefined }, l.agent || 'agent', now); } catch (e) { ok = false; }
+          if (ok) COV.closed = (COV.closed || 0) + 1; else COV.close_refused = (COV.close_refused || 0) + 1;
+          if (ok && out) bad('closed-with-decision-out', `light ${l.id}`, seed, step);
+          if (!ok && !out && l.state !== 'done') bad('close-refused-without-decision', `light ${l.id}`, seed, step);
         } else if (r < 0.66) {
           const mine = s.db.lights.filter((l) => l.agent && ['need_you', 'queued'].includes(l.state)); if (!mine.length) continue;
           const l = pick(mine); try { s.update(l.id, { draft: 'New ' + step, agent: l.agent }, l.agent, now); } catch (e) { /* frozen is fine */ }

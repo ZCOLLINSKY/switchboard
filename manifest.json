@@ -49,6 +49,14 @@
       "description": "Move a light along as its thread progresses, or mark it done."
     },
     {
+      "name": "close_light",
+      "description": "Close a light when the work it stood for is finished or no longer needed."
+    },
+    {
+      "name": "search_history",
+      "description": "Search what you already decided, so nothing is asked twice."
+    },
+    {
       "name": "list_lights",
       "description": "See what is on the board now."
     },

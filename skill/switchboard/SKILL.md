@@ -64,6 +64,12 @@ whatever doesn't depend on the answer.
 - **A new message on a thread you are still sending** is refused until you
   report the first one with `complete_decision`. Then raise it again with the
   same key and it comes back to the person.
+- **Make it quick to answer.** Say which option you recommend (`recommended`),
+  attach the draft, the `to` and a `link` to where the thing is done, and try the
+  tools you already have (Stripe, GitHub, Gmail, Vercel, a browser) before
+  raising a chore; say in the note what you tried. When a thread is finished,
+  close it with `close_light` (by `key`) instead of leaving it on the board, and
+  check `search_history` or the warning on raise for a question already answered.
 - **Keep drafts under 4,000 characters.** A longer one is refused, never cut.
 - **Read the warnings.** `raise_light` and `update_light` return `warnings` when
   something was ignored. Fix the call; don't carry on.

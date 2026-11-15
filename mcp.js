@@ -168,10 +168,15 @@ const TOOLS = [
       channel: S('How an approved draft goes out: agent (you send it after picking up the decision), sms (they send from their phone), copy (they paste it somewhere).', { enum: ['agent', 'sms', 'copy'] }),
       action_type: S('A stable name for this recurring kind of action, e.g. "listing-fix". Unedited approval streaks are tracked per type so the person can promote it to run by itself.'),
     }, lightFields, project) } },
-  { name: 'update_light', description: 'Change a light you raised: move it to a new state as the thread progresses, update progress, replace the draft, or mark it done.',
-    inputSchema: { type: 'object', required: ['id'], properties: Object.assign({ id: S('The light id.'),
+  { name: 'update_light', description: 'Change a light you raised: move it to a new state as the thread progresses, update progress, replace the draft, or mark it done. Name it by id or by the key you raised it with.',
+    inputSchema: { type: 'object', properties: Object.assign({ id: S('The light id. Send this or key.'), key: S('Instead of id: the key you raised the light with. Finds your own open light with that key.'),
       state: S('New state.', { enum: ['need_you', 'waiting_them', 'auto', 'queued', 'broken', 'done', 'dropped'] }), reason: S('Why it moved.'),
       kind: S('New kind.', { enum: ['approve', 'decide', 'sense', 'todo', 'fix'] }), area: S('Move it to this container.') }, lightFields, project) } },
+  { name: 'close_light', description: 'Close a light you raised when the work it stood for is finished or no longer needed, so the person is not left with a stale light. Name it by id or by key. Not for a light the person has decided: collect that decision and report it with complete_decision first (this is refused while a decision on it is out).',
+    inputSchema: { type: 'object', required: ['outcome'], properties: Object.assign({ id: S('The light id. Send this or key.'), key: S('Instead of id: the key you raised the light with.'),
+      outcome: S('done (the work is finished) or dropped (it is no longer needed).', { enum: ['done', 'dropped'] }), note: S('One plain line: what happened or why.') }, project) } },
+  { name: 'search_history', description: 'Search what the person already decided ("did I ever renew that?"). Check it before asking something that may have been answered. Leave q empty to see the latest. Returns each decision with its date, what they chose and any text.',
+    inputSchema: { type: 'object', properties: { q: S('Words to look for, in the title, container, answer or recipient.') } } },
   { name: 'list_lights', description: 'See what is on the board now. Check this before raising a light so you do not duplicate a thread.',
     inputSchema: { type: 'object', properties: { area: S('Only this container.'), state: S('Only this state.') } } },
   { name: 'get_decisions', description: 'Collect what the person decided on the lights you raised: approvals (with their final text and whether they edited it), answers, declines, "they replied". An answer can be collected 20 to 120 seconds after the person taps it (their undo window): an empty list with "held" means it is on its way. Collecting is a commitment and a claim: the person can no longer take the decision back, and nobody else is handed it for 10 minutes, so act on each one and report with complete_decision and its decision_id. Send exactly what the decision carries: its text, its "to", its attachments and its payload are what the person approved, even if the light has changed since. A decision with needs_check: true was collected before and never reported: find out whether it already went out BEFORE sending anything, and report "unsure" if you cannot tell. "sent_by_you" lists messages the person sent themselves: facts for your records, never something to send. Also returns follow-ups that need a draft from you and quick notes that need filing.',
@@ -220,6 +225,24 @@ async function callTool(name, a, signal) {
   const me = agent(project), use = () => { if (!FIXED) USED.add(me); }, all = FIXED ? [me] : namesFor(me);
   const need = (k) => { if (typeof a[k] !== 'string' || !a[k]) throw new Error(`${k} is required (text).`); };
   if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : me }); delete b.for_anyone; if (!a.for_anyone) use(); return api('POST', '/api/lights', b, signal); }
+  // Name your own open light by the key you raised it with (a long key is stored as a fingerprint, as the board does).
+  const byKey = async () => {
+    const raw = typeof a.key === 'string' ? a.key.trim() : '';
+    if (!raw) throw new Error('id or key is required (text).');
+    const key = raw.length > 120 ? 'h:' + require('crypto').createHash('sha1').update(raw).digest('hex') : raw;
+    const v = await api('GET', '/api/state', null, signal), l = v.lights.find((x) => x.key === key && x.agent && all.includes(x.agent));
+    if (!l) throw new Error(`No open light of yours has the key "${raw.slice(0, 60)}". Use list_lights to see your lights and their keys.`);
+    return l.id;
+  };
+  if (name === 'close_light') {
+    if (a.outcome !== 'done' && a.outcome !== 'dropped') throw new Error('outcome must be done or dropped.');
+    const id = typeof a.id === 'string' && a.id ? a.id : await byKey(); use();
+    const l = await api('POST', '/api/lights/' + encodeURIComponent(id), { state: a.outcome, closing: true, reason: typeof a.note === 'string' ? a.note : undefined, agent: me, agents: all }, signal);
+    return { id: l.id, state: l.state, warnings: l.warnings };
+  }
+  if (name === 'search_history') { const r = await api('GET', '/api/history?q=' + encodeURIComponent(typeof a.q === 'string' ? a.q : ''), null, signal); return { items: r.items.map((x) => Object.assign({}, x, { at: new Date(x.at).toISOString(), sentAt: x.sentAt ? new Date(x.sentAt).toISOString() : undefined })) }; }
+  if (name === 'update_light' && !(typeof a.id === 'string' && a.id)) { const id = await byKey(); a = Object.assign({}, a, { id }); }
+  if (name === 'update_light') { a = Object.assign({}, a); delete a.key; } // the key names the light here; it cannot change
   if (['complete_decision', 'wait_for_decision', 'update_light'].includes(name)) need('id');
   if (name === 'complete_decision') { const l = await api('POST', '/api/complete', a, signal); return { id: l.id, state: l.state, warnings: l.warnings }; }
   if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: me, agents: all }, signal, (sec + 10) * 1000); }
@@ -266,7 +289,8 @@ async function callTool(name, a, signal) {
     return { board: BASE, need_you_seconds: v.seconds, counts: v.counts,
       areas: v.areas.map((x) => ({ name: x.name, note: x.note, voice: [x.voice].concat((x.rules || []).map((r) => 'Always: ' + r)).filter(Boolean).join('\n') || undefined, asleep_until: x.wakeAt ? new Date(x.wakeAt).toISOString() : null })),
       lights: v.lights.filter((l) => (!a.state || l.state === a.state) && (!want || areaName(l.area).toLowerCase() === want))
-        .map((l) => ({ id: l.id, area: areaName(l.area), state: l.state, kind: l.kind, title: l.title, example: l.demo || undefined, stale: l.stale || undefined,
+        .map((l) => ({ id: l.id, key: l.key || undefined, agent: l.agent || undefined, area: areaName(l.area), state: l.state, kind: l.kind, title: l.title, link: l.link || undefined, due: l.due ? new Date(l.due).toISOString() : undefined,
+          recommended: l.recommended || undefined, options: l.options && l.options.length ? l.options : undefined, example: l.demo || undefined, stale: l.stale || undefined,
           follow_up_at: l.followUpAt ? new Date(l.followUpAt).toISOString() : undefined, batch: l.batch > 1 ? l.batch : undefined })) };
   }
   throw new Error(`Unknown tool ${name}`);

@@ -105,9 +105,15 @@ test('the board texts when SWITCHBOARD_NOTIFY_TEXT is set, adding the phone link
   const calls = [], spawn = (cmd, args) => { calls.push(args.slice(-2)); return { on() {}, unref() {} }; };
   const only = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: '+18595550123', SWITCHBOARD_PHONE_URL: 'https://box.tailnet.ts.net:8443/' }, { platform: 'darwin', spawn });
   assert.equal(only.senders.length, 1, 'texting alone is enough to switch notifications on');
-  only.senders[0]('Switchboard', '1 new thing needs you on Switchboard');
-  assert.deepEqual(calls[0], ['+18595550123', 'Switchboard: 1 new thing needs you on Switchboard https://box.tailnet.ts.net:8443/']);
-  assert.equal(sendersFromEnv({ SWITCHBOARD_NOTIFY: 'titles', SWITCHBOARD_NOTIFY_TEXT: '+18595550123' }, { platform: 'darwin', spawn }).senders.length, 2, 'banner and text');
+  only.senders[0]('Switchboard', '1 new thing needs you on Switchboard', 1);
+  assert.deepEqual(calls[0], ['+18595550123', 'Switchboard: 1 new thing needs you https://box.tailnet.ts.net:8443/']);
+  const both = sendersFromEnv({ SWITCHBOARD_NOTIFY: 'titles', SWITCHBOARD_NOTIFY_TEXT: '+18595550123' }, { platform: 'darwin', spawn });
+  assert.equal(both.senders.length, 2, 'banner and text');
+  both.senders[1]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
+  assert.deepEqual(calls[1], ['+18595550123', 'Switchboard: 1 new thing needs you'], 'a text never names the item unless asked: the banner may, the locked phone screen does not');
+  const named = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: '+18595550123', SWITCHBOARD_NOTIFY_TEXT_TITLES: '1' }, { platform: 'darwin', spawn });
+  named.senders[0]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
+  assert.deepEqual(calls[2], ['+18595550123', 'Switchboard: Text Pat Lee (Acme Lighting)']);
   const bad = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: 'my phone' }, { platform: 'darwin', spawn });
   assert.equal(bad.senders.length, 0); assert.match(bad.warning, /SWITCHBOARD_NOTIFY_TEXT/);
   assert.equal(sendersFromEnv({}, { platform: 'darwin', spawn }).senders.length, 0, 'off unless asked for');

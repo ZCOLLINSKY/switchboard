@@ -57,7 +57,7 @@ async function start(opts = {}) {
     else {
       const env = N.sendersFromEnv(process.env);
       if (env.warning) console.error(env.warning);
-      if (env.senders.length) notify = N.notifier({ send: (t, b) => { for (const f of env.senders) f(t, b); }, titles: env.titles });
+      if (env.senders.length) notify = N.notifier({ send: (t, b, n) => { for (const f of env.senders) f(t, b, n); }, titles: env.titles });
     }
   }
   const ring = () => { if (notify) try { notify.check(store.view()); } catch (e) { console.error('notify failed:', e.message); } };

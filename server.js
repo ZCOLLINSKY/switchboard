@@ -57,7 +57,7 @@ async function start(opts = {}) {
     else {
       const env = N.sendersFromEnv(process.env);
       if (env.warning) console.error(env.warning);
-      if (env.senders.length) notify = N.notifier({ send: (t, b, n) => { for (const f of env.senders) f(t, b, n); }, titles: env.titles });
+      if (env.senders.length) notify = N.notifier({ send: (t, b, n, ids) => { for (const f of env.senders) f(t, b, n, ids); }, titles: env.titles });
     }
   }
   const ring = () => { if (notify) try { notify.check(store.view()); } catch (e) { console.error('notify failed:', e.message); } };
@@ -141,6 +141,15 @@ async function start(opts = {}) {
       // use, so the page stops offering to connect one. A website cannot send this header without the board's permission.
       if (local && req.headers['x-switchboard-client'] === 'mcp' && !store.db.seen.mcp) { store.connectorSeen(); changed(); }
 
+      // The home-screen app: its icon and manifest hold nothing private, so they are served to any browser that can load the page.
+      if (req.method === 'GET' && p === '/icon.png') {
+        res.writeHead(200, { 'content-type': 'image/png', 'x-content-type-options': 'nosniff', 'cache-control': 'public, max-age=86400' });
+        return fs.createReadStream(path.join(__dirname, 'icon.png')).on('error', () => res.end()).pipe(res);
+      }
+      if (req.method === 'GET' && p === '/manifest.webmanifest') {
+        res.writeHead(200, { 'content-type': 'application/manifest+json', 'x-content-type-options': 'nosniff', 'cache-control': 'public, max-age=86400' });
+        return res.end(JSON.stringify({ name: 'Switchboard', short_name: 'Switchboard', start_url: '/', scope: '/', display: 'standalone', background_color: '#0E1116', theme_color: '#0E1116', icons: [{ src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] }));
+      }
       if (req.method === 'GET' && p === '/' && url.searchParams.get('key')) {
         if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Ask your assistant to open Switchboard for you, or get the current link in a terminal with: node "${path.join(__dirname, 'cli.js')}" link` });
         // The page itself keeps the key (per address, port included) and takes it out of the address bar. No cookie: a cookie

@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- **Sessions close their own lights.** `close_light {key or id, outcome, note}`
+  finishes work a session is done with (refused while a decision on the light is
+  out). `update_light` accepts `key` instead of `id`. `list_lights` now returns
+  each light's `key`, `link`, `agent`, `due`, `recommended`, `kind` and `options`
+  so a session can find its own.
+- **Answered before.** `search_history {q}` asks what the person already
+  decided, and raising a light whose key was answered in the last 14 days warns
+  with the answer and the date.
+- **Raise-time warnings** (never refusals): a decision with options and no
+  recommended answer, an approval with no draft, a message with no recipient, a
+  to-do with no link, and a waiting message with no follow-up draft. The skill
+  says to recommend, draft, link, and try the tools you already have first.
+- **Deep links.** The page opens and selects a light from `#<id>` in the
+  address. A text or banner for one new light links straight to it.
+- **Home-screen app.** The board serves `icon.png` and `manifest.webmanifest`,
+  and the page has the touch icon and standalone tags, so it can be added to a
+  phone's home screen.
+
 - **Your phone buzzes, with no cloud.** `SWITCHBOARD_NOTIFY_TEXT` (your own number
   or Apple ID) has the Mac's Messages app text you when something new needs you,
   on the same rules as the banner (at most every 30 minutes, none at night, a

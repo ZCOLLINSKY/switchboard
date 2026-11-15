@@ -161,7 +161,12 @@ claude mcp add --scope user switchboard -- node "$PWD/mcp.js"
 ## How anything turns on a light
 
 **From an AI assistant** (MCP): Switchboard ships an MCP server with tools such
-as `raise_light`, `get_decisions` and `update_light`. See [SETUP.md](SETUP.md).
+as `raise_light`, `get_decisions`, `update_light`, `close_light` (a session closes
+its own finished lights, by id or by the key it raised them with) and
+`search_history` (what you already answered; raising a light whose key you
+answered in the last 14 days says so). Raising also warns when a light would be
+slow to answer: no recommended answer, no draft, no recipient, no link. See
+[SETUP.md](SETUP.md).
 
 A round trip: the assistant calls `raise_light` with the draft and who it goes
 to, and keeps working. You tap Approve. The next time it calls `get_decisions`
@@ -235,7 +240,7 @@ days from the bar at the top of the page. Nothing touches your real board.
   `SWITCHBOARD_PORT`, `SWITCHBOARD_HOST`, `SWITCHBOARD_ALLOWED_HOSTS` (extra
   host names to answer to, for a private network), `SWITCHBOARD_URL` (where the
   command line and the connector look for the board) and `SWITCHBOARD_AGENT`
-  (the name an assistant's connector uses on the board). `SWITCHBOARD_NOTIFY_TEXT=+1…` (your own number or Apple ID, on a Mac) texts your phone through your Messages app when something new needs you, with `SWITCHBOARD_PHONE_URL` added to tap open; no service in between. `SWITCHBOARD_NOTIFY=1` shows a banner on your computer
+  (the name an assistant's connector uses on the board). `SWITCHBOARD_NOTIFY_TEXT=+1…` (your own number or Apple ID, on a Mac) texts your phone through your Messages app when something new needs you, with `SWITCHBOARD_PHONE_URL` added to tap open (for one new light the link ends in `#<id>` and opens that light); no service in between. Add the page to your phone's home screen and it opens like an app (the board serves its own icon and manifest). `SWITCHBOARD_NOTIFY=1` shows a banner on your computer
   when something new needs you (at most one every 30 minutes, none from 11 pm to
   7 am; `titles` names what came in, `1` only counts, so nothing private shows
   on a locked screen). macOS and Linux.

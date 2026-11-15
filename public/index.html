@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0E1116">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Switchboard">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Switchboard</title>
 <style>
 /* One dark look on purpose: the lights are the content, the rest stays quiet. */
@@ -210,7 +217,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   var pageKey = '';
   try {
     var qk = new URLSearchParams(location.search).get('key');
-    if (qk) { try { localStorage.setItem('switchboard-key', qk); } catch (e) {} pageKey = qk; history.replaceState(null, '', location.pathname); }
+    if (qk) { try { localStorage.setItem('switchboard-key', qk); } catch (e) {} pageKey = qk; history.replaceState(null, '', location.pathname + location.hash); }
     else pageKey = localStorage.getItem('switchboard-key') || '';
   } catch (e) {}
   function selecting() { var g = window.getSelection && window.getSelection(); return !!(g && String(g).length && $('main').contains(g.anchorNode)); }
@@ -308,6 +315,20 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       .catch(function () { clearTimeout(tm); down = true; renderDown(); throw new Error(ctl && ctl.signal.aborted ? 'Switchboard did not answer in 10 seconds. That tap may not have been saved: check the board before tapping again.' : 'Switchboard is not answering. Nothing you tap now is saved.'); })
       .then(function (r) { clearTimeout(tm); if (down) { down = false; renderDown(); } return r.json().then(function (d) { if (!r.ok) { var e = new Error(d.error || 'Something went wrong. Nothing was changed.'); e.status = r.status; throw e; } return d; }); });
   }
+  // A link ending in #<lightId> (from a text or a banner) opens that light, selected and scrolled into view.
+  var wantId = '';
+  function hashId() { try { return decodeURIComponent(location.hash.replace(/^#/, '')).trim(); } catch (e) { return ''; } }
+  function applyHash() {
+    if (!wantId || !S) return;
+    var id = wantId; wantId = '';
+    if (!light(id)) { toast('That one is already handled.'); return; }
+    if (S.queue.indexOf(id) < 0) { toast('That one is not waiting on you right now.'); return; }
+    delete pendingNew[id]; seeAll = false; areaFilter = null; fit = null; editId = null; noteId = null; snoozeId = null; redoId = null;
+    sel = id; openId = id; selAt = Date.now();
+    setTimeout(function () { render(); var r = document.getElementById('row-' + id); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'center' }); }, 0);
+  }
+  wantId = hashId();
+  window.addEventListener('hashchange', function () { wantId = hashId(); if (S) { applyHash(); } });
   // While the pointer or keyboard is in use, new arrivals wait in a "new" pill. Rows never move under the hand.
   function load(own) {
     return api('GET', '/api/state').then(function (v) {
@@ -327,6 +348,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
         else if (!shown[l.id]) { shown[l.id] = l.rev; seenAt[l.id] = Date.now(); }
       });
       S = v;
+      applyHash();
       clearTimeout(heldTimer);
       if (S.held.length) heldTimer = setTimeout(function again() { if (typing()) { heldTimer = setTimeout(again, 2000); return; } load(true); }, Math.min(30000, Math.max(300, Math.min.apply(null, S.held.map(function (x) { return x.until; })) - Date.now() + 250)));
       // "I have N minutes" is answered by the same rule the tests check, on the server.

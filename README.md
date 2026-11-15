@@ -1,5 +1,10 @@
 # Switchboard
 
+[![Tests](https://github.com/ZCOLLINSKY/switchboard/actions/workflows/test.yml/badge.svg)](https://github.com/ZCOLLINSKY/switchboard/actions/workflows/test.yml)
+[![Latest release](https://img.shields.io/github/v/release/ZCOLLINSKY/switchboard)](https://github.com/ZCOLLINSKY/switchboard/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)
+
 **One screen on your own computer for everything your AI assistants and scripts are waiting on you for.**
 
 For solo operators, small business owners, and developers running AI assistants or scripts.

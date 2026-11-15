@@ -218,13 +218,13 @@ async function start(opts = {}) {
         const orphans = Number(body.orphans_after_minutes) > 0 ? Math.max(1, Number(body.orphans_after_minutes)) * 60e3 : 0;
         // A scheduled task's rhythm (checks_every_minutes): 0 clears it, anything else is kept between 1 minute and 26 hours.
         const every = body.checks_every_minutes == null || body.checks_every_minutes === '' ? undefined : Math.max(0, Number(body.checks_every_minutes) || 0) * 60e3;
-        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true, orphans, every });
+        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, fallback: body.fallback, all: body.all === true, only: body.only === true, orphans, every });
         if (got.decisions.length || got.sent_by_you.length || firstIn()) changed();
         return json(res, 200, got);
       }
       if (p === '/api/wait') {
         // An assistant that is mid-task can wait here for one light's answer instead of polling.
-        const id = String(body.id || ''), who = { agent: String(body.agent || ''), agents: body.agents };
+        const id = String(body.id || ''), who = { agent: String(body.agent || ''), agents: body.agents, fallback: body.fallback };
         // Someone else's light would never be handed over: say so now, instead of waiting out the seconds for nothing.
         const why = store.notYours(id, who); if (why) return json(res, 200, { decided: false, reason: why });
         const until = Date.now() + Math.min(Math.max(Number(body.seconds) || 30, 1), 50) * 1000;

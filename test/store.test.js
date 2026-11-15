@@ -779,3 +779,34 @@ test('a light waiting on the Confirm of a chat answer is shown one at a time, ne
   assert.ok(v.lanes.high.includes(q.id) && !v.lanes.read.includes(q.id) && !v.lanes.safe.includes(q.id));
   assert.throws(() => s.bulk([q.id], 'recommended', {}, T0 + 2000), /one at a time/i);
 });
+
+test('a session in the project\'s folder collects answers stranded under the project name, only once that session is quiet', () => {
+  const { HOLD_MS } = require('../lib/store');
+  const s = fresh(), asker = { agent: 'claude-code:acme' }, inRepo = { agent: 'claude-code:acme~ab12', fallback: ['claude-code:acme'] };
+  const q = s.raise({ area: 'A', title: 'Which day?', kind: 'decide', options: ['Tue', 'Wed'], agent: asker.agent }, T0);
+  s.decisions(T0, asker); // the asking session was here
+  s.act(q.id, 'answer', { value: 'Wed', rev: require('../lib/store').rev(s.db.lights.find((l) => l.id === q.id)) }, T0 + 1000);
+  const ready = T0 + 1000 + HOLD_MS;
+  assert.equal(s.decisions(ready + 60e3, inRepo).decisions.length, 0, 'not while the asking session may still come back');
+  const later = ready + 11 * 60e3;
+  const got = s.decisions(later, inRepo).decisions;
+  assert.deepEqual(got.map((d) => [d.id, d.value, d.fallback, d.raised_by]), [[q.id, 'Wed', true, 'claude-code:acme']]);
+  assert.equal(s.db.lights.find((l) => l.id === q.id).decision.collectedBy, 'claude-code:acme~ab12', 'collected under its own name');
+  assert.throws(() => s.update(q.id, { state: 'dropped', closing: true, agent: inRepo.agent, agents: [inRepo.agent], fallback: ['claude-code:acme'] }, inRepo.agent, later), /belongs to claude-code:acme/, 'the fallback never lets it close the light');
+});
+
+test('the fallback never takes an answer from a session that is still around, nor a message to a person', () => {
+  const { HOLD_MS, rev } = require('../lib/store');
+  const s = fresh(), asker = { agent: 'claude-code:acme' }, inRepo = { agent: 'claude-code:acme~ab12', fallback: ['claude-code:acme'] };
+  const q = s.raise({ area: 'A', title: 'Pick one', kind: 'decide', options: ['A', 'B'], agent: asker.agent }, T0);
+  const m = s.raise({ area: 'A', title: 'Text Pat', kind: 'approve', draft: 'Hi Pat', outbound: true, to: 'Pat Lee', agent: asker.agent }, T0);
+  s.act(q.id, 'answer', { value: 'A', rev: rev(s.db.lights.find((l) => l.id === q.id)) }, T0 + 1000);
+  s.act(m.id, 'approve', { rev: rev(s.db.lights.find((l) => l.id === m.id)) }, T0 + 1000);
+  const later = T0 + 1000 + HOLD_MS + 11 * 60e3;
+  s.decisions(T0 + 1000, { agent: 'claude-code:pinger' }); s.db.seen.agents = Object.assign(s.db.seen.agents || {}, { 'claude-code:acme': later - 60e3 }); // the asking session checked in a minute ago
+  assert.equal(s.decisions(later, inRepo).decisions.filter((d) => d.fallback).length, 0, 'a live session keeps its answers');
+  const s2 = fresh();
+  const m2 = s2.raise({ area: 'A', title: 'Text Pat', kind: 'approve', draft: 'Hi Pat', outbound: true, to: 'Pat Lee', agent: asker.agent }, T0);
+  s2.act(m2.id, 'approve', { rev: rev(s2.db.lights.find((l) => l.id === m2.id)) }, T0 + 1000);
+  assert.equal(s2.decisions(T0 + 99 * 60e3, inRepo).decisions.length, 0, 'a message to a person waits for a session that can send it');
+});

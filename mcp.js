@@ -32,6 +32,10 @@ const agent = (project = PROJECT) => names.agentName({ fixed: FIXED, client: CLI
 // through never strands what it raised before. (Not with a fixed name: other chats share that process.)
 const USED = new Set();
 const namesFor = (me) => [me].concat([...USED].filter((n) => n !== me));
+// A session started in a repository's folder may also collect, as a fallback, answers on lights raised under the
+// project's name (client:repo, what a session elsewhere gets by naming that project) once that session has gone quiet.
+// Only for collecting: it never updates, closes or acks those lights. The board decides when the fallback applies.
+const fallbackFor = (me) => (!FIXED && FOLDER && me === `${CLIENT}:${FOLDER.base}~${FOLDER.fp}` ? [`${CLIENT}:${names.projectName(FOLDER.base)}`] : []);
 const HOME = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|\/)/, os.homedir());
 let BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${process.env.SWITCHBOARD_PORT || 4747}`).replace(/\/+$/, '');
 // The " --port N" a cli.js command needs to reach this board, or nothing on the usual port.
@@ -285,10 +289,10 @@ async function callTool(name, a, signal) {
     return r.held ? { id: r.id, held: true, note: 'High stakes: the board now shows the person their words from the chat with Confirm. Nothing is decided until they tap it; collect it then with get_decisions.' }
       : { id: r.id, recorded: true, decision_id: r.decision_id, note: 'Recorded as their decision. Collect it with get_decisions now, do what it says, and report it with complete_decision.' };
   }
-  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: me, agents: all }, signal, (sec + 10) * 1000); }
+  if (name === 'wait_for_decision') { const sec = Math.min(Math.max(Number(a.seconds) || 30, 1), 50); return api('POST', '/api/wait', { id: a.id, seconds: sec, agent: me, agents: all, fallback: fallbackFor(me) }, signal, (sec + 10) * 1000); }
   if (name === 'update_light') { use(); return api('POST', '/api/lights/' + encodeURIComponent(a.id), Object.assign({}, a, { agent: me, agents: all }), signal); }
   if (name === 'get_decisions') {
-    const body = { agent: me, agents: all, all: a.all === true };
+    const body = { agent: me, agents: all, fallback: fallbackFor(me), all: a.all === true };
     if (a.checks_every_minutes != null) body.checks_every_minutes = Math.max(0, Math.min(1560, Math.round(Number(a.checks_every_minutes) || 0)));
     const r = await api('POST', '/api/decisions', body, signal), notes = [];
     if (r.held) notes.push(`${r.held === 1 ? '1 answer is' : r.held + ' answers are'} still in the person's undo window, which lasts 20 to 120 seconds after they tap (until morning if they chose that). The first can be collected at ${r.next_release_at}: call get_decisions again then, or wait_for_decision on that light.`);

@@ -199,3 +199,34 @@ test('the board serves its icon and a web app manifest, and the page links them'
     for (const re of [/rel="manifest" href="\/manifest\.webmanifest"/, /rel="apple-touch-icon" href="\/icon\.png"/, /name="apple-mobile-web-app-capable" content="yes"/, /name="theme-color"/]) assert.match(html, re);
   } finally { b.close(); }
 });
+
+// ---- review fixes: ownership, answers of other sessions, banner links
+test('close by id: another session cannot close a light, its own names can, an unnamed light is open to a named closer', () => {
+  const s = open(tmp(), {});
+  const l = s.raise({ agent: 'a', area: 'Shop', title: 'Build site', state: 'auto', key: 'own-1' }, T);
+  assert.throws(() => s.update(l.id, { state: 'done', closing: true, agent: 'b', agents: ['b'] }, 'b', T + 10), /belongs to a|another session|raised by/i);
+  assert.notEqual(s.db.lights.find((x) => x.id === l.id).state, 'done');
+  s.update(l.id, { state: 'done', closing: true, agent: 'b', agents: ['b', 'a'] }, 'b', T + 20);
+  assert.equal(s.db.lights.find((x) => x.id === l.id).state, 'done', 'a session whose other names include the raiser may close');
+  const m = s.raise({ area: 'Shop', title: 'Own note', state: 'auto' }, T); s.db.lights.find((x) => x.id === m.id).own = true;
+  assert.throws(() => s.update(m.id, { state: 'done', closing: true, agent: 'b', agents: ['b'] }, 'b', T + 30), /person|own note|no name/i);
+});
+test('answered before: another session is not shown the answer or the reason', () => {
+  const s = open(tmp(), {});
+  const l = s.raise({ agent: 'a', area: 'Shop', title: 'Share?', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', key: 'shared' }, T);
+  s.act(l.id, 'answer', { value: 'Yes', text: 'private reason 123', rev: rev(l) }, T + 1000);
+  s.raise({ agent: 'b', area: 'Shop', title: 'Share?', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', key: 'shared' }, T + DAY);
+  assert.ok(!has(s, /private reason|answered before/), s.warnings.join('|'));
+  s.raise({ agent: 'a', area: 'Shop', title: 'Share? again', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', key: 'shared' }, T + DAY);
+  assert.ok(has(s, /answered before.*private reason 123/), 'the same session still sees it: ' + s.warnings.join('|'));
+});
+test('banner: one light links without the query string, several link to the board without it, and no link when none is set', () => {
+  const calls = []; const spawn = (c, a) => { calls.push(a[a.length - 1]); return { on() {}, unref() {} }; };
+  const send = osSender({ platform: 'darwin', spawn, link: 'https://zc.ts.net/?key=abcd#old' });
+  send('Switchboard', 'x', 1, ['abc123']); send('Switchboard', 'y', 2, ['abc', 'def']);
+  assert.equal(calls[0], 'x https://zc.ts.net/#abc123');
+  assert.equal(calls[1], 'y https://zc.ts.net/');
+  assert.ok(!calls.join(' ').includes('key='));
+  calls.length = 0; osSender({ platform: 'darwin', spawn })('Switchboard', 'z', 2, ['a', 'b']);
+  assert.equal(calls[0], 'z');
+});

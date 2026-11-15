@@ -109,7 +109,7 @@ Base: `http://127.0.0.1:4747`. Writes are `POST` with `content-type: application
 
 ## Deep links
 
-The page opens and selects a light from `#<lightId>` in its address and scrolls it into view. With `SWITCHBOARD_PHONE_URL` set, the phone text and the banner for exactly one new light link to `SWITCHBOARD_PHONE_URL#<id>`; several new lights link to the board itself.
+The page opens and selects a light from `#<lightId>` in its address and scrolls it into view. With `SWITCHBOARD_PHONE_URL` set, the phone text and the banner for exactly one new light link to `SWITCHBOARD_PHONE_URL#<id>`; several new lights link to the board itself. The banner can show on a lock screen, so its link drops everything after the address (a `?key=` and any `#`); the phone text keeps the URL as you set it.
 
 ## Connector tools added
 

@@ -583,6 +583,12 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     delete moreOf[l.id]; // a row that changed or is being edited has no More menu: never one left over from before
     if (changedAt[l.id]) { b.appendChild(B('Look again', function () { lookAgain(l); })); return b; }
     if (editId === l.id) return b; // the box below has its own Save & approve and Cancel
+    if (l.chatAnswer && (l.state === 'need_you' || l.state === 'broken')) {
+      // They answered in a chat: Confirm makes it count, Not that clears it. The options wait until then.
+      b.appendChild(B('Confirm: ' + (l.chatAnswer.value || l.chatAnswer.text || 'done'), function () { act(l, 'confirm_chat'); }, '', enter));
+      b.appendChild(B('Not that', function () { act(l, 'dismiss_chat'); }, 'gh', isSel ? 'N' : null));
+      return b;
+    }
     var edit = function () { editId = l.id; editBase = l.draft; openId = l.id; sel = l.id; moreId = null; render(); };
     if (l.kind === 'approve') {
       if (l.channel !== 'agent' && asked[l.id]) {

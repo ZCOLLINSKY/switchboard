@@ -136,3 +136,9 @@ test('a light answered in chat: the card shows the words and Confirm, Enter conf
   assert.match(page, /'You said in chat: ', h\('q', \{ text: ca\.quote \}\)/, 'the card quotes their words');
   assert.ok(page.indexOf("if (l.chatAnswer) return function () { act(l, 'confirm_chat'); }") < page.indexOf("act(l, 'answer', { value: yesOf(l) })"), 'checked before the recommended option');
 });
+
+test('every card for a light answered in chat leads with Confirm and Not that, the pass card included', () => {
+  const page = require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  const fn = page.slice(page.indexOf('  function buttons(l, isSel, compact)'), page.indexOf('  function buttons(l, isSel, compact)') + 1500);
+  assert.match(fn, /if \(l\.chatAnswer && \(l\.state === 'need_you' \|\| l\.state === 'broken'\)\) \{[\s\S]*confirm_chat[\s\S]*dismiss_chat[\s\S]*return b;/);
+});

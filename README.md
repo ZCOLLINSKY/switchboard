@@ -209,7 +209,7 @@ What makes it different from a to-do list:
   When several questions have one, a single button takes them all, after listing
   every answer it will give; each still waits on its own hold, so any one can be
   taken back.
-- **The minutes are honest.** The headline counts taps, using the middle of your last ten for each job type. Work away from the board ("chores") and anything not timed yet are counted apart, never guessed in.
+- **The minutes are honest.** The headline counts taps, using the middle of your last ten for each job type. Work away from the board ("chores") is counted apart, and lights with no time yet are only a count beside the minutes ("45 waiting on you · about 7 min (27 not timed)"), never guessed in.
 - **Change… in one place.** Edit the words yourself, or tell your assistant what to change (by typing, one-tap notes you have used before, or speaking). The new version comes back with your request, the assistant's own line on what it changed, and the changed words marked. Ask for the same thing twice and Switchboard offers to make it a standing rule for that container.
 - **It remembers what you told them.** A reply or follow-up shows the last message you sent that person, and flags a different price, day or time ("Earlier you said $1,450; this says $1,350"). Every message gets a one-line check: amounts, days, times and who it goes to.
 - **Since you last looked.** Back after a few hours, one short block says what is new, what went out and what broke, per container.

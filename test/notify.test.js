@@ -95,7 +95,7 @@ test('a text to the owner\'s own phone goes through Messages, with the words as 
   const args = calls[0][1], script = args.filter((a, i) => args[i - 1] === '-e');
   assert.ok(script.join(' ').includes('Messages') && !script.join(' ').includes('Dale') && !script.join(' ').includes('8595550123'), 'neither the number nor the words are spliced into the script');
   assert.deepEqual(args.slice(-2), ['+18595550123', 'Switchboard: 2 new things need you; "Dale" said `rm -rf`']);
-  assert.equal(textSender({ to: 'zach@example.com', platform: 'darwin', spawn: () => ({ on() {}, unref() {} }) }) != null, true, 'an Apple ID email works too');
+  assert.equal(textSender({ to: 'pat@example.com', platform: 'darwin', spawn: () => ({ on() {}, unref() {} }) }) != null, true, 'an Apple ID email works too');
   assert.equal(textSender({ to: 'call me', platform: 'darwin' }), null, 'not a number or an email: no sender');
   assert.equal(textSender({ to: '+18595550123', platform: 'linux' }), null, 'Messages is a Mac app');
 });
@@ -109,11 +109,11 @@ test('the board texts when SWITCHBOARD_NOTIFY_TEXT is set, adding the phone link
   assert.deepEqual(calls[0], ['+18595550123', 'Switchboard: 1 new thing needs you https://box.tailnet.ts.net:8443/']);
   const both = sendersFromEnv({ SWITCHBOARD_NOTIFY: 'titles', SWITCHBOARD_NOTIFY_TEXT: '+18595550123' }, { platform: 'darwin', spawn });
   assert.equal(both.senders.length, 2, 'banner and text');
-  both.senders[1]('Switchboard', 'Text Pat Lee (Evening Glow)', 1);
+  both.senders[1]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
   assert.deepEqual(calls[1], ['+18595550123', 'Switchboard: 1 new thing needs you'], 'a text never names the item unless asked: the banner may, the locked phone screen does not');
   const named = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: '+18595550123', SWITCHBOARD_NOTIFY_TEXT_TITLES: '1' }, { platform: 'darwin', spawn });
-  named.senders[0]('Switchboard', 'Text Pat Lee (Evening Glow)', 1);
-  assert.deepEqual(calls[2], ['+18595550123', 'Switchboard: Text Pat Lee (Evening Glow)']);
+  named.senders[0]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
+  assert.deepEqual(calls[2], ['+18595550123', 'Switchboard: Text Pat Lee (Acme Lighting)']);
   const bad = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: 'my phone' }, { platform: 'darwin', spawn });
   assert.equal(bad.senders.length, 0); assert.match(bad.warning, /SWITCHBOARD_NOTIFY_TEXT/);
   assert.equal(sendersFromEnv({}, { platform: 'darwin', spawn }).senders.length, 0, 'off unless asked for');

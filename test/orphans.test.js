@@ -10,7 +10,7 @@ const { open, rev, HOLD_MS } = require('../lib/store');
 
 const T0 = new Date(2026, 10, 16, 10, 0, 0).getTime(), MIN = 60e3;
 const fresh = () => open(fs.mkdtempSync(path.join(os.tmpdir(), 'sbo-')), {});
-const RELAY = { agent: 'zachs-board', only: true, orphans: 10 * MIN };
+const RELAY = { agent: 'owners-board', only: true, orphans: 10 * MIN };
 
 test('a gone session\'s answer goes to the relay after the wait, marked as an orphan', () => {
   const s = fresh();
@@ -45,7 +45,7 @@ test('never a message to a person, never something collected before, never witho
   s.decisions(T0 + 2 * MIN, { agent: 'claude-code:r9~dddd' }); // collected by its owner, who then went away
   const plain = s.raise({ agent: 'claude-code:r9~dddd', area: 'Shop', title: 'Order boxes?', kind: 'decide', options: ['Yes', 'No'] }, T0);
   s.act(plain.id, 'answer', { value: 'Yes', rev: rev(plain) }, T0 + 3 * MIN);
-  assert.equal(s.decisions(T0 + 60 * MIN, { agent: 'zachs-board', only: true }).decisions.length, 0, 'no orphans unless asked for');
+  assert.equal(s.decisions(T0 + 60 * MIN, { agent: 'owners-board', only: true }).decisions.length, 0, 'no orphans unless asked for');
   const got = s.decisions(T0 + 61 * MIN, RELAY).decisions.map((d) => d.id);
   assert.deepEqual(got, [plain.id], 'only the plain answer: not the message, not the one its owner collected');
 });
@@ -65,8 +65,8 @@ test('the HTTP route passes orphans_after_minutes on, and a plain call is unchan
     const l = a.store.raise({ agent: 'claude-code:gone~eeee', area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'] }, Date.now() - 20 * MIN);
     a.store.act(l.id, 'answer', { value: 'S', rev: rev(l) }, Date.now() - 15 * MIN);
     const post = (b) => fetch(a.url + '/api/decisions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) }).then((r) => r.json());
-    assert.equal((await post({ agent: 'zachs-board', only: true })).decisions.length, 0);
-    const got = (await post({ agent: 'zachs-board', only: true, orphans_after_minutes: 10 })).decisions;
+    assert.equal((await post({ agent: 'owners-board', only: true })).decisions.length, 0);
+    const got = (await post({ agent: 'owners-board', only: true, orphans_after_minutes: 10 })).decisions;
     assert.equal(got.length, 1); assert.equal(got[0].raised_by, 'claude-code:gone~eeee');
   } finally { a.close(); }
 });

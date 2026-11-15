@@ -7,7 +7,7 @@ const path = require('path'), fs = require('fs'), os = require('os');
 
 function fuzz(SEEDS = 20, STEPS = 300) {
   const { open, rev, CLAIM_MS, HOLD_MS, OUT_HOLD_MS } = require('../lib/store');
-  const AGENTS = ['claude-code:alpha~1a2b', 'claude-code:beta~3c4d', 'zachs-board', 'claude-code:around-lex'];
+  const AGENTS = ['claude-code:alpha~1a2b', 'claude-code:beta~3c4d', 'owners-board', 'claude-code:around-lex'];
   const viol = {}, samples = {}, THROWS = {}, COV = { orphans: 0, approvals: 0, answers: 0, handed: 0, rehanded_after_claim: 0, undone: 0, completed: 0, outbound_handed: 0 };
   const bad = (kind, msg, seed, step) => { viol[kind] = (viol[kind] || 0) + 1; if (!samples[kind]) samples[kind] = `seed ${seed} step ${step}: ${msg}`; };
   for (let seed = 1; seed <= SEEDS; seed++) {
@@ -59,8 +59,8 @@ function fuzz(SEEDS = 20, STEPS = 300) {
           const mine = s.db.lights.filter((l) => l.agent && ['need_you', 'queued'].includes(l.state)); if (!mine.length) continue;
           const l = pick(mine); try { s.update(l.id, { draft: 'New ' + step, agent: l.agent }, l.agent, now); } catch (e) { /* frozen is fine */ }
         } else if (r < 0.84) {
-          const agent = pick(AGENTS), only = agent === 'zachs-board' ? rnd() < 0.8 : false, all = !only && rnd() < 0.05;
-          const orphansMs = agent === 'zachs-board' && only && rnd() < 0.7 ? 10 * 60e3 : 0;
+          const agent = pick(AGENTS), only = agent === 'owners-board' ? rnd() < 0.8 : false, all = !only && rnd() < 0.05;
+          const orphansMs = agent === 'owners-board' && only && rnd() < 0.7 ? 10 * 60e3 : 0;
           const out = s.decisions(now, { agent, only, all, orphans: orphansMs });
           asked[agent] = now;
           for (const d of out.decisions) {

@@ -111,7 +111,7 @@ function openLink(link) {
   const b = process.env.BROWSER; // the usual override, also used by the tests
   return new Promise((done) => {
     const c = spawn(b || (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'cmd' : 'xdg-open'), !b && process.platform === 'win32' ? ['/c', 'start', '""', link] : [link], Object.assign({ stdio: 'ignore', detached: true }, !b && process.platform === 'win32' ? { windowsVerbatimArguments: true } : {}));
-    let over = false; const end = (why) => { if (over) return; over = true; c.unref(); if (why) { console.error(`${why} Run ${SELF} link in your own terminal and open what it prints.`); process.exitCode = 1; } done(); };
+    let over = false; const end = (why) => { if (over) return; over = true; c.unref(); if (why) { console.error(`${why} Run ${SELF} link${onPort(link)} in your own terminal and open what it prints.`); process.exitCode = 1; } done(); };
     c.on('error', () => end('Could not open a browser from here.'));
     c.on('exit', (code) => end(code ? `The browser did not open (exit ${code}).` : ''));
     c.on('spawn', () => setTimeout(() => end(''), 3000).unref());

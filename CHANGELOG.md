@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.1 (Nov 15, 2026)
+
+- **Public changes are answered one at a time.** Putting something live on a website, a post on a social site, a newsletter, press release or launch post is high stakes, like a deletion or a production database change, and never joins a group tap.
+
+- **Deleting is never part of a group tap.** A light that deletes, removes, cleans up, wipes, purges, erases or
+  destroys something, runs `rm -rf` or force-pushes (in any capitals) is now high stakes: answered one at a time,
+  never pre-ticked in "Safe to take together". "Clean up old branches and worktrees, and the backups folder?" with
+  "Yes all" recommended now waits for its own tap. A recommended "No" (keep everything) is read first, never safe.
+  The answers count too: "Delete them all" or "Refund in full" as a button makes the light high even when the title
+  sounds harmless. Prune, trash, discard, clear out, dropping a table or branch, `rm -r`, `git reset --hard` and
+  `git branch -D` count as deleting. Words that only describe ("Nothing is deleted", "No files are removed", "the
+  cleaned-up logo", the phone's "Recently Deleted" folder) do not, and a to-do never does: tapping Done deletes nothing.
+- **The relay keeps his words on the light.** When the owner answers a message to a customer with anything but
+  Switchboard's own buttons ("It went out", "It did not go out", "It was done", "It was not done" and the like),
+  the note in the queue says "(his words are on the Switchboard light)" instead of repeating the answer, so a
+  name in it never reaches the queue file.
+- **Honest minutes in the headline.** The minutes add up only the taps that have a time; the rest are a count
+  beside them, for example "45 waiting on you · about 7 min (27 not timed)". No row says "not timed yet" any more:
+  a time shows only when it is known.
+- **A calmer row.** Each row in the list shows one main button (the gold one: Approve, Done, Copy text, Yes) and
+  More…, which holds the rest (Change…, Don't send, Snooze, Drop, I sent it, Move to Reach out). The keys work as
+  before (Enter, E, S, N). Broken lights keep their own buttons (Run it now and so on). On a phone both buttons
+  are at least 44 pixels tall.
+  A row never hides what you need to read first: a text to a person shows "Open in Messages" (the ghost "I sent it"
+  is under More…), a question about a page keeps "Open page ↗" beside its answer, and a choice with no recommended
+  answer shows every answer side by side, so none looks like the suggested one. More… closes when the light changes,
+  when you tap Change… and on Escape, so it never shows buttons left over from before. When none of the waiting taps
+  is timed, the headline says so ("5 waiting on you (none timed)").
+- **Setup questions land in the Switchboard container.** Every question `setup_guide` hands out now carries
+  `area: "Switchboard"` (raising a light needs one), and SETUP.md says the same, with the same notes and the
+  recommended answer marked the same way.
+- **Links on another port.** When the board is not on port 4747, the "run cli.js link" hints from `open_board`,
+  the out-of-date-link page, the command line and the start message include `--port N`.
+- **Made-up names only.** Examples in the changelog and the tests use made-up businesses and people.
+
 ## 0.3.0 (Nov 15, 2026)
 
 - **Cloud drafts for a person are messages.** When the relay turns a queue question with a draft for a person
@@ -43,7 +78,7 @@
 - **Customer details stay out of git and off the lock screen.** The relay's notes in queue.md name a message to a
   customer only by its area, "a customer" and the light id: never the person's name, number or the words (the
   session reads those on Switchboard). No note ever carries a phone number. With banner titles on, a message to
-  a customer shows as "a message to a customer is ready (Evening Glow)".
+  a customer shows as "a message to a customer is ready (Acme Lighting)".
 - **Every customer message has one owner.** Raising a message to a customer with no name (or `for_anyone`) is
   refused with a clear message, so two sessions can never both send it (marking it as an example through the
   API does not get around this). The command line still works: it raises
@@ -51,8 +86,8 @@
 - **"Yes (recommended)" works.** An option label marked "(recommended)" becomes the recommended answer, and the
   mark comes off the button.
 - **Sessions outside a repo name their project.** A session started in the home folder (or Desktop, Documents,
-  Downloads, or the top of the disk) that names no project cannot ask Zach a question or approval (it is told to
-  pass `project`), so his answer always comes back to a session working on that project. Other lights get a
+  Downloads, or the top of the disk) that names no project cannot ask the owner a question or approval (it is told to
+  pass `project`), so their answer always comes back to a session working on that project. Other lights get a
   warning. A plain project folder that is not a git repository is fine: its name is the project.
 - **New page key.** `node cli.js rotate-key` makes a new key: links opened before can only look once the board
   restarts. A login item is stopped for you; the command says how to start it and get the new link. Only the board

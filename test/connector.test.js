@@ -138,6 +138,8 @@ test('open_board says so when the browser did not open, and offers a way that ne
     assert.ok(r.text.includes(file), r.text);
     assert.ok(fs.readFileSync(file, 'utf8').includes(a.link), 'the file opens the key link');
     if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o600, 'only the person can read it');
+    // The terminal way names this board's port: it is not on the usual one.
+    assert.ok(r.text.includes('link --port ' + new URL(a.url).port), r.text);
   } finally { m.close(); a.close(); }
 });
 

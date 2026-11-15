@@ -409,11 +409,11 @@ test('an empty collection says what is still in the undo window, and what is rea
 
 test('an approval only one program can collect names that program, instead of asking for a chat that cannot collect it', () => {
   const MIN = 60e3, s = fresh();
-  const relay = s.raise({ area: 'Board', title: 'Order flyers', draft: 'Order 500 flyers', kind: 'approve', key: 'board:r12', agent: 'zachs-board' }, T0);
+  const relay = s.raise({ area: 'Board', title: 'Order flyers', draft: 'Order 500 flyers', kind: 'approve', key: 'board:r12', agent: 'owners-board' }, T0);
   const anyone = s.raise({ area: 'Shop', title: 'Order boxes', draft: 'Order 20 boxes', kind: 'approve' }, T0);
   for (const l of [relay, anyone]) s.act(l.id, 'approve', { rev: s.view(T0).lights.find((x) => x.id === l.id).rev }, T0);
   const shown = (id) => s.view(T0 + 17 * MIN).lights.find((x) => x.id === id);
-  assert.equal(shown(relay.id).alert, 'Waiting for zachs-board to check in. Only it can collect this one.');
+  assert.equal(shown(relay.id).alert, 'Waiting for owners-board to check in. Only it can collect this one.');
   assert.doesNotMatch(shown(relay.id).alert, /Start a chat/);
   assert.match(shown(anyone.id).alert, /^Waiting for an assistant to check in\. Start a chat and say/);
 });

@@ -245,3 +245,54 @@ test('a timed pass inside one area is filled from that area only', () => {
   assert.deepEqual(f.ids.slice().sort(), mine.map((l) => l.id).sort());
   assert.ok(s.fit(10, T).ids.length > 3, 'without an area the whole board fills it, as before');
 });
+
+test('a deletion is high: it cannot be taken back, so it is never in a group tap', () => {
+  const title = 'Clean up old branches and worktrees, and the _published-backups folder?';
+  assert.deepEqual([guess({ title, options: ['Yes all', 'No'], recommended: 'Yes all' }).stakes, guess({ title }).why], ['high', 'DELETES']);
+  for (const t of ['Delete the old preview builds', 'Remove the unused venue rows', 'Wipe the test inbox', 'PURGE the cache folder',
+    'Erase the draft photos', 'Destroy the staging box', 'Run rm -rf dist/old', 'Force-push the cleaned branch', 'cleanup of stale tags', 'Clean-up the backups'])
+    assert.equal(guess({ title: t }).why, 'DELETES', t);
+  // A "No" to a deletion keeps things as they are: read first or high, never safe.
+  const no = guess({ title, options: ['Yes all', 'No'], recommended: 'No' });
+  assert.notEqual(no.stakes, 'safe');
+  assert.notEqual(guess({ title: 'Keep the old branches, or delete them?', options: ['Delete', 'Keep'], recommended: 'Keep' }).stakes, 'safe');
+  // On a board: the deletion is not in the safe lane, and a group tap refuses it.
+  const s = fresh();
+  const a = yn(s, title, { options: ['Yes all', 'No'], recommended: 'Yes all' });
+  const b = yn(s, 'Rename the internal dashboard tab'), c = yn(s, 'Sort the tag list');
+  const v = s.view(T);
+  assert.ok(!v.lanes.safe.includes(a.id) && !v.lanes.read.includes(a.id));
+  assert.ok(v.lanes.high.includes(a.id));
+  assert.ok(v.lanes.safe.includes(b.id) && v.lanes.safe.includes(c.id));
+  assert.throws(() => s.bulk([a.id, b.id], 'recommended', { revs: { [a.id]: rev(v.lights.find((l) => l.id === a.id)), [b.id]: rev(v.lights.find((l) => l.id === b.id)) } }, T), /one at a time/);
+});
+
+test('a deletion in an answer, or in other common words, is high too', () => {
+  // The words of the answers count: a deletion in "Delete them all" cannot be taken in a group tap.
+  assert.deepEqual(guess({ title: 'The 14 stale worktrees and the _published-backups folder', options: ['Delete them all', 'Keep'], recommended: 'Delete them all' }), { stakes: 'high', from: 'guess', why: 'DELETES' });
+  assert.equal(guess({ title: 'The customer asked for their money back', options: ['Refund in full', 'Partial'], recommended: 'Partial' }).stakes, 'high');
+  for (const t of ['Prune stale worktrees and old branches?', 'Drop the old leads table?', 'Trash the 40 old drafts in the mailbox?',
+    'Run git reset --hard origin/main on the release branch?', 'rm -r ~/Desktop/old-plans?', 'git branch -D the 9 merged branches?',
+    'Clear out the backups folder?', 'Discard the unsaved layout changes?', 'git push --force to main?'])
+    assert.equal(guess({ title: t, options: ['Yes', 'No'], recommended: 'Yes' }).why, 'DELETES', t);
+});
+
+test('words that say nothing is deleted, a description, or a to-do do not make a light high', () => {
+  for (const l of [
+    { title: 'Turn on the weekly digest?', note: 'Nothing is deleted; you can turn it off later.' },
+    { title: 'Pick a color for the header', note: 'No files are removed.' },
+    { title: 'Use the cleaned-up logo?' },
+    { title: 'Move the photos to the shared album?', note: 'This does not delete anything, and it runs without removing the originals.' },
+    { title: 'Drop by the shop for the sample fixtures?' },
+    { title: 'Check Recently Deleted for your wiped texts', kind: 'todo' },
+  ]) assert.equal(guess(Object.assign({ options: ['Yes', 'No'], recommended: 'Yes' }, l)).stakes, 'safe', l.title);
+  // A real deletion next to a calm sentence still counts.
+  assert.equal(guess({ title: 'Delete the old previews?', note: 'Nothing else is removed.' }).why, 'DELETES');
+});
+
+test('public changes are high: live on a website, social posts, newsletters; routine words are not', () => {
+  const { stakes } = require('../lib/store');
+  const st = (title) => stakes({ title, kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', note: '', draft: '' }).stakes;
+  for (const t of ['Put the new pricing line live on example.com', 'Go live with the new homepage', 'Post the launch thread on LinkedIn', 'Send the November newsletter', 'Publish the press release']) assert.equal(st(t), 'high', t);
+  for (const t of ['Let the publish and send lists accept the same email spellings', 'Merge the docs typo fix', 'Keep the event search inside Filter events on phones']) assert.notEqual(st(t), 'high', t);
+});

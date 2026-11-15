@@ -169,7 +169,7 @@ async function start(opts = {}) {
         return res.end(JSON.stringify({ name: 'Switchboard', short_name: 'Switchboard', start_url: '/', scope: '/', display: 'standalone', background_color: '#0E1116', theme_color: '#0E1116', icons: [{ src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] }));
       }
       if (req.method === 'GET' && p === '/' && url.searchParams.get('key')) {
-        if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Ask your assistant to open Switchboard for you, or get the current link in a terminal with: node "${path.join(__dirname, 'cli.js')}" link` });
+        if (url.searchParams.get('key') !== pageKey) return json(res, 403, { error: `That link is out of date. Ask your assistant to open Switchboard for you, or get the current link in a terminal with: node "${path.join(__dirname, 'cli.js')}" link${server.address().port !== 4747 ? ' --port ' + server.address().port : ''}` });
         // The page itself keeps the key (per address, port included) and takes it out of the address bar. No cookie: a cookie
         // on 127.0.0.1 is shared with every other local server, and with a simulation on another port.
         res.writeHead(200, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, SAFE));
@@ -304,6 +304,6 @@ module.exports = { start };
 
 if (require.main === module) {
   // The key link only to a terminal: a login item's log file is no place for it.
-  start().then((s) => console.log(process.stdout.isTTY ? `Switchboard is on. Open it with this link once per browser: ${s.link}\n(data: ${s.store.file})` : `Switchboard is on at ${s.url}. Open it ready to approve with: node "${path.join(__dirname, 'cli.js')}" link --open\n(data: ${s.store.file})`))
+  start().then((s) => console.log(process.stdout.isTTY ? `Switchboard is on. Open it with this link once per browser: ${s.link}\n(data: ${s.store.file})` : `Switchboard is on at ${s.url}. Open it ready to approve with: node "${path.join(__dirname, 'cli.js')}" link --open${new URL(s.url).port !== '4747' ? ' --port ' + new URL(s.url).port : ''}\n(data: ${s.store.file})`))
     .catch((e) => { console.error(e.code === 'EADDRINUSE' ? 'Switchboard is already running on that port.' : e.message); process.exit(1); });
 }

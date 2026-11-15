@@ -42,7 +42,7 @@ test('1.3 bulk approve needs the rev of every light', () => {
   const s = open(tmp());
   const ls = [1, 2, 3].map((i) => s.raise({ area: 'A', title: 'fix ' + i, change_from: 'a', change_to: 'b', action_type: 'fix' }, T0));
   const revs = {}; ls.forEach((l) => { revs[l.id] = revOf(s, l.id, T0); });
-  s.update(ls[2].id, { change_to: 'delete everything' }, 'agent', T0 + 1000);
+  s.update(ls[2].id, { change_to: 'something else entirely' }, 'agent', T0 + 1000);
   assert.throws(() => s.bulk(ls.map((l) => l.id), 'approve', { revs }, T0 + 2000), /This changed/);
   assert.equal(s.view(T0 + 2000).queue.length, 3, 'nothing was approved');
 });

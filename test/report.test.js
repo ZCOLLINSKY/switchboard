@@ -12,8 +12,8 @@ test('the report counts what came in, what was decided and how fast, and what is
   const T = new Date(2026, 10, 16, 9, 0, 0).getTime(), M = 60e3;
   const a = s.raise({ agent: 'claude-code:around-lex', area: 'Around Lex', title: 'Ship release 131?', kind: 'decide', options: ['Yes', 'No'] }, T);
   const b = s.raise({ agent: 'claude-code:around-lex', area: 'Around Lex', title: 'Reply to the Lyric', kind: 'approve', draft: 'Thanks!', outbound: true, to: 'Lyric' }, T);
-  const c = s.raise({ agent: 'zachs-board', area: 'LightDeck', title: 'Rename the repo?', kind: 'decide', options: ['Yes', 'No'] }, T + M);
-  s.raise({ agent: 'zachs-board', area: 'LightDeck', title: 'Still waiting one', kind: 'todo' }, T + 2 * M);
+  const c = s.raise({ agent: 'owners-board', area: 'LightDeck', title: 'Rename the repo?', kind: 'decide', options: ['Yes', 'No'] }, T + M);
+  s.raise({ agent: 'owners-board', area: 'LightDeck', title: 'Still waiting one', kind: 'todo' }, T + 2 * M);
   s.raise({ agent: 'claude-code:test', area: 'Bourbon Daybook', title: 'Release running', kind: 'todo', state: 'auto' }, T + 2 * M);
   s.act(a.id, 'answer', { value: 'Yes', rev: rev(a) }, T + 4 * M);
   s.act(b.id, 'approve', { rev: rev(b) }, T + 10 * M);
@@ -23,7 +23,7 @@ test('the report counts what came in, what was decided and how fast, and what is
   s.save();
   const events = fs.readFileSync(path.join(dir, 'events.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
   const r = report(events, s.view(T + 40 * M), { days: 7, now: T + 40 * M });
-  assert.match(r, /Came in: 5 lights, 4 asking you \(from claude-code:around-lex 2, zachs-board 2, claude-code:test 1\)/);
+  assert.match(r, /Came in: 5 lights, 4 asking you \(from claude-code:around-lex 2, owners-board 2, claude-code:test 1\)/);
   assert.match(r, /You decided: 3 \(1 approved, 2 answered\)/);
   assert.match(r, /middle 10 min, fastest 4 min, slowest 20 min/);
   assert.match(r, /Picked up by assistants: 2 \(claude-code:around-lex 2\)/);

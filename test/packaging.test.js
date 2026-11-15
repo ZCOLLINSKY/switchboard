@@ -79,7 +79,7 @@ test('setup_guide gives the first-run steps from SETUP.md without touching a boa
     assert.match(g.guide, /## 6\. Prove the loop: Setup check/);
     // Setup is three taps on the board, ready to raise as they are, then the check; never questions in the chat.
     assert.deepEqual(g.questions.map((q) => q.key), ['setup:areas', 'setup:never', 'setup:attention', 'setup:check']);
-    for (const q of g.questions) { assert.equal(q.kind, 'decide'); assert.equal(q.for_anyone, true); assert.ok(q.options.length >= 1 && q.options.every((o) => o.length <= 40)); }
+    for (const q of g.questions) { assert.equal(q.area, 'Switchboard', 'raise_light needs an area'); assert.equal(q.kind, 'decide'); assert.equal(q.for_anyone, true); assert.ok(q.options.length >= 1 && q.options.every((o) => o.length <= 40)); }
     const att = g.questions[2];
     assert.deepEqual(att.options, ["Don't, I'll open it myself", 'A banner on this computer', 'A text to my phone']);
     assert.equal(att.recommended, "Don't, I'll open it myself", 'the safe choice is the recommended one');

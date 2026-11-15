@@ -84,6 +84,8 @@ h1.zero em{color:var(--green)}
 .tg.val{border-color:var(--green);color:var(--green)}
 .est{font-size:12px;color:var(--gold-soft);font-weight:600;white-space:nowrap}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
+#headline .untimed{font-size:.5em;font-weight:600;color:var(--soft);white-space:nowrap}
+.btns.one{flex-wrap:nowrap}.btns.one.wrap{flex-wrap:wrap}
 .btn{font-size:13px;font-weight:700;padding:8px 13px;border-radius:8px;background:var(--gold);color:var(--gold-ink);border:1px solid var(--gold);cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
 .btn.gh{background:transparent;border-color:var(--gold-line);color:var(--gold)}
 .red .btn{background:var(--red);border-color:var(--red);color:#2a0803}
@@ -430,11 +432,11 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function timeLine(ls) {
     var taps = ls.filter(function (l) { return !l.chore && !l.unsized; }), un = ls.filter(function (l) { return l.unsized && !l.chore; }).length, ch = ls.filter(function (l) { return l.chore; }), parts = [];
     if (taps.length) parts.push('About ' + about(sum(taps)) + (taps.length < ls.length ? ' of taps' : ''));
-    if (un) parts.push(un + ' not timed yet');
+    if (un) parts.push(un + ' with no time estimate');
     if (ch.length) parts.push(ch.length + (ch.length === 1 ? ' chore' : ' chores') + ' away from the board (about ' + about(ch.reduce(function (n, l) { return n + size(l); }, 0)) + ')');
     return parts.join(', plus ') + '.';
   }
-  function estText(l) { return l.chore ? dur(size(l)) + ' of work' : l.unsized ? 'not timed yet' : dur(l.est); }
+  function estText(l) { return l.chore ? dur(size(l)) + ' of work' : l.unsized ? '' : dur(l.est); }
   function when(t) {
     var a = new Date(S.now), b = new Date(t), hrs = Math.round((t - S.now) / 36e5);
     var d = Math.round((new Date(b.getFullYear(), b.getMonth(), b.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5);
@@ -569,11 +571,14 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function B(label, fn, cls, key) { return h('button', { class: 'btn' + (cls ? ' ' + cls : ''), type: 'button', onclick: function (e) { e.stopPropagation(); if (Date.now() < quietUntil) return; quietUntil = Date.now() + 400; fn(); }, 'aria-keyshortcuts': key && key.length === 1 && /[A-Z]/.test(key) ? key : null }, label, key ? h('kbd', { text: key, 'aria-hidden': 'true' }) : null); }
   function A(label, href, cls) { return h('a', { class: 'btn' + (cls ? ' ' + cls : ''), href: href, target: /^http/.test(href) ? '_blank' : null, rel: 'noopener', onclick: function (e) { e.stopPropagation(); } }, label); }
 
-  function buttons(l, isSel) {
+  // compact (a row in the list): one main button, the gold one (Approve, Done, Copy text, Yes), and More… for the rest.
+  // The keys (Enter, E, S, N...) work the same either way. A rapid card shows them all.
+  function buttons(l, isSel, compact) {
     var b = h('div', { class: 'btns' }), enter = isSel ? '⏎' : null;
+    delete moreOf[l.id]; // a row that changed or is being edited has no More menu: never one left over from before
     if (changedAt[l.id]) { b.appendChild(B('Look again', function () { lookAgain(l); })); return b; }
     if (editId === l.id) return b; // the box below has its own Save & approve and Cancel
-    var edit = function () { editId = l.id; editBase = l.draft; openId = l.id; sel = l.id; render(); };
+    var edit = function () { editId = l.id; editBase = l.draft; openId = l.id; sel = l.id; moreId = null; render(); };
     if (l.kind === 'approve') {
       if (l.channel !== 'agent' && asked[l.id]) {
         // They came back from Messages: ask, don't assume.
@@ -600,19 +605,42 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     } else {
       if (l.link) b.appendChild(A('Open page ↗', l.link));
       var yes = yesOf(l), no = noOf(l);
-      l.options.forEach(function (o, i) { var rec = l.recommended === o; b.appendChild(B(rec ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, (l.recommended ? !rec : i || l.link) ? 'gh' : '', isSel && o === yes ? '⏎' : isSel && o === no ? 'N' : null)); });
+      l.options.forEach(function (o, i) { var rec = l.recommended === o; b.appendChild(B(rec ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, ((l.recommended ? !rec : i || l.link) ? 'gh ' : '') + 'opt', isSel && o === yes ? '⏎' : isSel && o === no ? 'N' : null)); });
       if (l.kind !== 'fix' && !l.spot && !l.board && !l.brake) b.appendChild(B(l.kind === 'sense' ? 'Type what it says' : 'Other…', function () { noteId = l.id; openId = l.id; sel = l.id; render(); }, 'gh'));
       if (l.kind === 'fix' && !l.options.length) b.appendChild(B('Fixed', function () { act(l, 'done'); }));
     }
-    if (!l.spot) b.appendChild(B('Snooze', function () { snoozeId = snoozeId === l.id ? null : l.id; sel = l.id; render(); }, 'gh', isSel ? 'S' : null));
-    if (canReachOut(l)) b.appendChild(B('More\u2026', function () { moreId = moreId === l.id ? null : l.id; sel = l.id; render(); }, 'gh'));
+    if (!l.spot) b.appendChild(B('Snooze', function () { snoozeId = snoozeId === l.id ? null : l.id; moreId = null; sel = l.id; render(); }, 'gh', isSel ? 'S' : null));
     if (l.stale || l.kind === 'todo' || l.kind === 'fix' || l.channel !== 'agent') b.appendChild(B('Drop', function () { act(l, 'drop'); }, 'gh'));
-    return b;
+    if (canReachOut(l)) b.appendChild(B('Move to Reach out', function () { moreId = null; act(l, 'reach_out'); }, 'gh'));
+    if (!compact || b.children.length < 2) return b;
+    var kids = Array.prototype.slice.call(b.children), main = rowMain(l, kids);
+    moreOf[l.id] = kids.filter(function (x) { return main.indexOf(x) < 0; });
+    var one = h('div', { class: 'btns one' + (main.length > 2 ? ' wrap' : '') });
+    main.forEach(function (x) { one.appendChild(x); });
+    one.appendChild(B('More\u2026', function () { moreId = moreId === l.id ? null : l.id; snoozeId = null; sel = l.id; render(); }, 'gh more-btn'));
+    one.lastChild.setAttribute('aria-expanded', moreId === l.id ? 'true' : 'false');
+    return one;
+  }
+  var moreOf = {};
+  // What stays on a row: the gold button (Approve, Done, Copy text, the recommended answer) and, beside it, a gold link to open
+  // (Open in Messages, Open page ↗), so the words or the page are always one tap away. A ghost button like "I sent it" stands
+  // alone only when there is nothing to open. A choice with no recommended answer shows every answer side by side: none is put forward.
+  function rowMain(l, kids) {
+    var isBtn = function (x) { return x.tagName === 'BUTTON'; }, gold = function (x) { return !/\b(gh|plain)\b/.test(x.className); };
+    var link = l.kind !== 'todo' ? kids.filter(function (x) { return x.tagName === 'A' && gold(x); })[0] : null;
+    var opts = kids.filter(function (x) { return /\bopt\b/.test(x.className); });
+    if (opts.length > 1 && !(l.recommended && (l.options || []).indexOf(l.recommended) >= 0)) return (link ? [link] : []).concat(opts);
+    var main = [link, kids.filter(function (x) { return isBtn(x) && gold(x); })[0]].filter(Boolean);
+    return main.length ? main : [kids.filter(isBtn)[0] || kids[0]];
   }
   // A message to a person can be pushed into the folded "Reach out?" drawer by the person: out of the list, nothing decided.
   function canReachOut(l) { return S.canAct && l.kind === 'approve' && l.outbound && l.state === 'need_you' && !l.reachOut && !l.demo; }
+  // The rest of a row's buttons, under it. Move to Reach out says what it does: nothing is sent.
   function moreMenu(l) {
-    return h('div', { class: 'snz' }, 'More:', B('Move to Reach out', function () { moreId = null; act(l, 'reach_out'); }, 'gh'), h('span', { class: 'note', text: 'It waits folded away until you open it. Nothing is sent.' }));
+    var m = h('div', { class: 'snz moremenu' });
+    (moreOf[l.id] || []).forEach(function (x) { m.appendChild(x); });
+    if (canReachOut(l)) m.appendChild(h('span', { class: 'note', text: 'Reach out: it waits folded away until you open it. Nothing is sent.' }));
+    return m;
   }
   function snoozeMenu(l) {
     if (l.snoozes >= 2) {
@@ -739,9 +767,9 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
         h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)), l.changeFrom || l.changeTo ? h('small', { class: 'chgline' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })) : null,
           careful(l) ? h('span', { class: 'impact' + (l.impact ? '' : ' none'), text: l.impact ? 'Impact: ' + l.impact : 'No impact line from the assistant' }) : null,
           small ? h('small', { text: small }) : null, l.next ? h('span', { class: 'next', text: 'After: ' + l.next }) : null),
-        h('span', { class: 'est', text: estText(l) }), buttons(l, isSel)));
+        estText(l) ? h('span', { class: 'est', text: estText(l) }) : null, buttons(l, isSel, l.state !== 'broken')));
+    if (moreId === l.id && l.state !== 'broken' && moreOf[l.id]) r.appendChild(moreMenu(l));
     if (snoozeId === l.id) r.appendChild(snoozeMenu(l));
-    if (moreId === l.id && canReachOut(l)) r.appendChild(moreMenu(l));
     if (isOpen) { var d = details(l); if (d) r.appendChild(d); }
     return r;
   }
@@ -1000,11 +1028,16 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     var v = visible(), mine = queueLights(), waitingLs = mine.filter(function (l) { return l.state === 'need_you'; }), c = (areaFilter && area(areaFilter).counts) || S.counts;
     if (!v.keys.some(function (it) { return it.key === sel; })) sel = v.keys.length ? v.keys[0].key : null;
     if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
-    // The headline: how many are waiting on you and about how long they take. Untimed ones count at the usual time, marked ~.
+    // The headline: how many are waiting on you and about how long the timed taps take (what /api/state calls seconds).
+    // Untimed ones are never guessed in: they are a count beside the minutes.
     var H = $('headline'); H.textContent = ''; H.className = waitingLs.length || v.broken.length ? '' : 'zero';
     if (areaFilter) H.appendChild(document.createTextNode(area(areaFilter).name + ': '));
-    var taps = waitingLs.filter(function (l) { return !l.chore; }), guess = taps.some(function (l) { return l.unsized; });
-    if (waitingLs.length) { H.appendChild(h('em', { text: waitingLs.length + ' waiting on you' })); if (taps.length) H.appendChild(document.createTextNode(' · ' + (guess ? '~' : 'about ') + Math.max(1, Math.round(sum(taps) / 60)) + ' min')); }
+    var taps = waitingLs.filter(function (l) { return !l.chore && !l.unsized; }), untimed = waitingLs.filter(function (l) { return !l.chore && l.unsized; }).length;
+    if (waitingLs.length) {
+      H.appendChild(h('em', { text: waitingLs.length + ' waiting on you' }));
+      if (taps.length) H.appendChild(document.createTextNode(' · about ' + Math.max(1, Math.round(sum(taps) / 60)) + ' min'));
+      if (untimed) H.appendChild(h('span', { class: 'untimed', text: ' (' + (taps.length ? untimed : untimed === 1 ? 'not' : 'none') + ' timed)' }));
+    }
     else H.appendChild(h('em', { text: v.broken.length ? 'Nothing waiting on you' : areaFilter ? 'Nothing needs you here' : 'Nothing needs you right now' }));
     document.title = (S.counts.waiting || S.counts.broken ? '(' + S.counts.waiting + (S.counts.broken ? ', ' + S.counts.broken + ' broken' : '') + ') ' : '') + 'Switchboard';
     // One line that adds up to the whole board. The total opens the full list.
@@ -1308,7 +1341,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (rapid) stopRapid(); $('dump-text').focus(); return; }
     // A checkbox is not typing: after ticking a line, Enter, Y, 2/0/F and the arrows still work.
     var tag = (document.activeElement && document.activeElement.tagName) || '', typing = /INPUT|TEXTAREA|SELECT/.test(tag) && document.activeElement.type !== 'checkbox';
-    if (e.key === 'Escape') { if (typing) { var was = document.activeElement.id; document.activeElement.blur(); if (was === 'edit-text') { editId = null; editBase = null; } if (was === 'note-text') noteId = null; if (was === 'redo-text') redoId = null; if (was !== 'dump-text') render(); } else if (rapid) stopRapid(); else { editId = null; noteId = null; snoozeId = null; fit = null; render(); } return; }
+    if (e.key === 'Escape') { if (typing) { var was = document.activeElement.id; document.activeElement.blur(); if (was === 'edit-text') { editId = null; editBase = null; } if (was === 'note-text') noteId = null; if (was === 'redo-text') redoId = null; if (was !== 'dump-text') render(); } else if (rapid) stopRapid(); else { editId = null; noteId = null; snoozeId = null; moreId = null; fit = null; render(); } return; }
     if (typing || e.metaKey || e.ctrlKey || e.altKey || !S) return;
     var k = e.key.toLowerCase(), nav = /^Arrow/.test(e.key) || k === 'j' || k === 'k';
     // A held key must never act twice, and Enter waits a beat after a new row or card takes the selection.

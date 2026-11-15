@@ -90,3 +90,41 @@ test('the "Reach out?" drawer is built from the server\'s reachOut list, folded,
   assert.match(code, /act\(l, 'drop', why\.value\.trim\(\) \? \{ why: why\.value\.trim\(\) \} : \{\}\)/, '"Not now" drops it with the reason');
   assert.match(code, /act\(l, 'approve', \{ rev: roShown\[l\.id\] \}\)/, 'an assistant sends only the words that were on screen when the row was opened');
 });
+
+test('a list row shows one main button and More…; the headline adds only timed taps', () => {
+  // One gold button and More… on every queue row; broken rows (and the broken box) keep their own buttons.
+  assert.match(code, /buttons\(l, isSel, l\.state !== 'broken'\)/);
+  assert.match(code, /h\('div', \{ class: 'btns one' \+ \(main\.length > 2 \? ' wrap' : ''\) \}\);\n    main\.forEach\(function \(x\) \{ one\.appendChild\(x\); \}\);\n    one\.appendChild\(B\('More\\u2026'/);
+  assert.match(code, /if \(moreId === l\.id && l\.state !== 'broken' && moreOf\[l\.id\]\) r\.appendChild\(moreMenu\(l\)\)/);
+  // A time is shown only when it is known.
+  assert.doesNotMatch(html, /not timed yet/);
+  // The headline: minutes from timed taps only (as /api/state seconds), untimed ones a count beside them.
+  assert.match(code, /taps = waitingLs\.filter\(function \(l\) \{ return !l\.chore && !l\.unsized; \}\)/);
+  // ...and said even when none of them is timed.
+  assert.match(code, /if \(untimed\) H\.appendChild\(h\('span', \{ class: 'untimed', text: ' \(' \+ \(taps\.length \? untimed : untimed === 1 \? 'not' : 'none'\) \+ ' timed\)' \}\)\)/);
+});
+
+test('a row keeps the gold link to open beside its main button, and a choice with no recommendation shows every answer', () => {
+  const from = code.indexOf('  function rowMain(l, kids)'), to = code.indexOf('  function moreMenu(l)');
+  assert.ok(from > 0 && to > from, 'rowMain sits just before moreMenu()');
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(code.slice(from, to), ctx);
+  const el = (tagName, text, className) => ({ tagName, text, className: 'btn' + (className ? ' ' + className : '') });
+  const shown = (l, kids) => ctx.rowMain(l, kids).map((x) => x.text);
+  // A text to a person: Open in Messages stays on the row; the ghost "I sent it" goes under More…
+  assert.deepEqual(shown({ kind: 'approve', channel: 'sms', options: [] }, [el('A', 'Open in Messages'), el('BUTTON', 'I sent it', 'gh'), el('BUTTON', 'Change…', 'gh'), el('BUTTON', 'Drop', 'gh'), el('BUTTON', 'Move to Reach out', 'gh')]), ['Open in Messages']);
+  // A choice about a page, no recommendation: the page and every answer, side by side.
+  assert.deepEqual(shown({ kind: 'decide', link: 'https://example.com/preview', options: ['Yes', 'No'] }, [el('A', 'Open page ↗'), el('BUTTON', 'Yes', 'gh opt'), el('BUTTON', 'No', 'gh opt'), el('BUTTON', 'Other…', 'gh'), el('BUTTON', 'Snooze', 'gh')]), ['Open page ↗', 'Yes', 'No']);
+  // No recommendation, no link: the first answer is not put forward on its own.
+  assert.deepEqual(shown({ kind: 'decide', options: ['Brass', 'Black'] }, [el('BUTTON', 'Brass', 'opt'), el('BUTTON', 'Black', 'gh opt'), el('BUTTON', 'Other…', 'gh')]), ['Brass', 'Black']);
+  // With a recommendation: the page and the recommended answer.
+  assert.deepEqual(shown({ kind: 'decide', link: 'https://example.com/pricing', options: ['Looks right', 'Not yet'], recommended: 'Looks right' }, [el('A', 'Open page ↗'), el('BUTTON', 'Looks right · recommended', 'opt'), el('BUTTON', 'Not yet', 'gh opt')]), ['Open page ↗', 'Looks right · recommended']);
+  assert.deepEqual(shown({ kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes' }, [el('BUTTON', 'Yes · recommended', 'opt'), el('BUTTON', 'No', 'gh opt')]), ['Yes · recommended']);
+  // A to-do with a link keeps Done as its one button, as before; an agent approval keeps Approve.
+  assert.deepEqual(shown({ kind: 'todo', options: [] }, [el('A', 'Open ↗'), el('BUTTON', 'Done', 'gh'), el('BUTTON', 'Snooze', 'gh')]), ['Done']);
+  assert.deepEqual(shown({ kind: 'approve', channel: 'agent', options: [] }, [el('BUTTON', 'Approve'), el('BUTTON', 'Change…', 'gh'), el('BUTTON', 'No', 'gh')]), ['Approve']);
+  // Option buttons are marked so they can be kept together; editing or a changed light leaves no old More menu behind.
+  assert.match(code, /\(\(l\.recommended \? !rec : i \|\| l\.link\) \? 'gh ' : ''\) \+ 'opt'/);
+  assert.match(code, /delete moreOf\[l\.id\];/);
+  assert.match(code, /var edit = function \(\) \{ [^}]*moreId = null; render\(\); \}/);
+  assert.match(code, /snoozeId = null; moreId = null; fit = null; render\(\); \} return; \}/, 'Escape closes More… too');
+});

@@ -34,6 +34,8 @@ const USED = new Set();
 const namesFor = (me) => [me].concat([...USED].filter((n) => n !== me));
 const HOME = (process.env.SWITCHBOARD_HOME || path.join(os.homedir(), '.local', 'share', 'switchboard')).replace(/^~(?=$|\/)/, os.homedir());
 let BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${process.env.SWITCHBOARD_PORT || 4747}`).replace(/\/+$/, '');
+// The " --port N" a cli.js command needs to reach this board, or nothing on the usual port.
+const portFlag = () => { let p = ''; try { p = new URL(BASE).port; } catch (e) { /* not a URL */ } return p && p !== '4747' ? ` --port ${p}` : ''; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const notThere = (e) => { const c = (e && e.cause && e.cause.code) || (e && e.code) || ''; return c === 'ECONNREFUSED' || c === 'ENOENT' || c === 'EADDRNOTAVAIL'; };
 
@@ -297,7 +299,8 @@ async function callTool(name, a, signal) {
     let habits = ''; try { habits = fs.readFileSync(path.join(__dirname, 'skill', 'switchboard', 'SKILL.md'), 'utf8').replace(/^---\n[\s\S]*?\n---\n+/, '').trim(); } catch (e) { /* an install without the skill */ }
     const { ATTENTION_KEY, attentionOptions } = require('./lib/store'), reach = attentionOptions();
     // The three setup questions and the check, ready to raise as they are (step 5 and 6 of the guide say what to do with each answer).
-    const q = (key, title, options, recommended, note) => Object.assign({ key, title, kind: 'decide', options, for_anyone: true, note }, recommended ? { recommended } : {});
+    // Every setup question goes in the Switchboard container: raise_light needs an area.
+    const q = (key, title, options, recommended, note) => Object.assign({ key, area: 'Switchboard', title, kind: 'decide', options, for_anyone: true, note }, recommended ? { recommended } : {});
     const questions = [
       q('setup:areas', 'What do you want to keep up with?', ['My business', 'Side project', 'School', 'Family', 'Home'], '', 'Tap one, or type several, separated by commas (Lighting business, School, Family). Each becomes a container on your board.'),
       q('setup:never', 'What should never happen without your tap?', ['Keep all four', 'Let me change it'], 'Keep all four', 'Out of the box, each of these always waits for your tap: messages to people, anything with money, public posts, changes to live sites or databases.'),
@@ -320,7 +323,7 @@ async function callTool(name, a, signal) {
     const link = `${BASE}/?key=${key}`;
     try { await openInBrowser(link); } catch (e) {
       let file = ''; try { file = openerFile(link); } catch (e2) { /* the folder cannot be written */ }
-      throw new Error(`Could not open a browser from here. ${file ? `Ask the person to double-click ${file}: it opens their board ready to approve. Or, in` : 'Ask the person, in'} their own terminal, to run node "${path.join(__dirname, 'cli.js')}" link and open what it prints. Do not open that file or run that command yourself: the link is theirs.`);
+      throw new Error(`Could not open a browser from here. ${file ? `Ask the person to double-click ${file}: it opens their board ready to approve. Or, in` : 'Ask the person, in'} their own terminal, to run node "${path.join(__dirname, 'cli.js')}" link${portFlag()} and open what it prints. Do not open that file or run that command yourself: the link is theirs.`);
     }
     return { opened: true, board: BASE, note: 'Opened in their browser. The link is theirs and was not shown to you.' };
   }

@@ -236,14 +236,16 @@ that file:
 Setup is one sentence to you ("set up my Switchboard") and three taps on the
 board. Do not ask these questions in the chat: raise each as a light, call
 `open_board`, and tell the person in one sentence that three quick questions
-are waiting. Raise all three with `for_anyone: true` (so whichever session
-comes next can act on the answers), kind `decide`, and the stable `key` shown,
+are waiting. Raise all three with `area: "Switchboard"` (`raise_light` needs an area),
+`for_anyone: true` (so whichever session comes next can act on the answers),
+kind `decide`, and the stable `key` shown,
 so running setup again updates the same light instead of adding a second one.
 The person can tap a button or type their own answer ("Other…").
 
 1. **What do you want to keep up with?** `key: "setup:areas"`. Options:
    `My business`, `Side project`, `School`, `Family`, `Home`. Note: "Tap one,
-   or type several, separated by commas (Lighting business, School, Family)."
+   or type several, separated by commas (Lighting business, School, Family).
+   Each becomes a container on your board."
    Recommend one only if this chat already told you what they juggle; if you
    recommend nothing, the warning about a missing recommended answer is
    expected for this one question. Each answer becomes a container: call
@@ -252,12 +254,12 @@ The person can tap a button or type their own answer ("Other…").
 2. **What should never happen without your tap?** `key: "setup:never"`.
    Note: "Out of the box, each of these always waits for your tap: messages to
    people, anything with money, public posts, changes to live sites or
-   databases." Options: `Keep all four (recommended)` and `Let me change it`.
+   databases." Options: `Keep all four` (recommended) and `Let me change it`.
    Record the answer in every container's `voice` with `add_area`, for
    example "Never without his tap: messages to people, money, public posts,
    live sites and databases." If they typed a change, record exactly what they
    said. If they tapped `Let me change it` without typing anything, ask once
-   more on the board (never in the chat): kind `decide`, `key:
+   more on the board (never in the chat): `area: "Switchboard"`, kind `decide`, `key:
    "setup:never-change"`, title "Which of these may go ahead without your
    tap?", options `Money`, `Public posts`, `Live sites and databases`, `Keep
    all four` (recommended), note "Messages to people always wait for you. Type
@@ -269,7 +271,8 @@ The person can tap a button or type their own answer ("Other…").
    I'll open it myself` (recommended), `A banner on this computer`, `A text to
    my phone`; on Linux the first two (no texts); on Windows the question is
    left out (no banners or texts there), and attention is "none". Never offer
-   one this computer cannot do, and never reword them: only a tap on these
+   one this computer cannot do, and never reword them. Note: "Your tap sets
+   it. You can change it any time at the bottom of the board." Only a tap on these
    exact buttons sets the board's switches (no banners and no texts, banners
    on, or texts on); a typed answer is yours to read and set on the page's
    switches with the person. Texts to the phone are off until they choose
@@ -299,9 +302,10 @@ from this chat: one light per real item, with `for_anyone: true` and a stable
 
 ## 6. Prove the loop: Setup check
 
-1. Raise a last light with `for_anyone: true` and the stable `key`
-   `setup:check`: kind `decide`, title "Setup check", options `Check my setup`
-   (recommended), note "Tap it and your assistant checks that it heard you."
+1. Raise a last light with `area: "Switchboard"`, `for_anyone: true` and the
+   stable `key` `setup:check`: kind `decide`, title "Setup check", options
+   `Check my setup` (recommended), note "Tap it and your assistant checks that
+   it heard your answers."
 2. Wait for the tap with `wait_for_decision` on that light's id (it waits at
    most 50 seconds: if it returns `decided: false`, call it again), or
    `get_decisions` after the hold: 20 seconds for an answer, 60 for a message

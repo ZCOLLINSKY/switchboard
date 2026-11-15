@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.2 (Nov 15, 2026)
 
 - **Answers you give in chat count.** When you answer an assistant in the chat instead of on the board, it can record
   your answer with your exact words (`record_answer`), so the board stops asking and the answer is on record.

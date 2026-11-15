@@ -1,7 +1,7 @@
 {
   "name": "switchboard",
   "displayName": "Switchboard",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "One local screen for everything your AI assistants are waiting on you for, with the draft attached. You approve on the board; the assistant acts.",
   "author": {
     "name": "Zach Collins",

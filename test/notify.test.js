@@ -74,7 +74,7 @@ test('the macOS sender passes the words as arguments, never inside the script', 
 
 test('the board rings when a light that needs the person is raised, and only when switched on', async () => {
   const sent = [], dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sbn-'));
-  const a = await start({ port: 0, dir, notify: { send: (t, b) => sent.push(b), titles: true } });
+  const a = await start({ port: 0, dir, notify: { send: (t, b) => sent.push(b), titles: true, quiet: [0, 0] } }); // no quiet hours: the test runs at any hour
   try {
     await fetch(a.url + '/api/lights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ agent: 't', area: 'Shop', title: 'Which size?', kind: 'decide', options: ['S', 'L'] }) });
     assert.deepEqual(sent, ['Which size? (Shop)']);

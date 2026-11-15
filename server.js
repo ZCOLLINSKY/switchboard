@@ -53,7 +53,7 @@ async function start(opts = {}) {
   let notify = null;
   if (!sim) {
     const N = require('./lib/notify');
-    if (opts.notify !== undefined) { if (opts.notify) { const send = opts.notify.send || N.osSender(); if (send) notify = N.notifier({ send, titles: !!opts.notify.titles }); } }
+    if (opts.notify !== undefined) { if (opts.notify) { const send = opts.notify.send || N.osSender(); if (send) notify = N.notifier({ send, titles: !!opts.notify.titles, quiet: opts.notify.quiet }); } }
     else {
       const env = N.sendersFromEnv(process.env);
       if (env.warning) console.error(env.warning);
@@ -193,7 +193,9 @@ async function start(opts = {}) {
       const was = store.db.seen.checkIn, firstIn = () => was == null || Date.now() - was > 5 * 60e3;
       if (p === '/api/decisions') {
         const orphans = Number(body.orphans_after_minutes) > 0 ? Math.max(1, Number(body.orphans_after_minutes)) * 60e3 : 0;
-        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true, orphans });
+        // A scheduled task's rhythm (checks_every_minutes): 0 clears it, anything else is kept between 1 minute and 26 hours.
+        const every = body.checks_every_minutes == null || body.checks_every_minutes === '' ? undefined : Math.max(0, Number(body.checks_every_minutes) || 0) * 60e3;
+        const got = store.decisions(Date.now(), { agent: String(body.agent || ''), agents: body.agents, all: body.all === true, only: body.only === true, orphans, every });
         if (got.decisions.length || got.sent_by_you.length || firstIn()) changed();
         return json(res, 200, got);
       }

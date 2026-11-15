@@ -219,3 +219,20 @@ test('a session working on a collected approval keeps its claim with progress, u
     assert.ok(a.store.db.lights[0].decision.claimUntil > before, 'the claim was kept, though the session now names a project');
   } finally { s.close(); a.close(); }
 });
+
+test('a scheduled task\'s checks_every_minutes reaches the board through the connector, and 0 clears it', async () => {
+  const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  const env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port };
+  const task = mcp(env, home);
+  try {
+    await task.hello();
+    await task.call('get_decisions', { project: 'agent-queue', checks_every_minutes: 30 });
+    const name = Object.keys(a.store.db.seen.every || {}).find((n) => n.endsWith(':agent-queue'));
+    assert.ok(name, 'the rhythm is kept under the task\'s own name');
+    assert.equal(a.store.db.seen.every[name], 30 * 60e3);
+    await task.call('get_decisions', { project: 'agent-queue' });
+    assert.equal(a.store.db.seen.every[name], 30 * 60e3, 'a call without it keeps it');
+    await task.call('get_decisions', { project: 'agent-queue', checks_every_minutes: 0 });
+    assert.equal(a.store.db.seen.every[name], undefined);
+  } finally { task.close(); a.close(); }
+});

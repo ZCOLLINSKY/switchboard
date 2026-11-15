@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Scheduled tasks keep their answers.** `get_decisions` takes
+  `checks_every_minutes`: a task that runs every 30 minutes (or four times a
+  day) says so, and an answer to its light waits for its next run instead of
+  going to the relay 10 minutes after the tap. A task that stops running still
+  hands its answers on once it misses a run by the same wait. 0 clears it; capped
+  at 26 hours. Tests no longer depend on the hour they run (quiet hours).
+
 - **Sessions close their own lights.** `close_light {key or id, outcome, note}`
   finishes work a session is done with (refused while a decision on the light is
   out). `update_light` accepts `key` instead of `id`. `list_lights` now returns

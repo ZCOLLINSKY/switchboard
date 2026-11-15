@@ -142,6 +142,13 @@ it finishes. If you are blocked mid-task on one answer, `wait_for_decision`
 waits for it instead of stopping. If it fails and you cannot recover, set
 it to `broken` with a one-line fix.
 
+If you are a scheduled task (you run every so often, not in a live chat), pass
+`checks_every_minutes` to `get_decisions` with the longest gap between your runs
+(30 for every half hour, 720 for a task that runs 8 am to 8 pm). The person's
+answers to your lights then wait for your next run. Without it, an answer you
+have not collected about 10 minutes after they tap may be handed to their relay
+as a note for whichever session picks the project up next.
+
 ## Hard rules
 
 - Set `outbound: true` on anything that sends a message to another person.

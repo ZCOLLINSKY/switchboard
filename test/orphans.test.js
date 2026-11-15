@@ -70,3 +70,41 @@ test('the HTTP route passes orphans_after_minutes on, and a plain call is unchan
     assert.equal(got.length, 1); assert.equal(got[0].raised_by, 'claude-code:gone~eeee');
   } finally { a.close(); }
 });
+
+test('a scheduled task that says how often it runs keeps its answers until it misses a run', () => {
+  const s = fresh();
+  const TASK = { agent: 'claude-code:agent-queue', every: 30 * MIN };
+  s.decisions(T0, TASK); // the 10:00 run checks in and says it runs every 30 minutes
+  const l = s.raise({ agent: 'claude-code:agent-queue', area: 'Ops', title: 'Run 4 times a day?', kind: 'decide', options: ['Yes', 'No'] }, T0);
+  s.act(l.id, 'answer', { value: 'Yes', rev: rev(l) }, T0 + 2 * MIN);
+  assert.equal(s.decisions(T0 + 15 * MIN, RELAY).decisions.length, 0, 'past the usual 10 minutes, but its next run is not due until 10:30');
+  assert.equal(s.decisions(T0 + 35 * MIN, RELAY).decisions.length, 0, 'still inside the grace after 10:30');
+  const got = s.decisions(T0 + 31 * MIN, TASK).decisions; // the 10:31 run picks it up itself
+  assert.equal(got.length, 1);
+  assert.equal(got[0].value, 'Yes');
+  assert.ok(!got[0].orphan);
+});
+
+test('a task that stops running still hands its answer on, after the missed run plus the wait', () => {
+  const s = fresh();
+  s.decisions(T0, { agent: 'claude-code:nightly', every: 60 * MIN });
+  const l = s.raise({ agent: 'claude-code:nightly', area: 'Ops', title: 'Keep the nightly check?', kind: 'decide', options: ['Yes', 'No'] }, T0);
+  s.act(l.id, 'answer', { value: 'No', rev: rev(l) }, T0 + 5 * MIN);
+  assert.equal(s.decisions(T0 + 65 * MIN, RELAY).decisions.length, 0, 'its 11:00 run is only 5 minutes late');
+  const got = s.decisions(T0 + 71 * MIN, RELAY).decisions;
+  assert.equal(got.length, 1, 'missed its run by more than the wait: the relay takes it');
+  assert.equal(got[0].orphan, true);
+});
+
+test('a live session sharing the name keeps the rhythm; 0 clears it; nonsense is ignored', () => {
+  const s = fresh();
+  s.decisions(T0, { agent: 'claude-code:around-lex', every: 240 * MIN });
+  s.decisions(T0 + MIN, { agent: 'claude-code:around-lex' }); // a live session with the same name says nothing
+  assert.equal(s.db.seen.every['claude-code:around-lex'], 240 * MIN);
+  s.decisions(T0 + 2 * MIN, { agent: 'claude-code:around-lex', every: 0 });
+  assert.equal(s.db.seen.every['claude-code:around-lex'], undefined);
+  s.decisions(T0 + 3 * MIN, { agent: 'claude-code:around-lex', every: 'soon' });
+  assert.equal(s.db.seen.every['claude-code:around-lex'], undefined, 'not a number: nothing kept');
+  s.decisions(T0 + 4 * MIN, { agent: 'claude-code:around-lex', every: 999 * 3600e3 });
+  assert.equal(s.db.seen.every['claude-code:around-lex'], 26 * 3600e3, 'capped at 26 hours');
+});

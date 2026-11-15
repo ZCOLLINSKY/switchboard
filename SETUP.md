@@ -4,16 +4,58 @@ You are setting up Switchboard for the person you are working with. Do the steps
 in order. Do the work yourself; ask the person only the questions marked **Ask**.
 Tell them in plain words what you did at the end.
 
+The whole setup, for the person, is one sentence to you ("Set up Switchboard
+for me") and three taps on the board (step 5), then one "Setup check" tap that
+proves the loop (step 6). Do everything else yourself.
+
+On Windows, run the commands in PowerShell. Where a command differs, the
+PowerShell version follows the Mac and Linux one.
+
 All paths below are relative to this folder. Wherever a command needs its
 absolute path, it is shown as `REPO`. Keep the quotes: the path may contain
 spaces.
 
 ## 0. Already connected?
 
-If you already have the Switchboard tools (`open_board`, `raise_light`), the
-person installed the Claude Code plugin or the Claude Desktop extension. Skip
-steps 1 to 4: call `open_board` (it starts the board and opens it in their
-browser with their key, which you never see), then go to step 5.
+If you already have the Switchboard tools (`open_board`, `raise_light`) because
+the person installed the Claude Code plugin or the Claude Desktop extension,
+skip steps 1 to 4: call `open_board` (it starts the board and opens it in their
+browser with their key, which you never see), then go to step 5. The plugin
+and the extension bring their own rules.
+
+If you are Codex (or another assistant) and have the tools because the person
+added the MCP server by hand, skip steps 1 to 3 but do step 4 (copy the skill,
+or offer the AGENTS.md lines): without it, later sessions never check
+`get_decisions` and the person's answers are never picked up. Then call
+`open_board` and go to step 5.
+
+If you are Claude Code without the tools, the easiest path is the plugin: give
+the person these two lines to paste into a session, then ask them to start a
+new session and type `/switchboard:setup`:
+
+```
+/plugin marketplace add ZCOLLINSKY/switchboard
+/plugin install switchboard@zcollinsky
+```
+
+If you are Claude Desktop without the tools, tell them to download the `.mcpb`
+file from https://github.com/ZCOLLINSKY/switchboard/releases/latest,
+double-click it, click Install, and say "Set up my Switchboard" in a new chat.
+
+Otherwise (Codex, another assistant, or the person prefers it), get the folder
+if you do not have it yet, then follow steps 1 to 8. `REPO` is wherever it
+lands:
+
+```sh
+git clone https://github.com/ZCOLLINSKY/switchboard.git ~/switchboard
+```
+
+```powershell
+git clone https://github.com/ZCOLLINSKY/switchboard.git "$HOME\switchboard"
+```
+
+No git: download https://github.com/ZCOLLINSKY/switchboard/archive/refs/heads/main.zip
+and unzip it.
 
 ## 1. Check Node
 
@@ -38,7 +80,13 @@ answers:
 for i in 1 2 3 4 5 6 7 8 9 10; do node "REPO/cli.js" link && break; sleep 1; done
 ```
 
-If it still does not answer, read `${TMPDIR:-/tmp}/switchboard-start.log`: it
+```powershell
+Start-Process -WindowStyle Hidden -FilePath node -ArgumentList '"REPO\cli.js"', 'start' -RedirectStandardOutput "$env:TEMP\switchboard-start.out" -RedirectStandardError "$env:TEMP\switchboard-start.log"
+for ($i = 0; $i -lt 10; $i++) { node "REPO\cli.js" link; if ($LASTEXITCODE -eq 0) { break }; Start-Sleep 1 }
+```
+
+If it still does not answer, read `${TMPDIR:-/tmp}/switchboard-start.log`
+(Windows: `$env:TEMP\switchboard-start.log`): it
 says why (another program on the port, a damaged data file, a folder your shell
 may not write to). If your shell cannot start or keep background programs, skip
 this step: the MCP server in step 3 starts the board by itself (checked: under
@@ -52,9 +100,10 @@ address. You cannot approve, undo or promote from the API, by design. To stop th
 `kill EPERM`, your shell may not signal programs it did not start: ask the
 person to run that command in their own terminal.
 
-Data is stored in `~/.local/share/switchboard/` (override with
+Data is stored in `~/.local/share/switchboard/` (Windows:
+`%USERPROFILE%\.local\share\switchboard`; override with
 `SWITCHBOARD_HOME`). For another port, set `SWITCHBOARD_PORT=5000` (or pass
-`--port 5000` to every command). Whatever you choose, use the same
+`--port 5000` to every command; in PowerShell, `$env:SWITCHBOARD_PORT = "5000"`). Whatever you choose, use the same
 `SWITCHBOARD_HOME` and `SWITCHBOARD_PORT` for every command here and for the
 MCP server in step 3, or it will start a second, empty board. Set both
 together: `SWITCHBOARD_HOME` alone still looks for the board on port 4747.
@@ -77,7 +126,25 @@ name (`switchboard`) and before `--`:
 claude mcp add --scope user switchboard -e SWITCHBOARD_HOME="/path/to/data" -e SWITCHBOARD_PORT=5000 -- node "REPO/mcp.js"
 ```
 
-Any other MCP client, in its server config:
+The same command works in PowerShell.
+
+Codex: add this to `~/.codex/config.toml` (Windows:
+`%USERPROFILE%\.codex\config.toml`; create the file if it is missing). Use
+the full path of node (`command -v node`; Windows: `where.exe node`), because
+Codex may not see your shell's PATH. On Windows, write the paths with forward
+slashes (`C:/Program Files/nodejs/node.exe`) or doubled backslashes.
+
+```toml
+[mcp_servers.switchboard]
+command = "/full/path/to/node"
+args = ["REPO/mcp.js"]
+```
+
+For a custom folder or port, add a line under it:
+`env = { SWITCHBOARD_HOME = "/path/to/data", SWITCHBOARD_PORT = "5000" }`.
+
+Any other MCP client, in its server config (on Windows, the same forward
+slashes or doubled backslashes):
 
 ```json
 { "mcpServers": { "switchboard": { "command": "node", "args": ["REPO/mcp.js"] } } }
@@ -131,69 +198,124 @@ Copy the skill so future sessions know how to use the board well:
 mkdir -p ~/.claude/skills && cp -R "REPO/skill/switchboard" ~/.claude/skills/
 ```
 
+```powershell
+New-Item -ItemType Directory -Force "$HOME\.claude\skills" | Out-Null; Copy-Item -Recurse -Force "REPO\skill\switchboard" "$HOME\.claude\skills\"
+```
+
 If your shell refuses to write `~/.claude/skills` (a sandbox), give the person
 that command to run.
 
-If you are not Claude Code, read `skill/switchboard/SKILL.md` and add its rules
-to wherever your standing instructions live.
+Codex: copy the same folder into `~/.codex/skills/` if your Codex loads skills
+from there:
+
+```sh
+mkdir -p ~/.codex/skills && cp -R "REPO/skill/switchboard" ~/.codex/skills/
+```
+
+If it does not, add the lines below to `~/.codex/AGENTS.md` instead (Windows:
+`%USERPROFILE%\.codex\AGENTS.md`), with the same **Ask** first.
+
+Claude Desktop cannot load a skill file or edit its own settings. Ask the
+person to paste the lines below into Settings, Profile, personal preferences
+("What personal preferences should Claude consider in responses?"), and give
+them the exact text.
+
+Any other assistant: read `skill/switchboard/SKILL.md` and add its rules to
+wherever your standing instructions live.
 
 Then add this line to the person's global instructions file (for Claude Code,
-`~/.claude/CLAUDE.md`). **Ask** before editing that file:
+`~/.claude/CLAUDE.md`; for Codex, `~/.codex/AGENTS.md`). **Ask** before editing
+that file:
 
 > When you need something from me, raise a light on Switchboard (MCP server
 > `switchboard`) with the draft attached instead of stopping to ask. Check
 > `get_decisions` when you start work and between jobs.
 
-## 5. Put their real life on it
+## 5. Three questions, on the board
 
-**Ask** these three questions, one message, plain words:
+Setup is one sentence to you ("set up my Switchboard") and three taps on the
+board. Do not ask these questions in the chat: raise each as a light, call
+`open_board`, and tell the person in one sentence that three quick questions
+are waiting. Raise all three with `for_anyone: true` (so whichever session
+comes next can act on the answers), kind `decide`, and the stable `key` shown,
+so running setup again updates the same light instead of adding a second one.
+The person can tap a button or type their own answer ("Other…").
 
-1. What are the 3 to 7 things you're juggling? (businesses, projects, school,
-   family, admin). Each becomes a container.
-2. For each one: is anything waiting on you right now? Is anything waiting on
-   someone else?
-3. Is there anything that should stay asleep until a date?
+1. **What do you want to keep up with?** `key: "setup:areas"`. Options:
+   `My business`, `Side project`, `School`, `Family`, `Home`. Note: "Tap one,
+   or type several, separated by commas (Lighting business, School, Family)."
+   Recommend one only if this chat already told you what they juggle; if you
+   recommend nothing, the warning about a missing recommended answer is
+   expected for this one question. Each answer becomes a container: call
+   `add_area` with its name (and a one-line `note` when you know one). Ask
+   again with the same key if they want more.
+2. **What should never happen without your tap?** `key: "setup:never"`.
+   Note: "Out of the box, each of these always waits for your tap: messages to
+   people, anything with money, public posts, changes to live sites or
+   databases." Options: `Keep all four (recommended)` and `Let me change it`.
+   Record the answer in every container's `voice` with `add_area`, for
+   example "Never without his tap: messages to people, money, public posts,
+   live sites and databases." If they typed a change, record exactly what they
+   said. If they tapped `Let me change it` without typing anything, ask once
+   more on the board (never in the chat): kind `decide`, `key:
+   "setup:never-change"`, title "Which of these may go ahead without your
+   tap?", options `Money`, `Public posts`, `Live sites and databases`, `Keep
+   all four` (recommended), note "Messages to people always wait for you. Type
+   it if it is something else." Record their answer in every container's
+   `voice`, and never write "Let me change it" there. The board already never lets a message to a person run by itself, and
+   "Runs by itself" stays off until they switch it on.
+3. **How should it get your attention?** `key: "setup:attention"`. Options,
+   exactly as `setup_guide` gives them for this computer: on a Mac `Don't,
+   I'll open it myself` (recommended), `A banner on this computer`, `A text to
+   my phone`; on Linux the first two (no texts); on Windows the question is
+   left out (no banners or texts there), and attention is "none". Never offer
+   one this computer cannot do, and never reword them: only a tap on these
+   exact buttons sets the board's switches (no banners and no texts, banners
+   on, or texts on); a typed answer is yours to read and set on the page's
+   switches with the person. Texts to the phone are off until they choose
+   them, on a new board and on one from before. A text also needs
+   their own number: if they chose it and the board cannot text yet, raise a
+   `todo` (key `setup:phone`) asking for the number, then set
+   `SWITCHBOARD_NOTIFY_TEXT` where the board is started (the MCP server's
+   settings, the Claude Desktop extension's "Texts to your phone", or the login
+   item) and say that the board needs a restart. Opening the board on the phone
+   (step 8) is a later, optional light; never raise it during setup.
 
-Then:
+Then put their real life on it, only what they name or what you already know
+from this chat: one light per real item, with `for_anyone: true` and a stable
+`key` (`setup:dentist`, an email thread id).
 
-- Create each container with `add_area` (a one-line `note` helps). For anything
-  asleep until a date, give that container `wake_at` as a date (`2027-01-05`).
-  Its lights stay out of the queue until then, and that day it asks what is next.
-- Raise one light per real item, with `for_anyone: true` so that whichever
-  assistant comes next can act on the person's answers, and a stable `key`
-  for each (`setup:dentist`, an email thread id). If setup runs again, the same
-  key updates the same light instead of adding a second one.
-  - Theirs to decide or approve: state `need_you`.
-  - Something they sent and are waiting on: state `waiting_them` with
-    `follow_up_days`. If it was a message to a person, also give `to` (who it
-    went to) and `outbound: true`, so the follow-up comes back as a message to
-    write. Anything else comes back as "Check on: …".
-  - Jobs that run by themselves: `auto`. What is lined up: `queued`.
-- For anything you can draft, attach the draft. Never leave a `need_you` light
-  that just says "send a text"; write the text.
-- Do not invent items. If a container has nothing yet, leave it empty.
-- If you loaded the examples (`demo`), remove them with `clear_examples` once
-  there are real lights. A new board has none.
+- Theirs to decide or approve: state `need_you`, with the draft attached.
+  Never leave a light that just says "send a text"; write the text.
+- Something they sent and are waiting on: state `waiting_them` with
+  `follow_up_days` (and `to` and `outbound: true` for a message to a person).
+- Jobs that run by themselves: `auto`. What is lined up: `queued`.
+- Anything asleep until a date: give that container `wake_at` (`2027-01-05`).
+- Do not invent items, and never raise outreach they did not ask for (an old
+  lead to text, a past customer to check on). If you know of one, raise it
+  with `optional: true` and `last_contact`, so it waits folded in "Reach out?"
+  where they can look it up.
+- If you loaded the examples (`demo`), remove them with `clear_examples`.
 
-## 6. Prove the loop
+## 6. Prove the loop: Setup check
 
-1. Raise a small real light with `for_anyone: true` and a stable `key`
-   (`setup:first-light`), or use one from step 5. `for_anyone` lets the
-   session that finishes setup collect it, whatever folder it was started in.
-2. **Ask** the person to act on it on the board. Call `open_board` to open the
-   board in their browser (without the Switchboard tools yet, run
-   `node "REPO/cli.js" link --open` with the same `SWITCHBOARD_HOME` and
-   `SWITCHBOARD_PORT`). Either way the key goes to their browser, not to you.
-3. Call `wait_for_decision` with that light's id, or `get_decisions` after the
-   hold: 20 seconds for a change or an answer, 60 for a message to a person
-   (120 if they approved it faster than it can be read, and longer if they
-   chose "Hold until 7:45 am"). `wait_for_decision` waits at most 50 seconds:
-   if it returns `decided: false`, call it again. Confirm their answer is there,
-   do what it says, then report it with `complete_decision` and its
-   `decision_id`. An approval should leave "approved, not yet sent"; an answer
-   to a question shows as done as soon as it is tapped.
+1. Raise a last light with `for_anyone: true` and the stable `key`
+   `setup:check`: kind `decide`, title "Setup check", options `Check my setup`
+   (recommended), note "Tap it and your assistant checks that it heard you."
+2. Wait for the tap with `wait_for_decision` on that light's id (it waits at
+   most 50 seconds: if it returns `decided: false`, call it again), or
+   `get_decisions` after the hold: 20 seconds for an answer, 60 for a message
+   to a person. Collect the three setup answers the same way and do what each
+   says.
+3. Report the check with `complete_decision`, its `decision_id`, outcome
+   `done` and the detail "Setup verified: <containers>; never without your
+   tap: <what>; attention: <banners, texts or none>". Tell the person the
+   same in plain words.
 
-Do not say setup is finished until this round trip has worked once.
+Do not say setup is finished until this round trip has worked once. Without
+the Switchboard tools yet, open the board with `node "REPO/cli.js" link --open`
+(same `SWITCHBOARD_HOME` and `SWITCHBOARD_PORT`): the key goes to their
+browser, not to you.
 
 ## 7. Optional: keep it running
 

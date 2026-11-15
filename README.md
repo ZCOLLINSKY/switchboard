@@ -2,6 +2,8 @@
 
 **One screen on your own computer for everything your AI assistants and scripts are waiting on you for.**
 
+For solo operators, small business owners, and developers running AI assistants or scripts.
+
 Your scripts and AI sessions do 90% of the work, then stop and wait for you,
 each in its own terminal or chat. Switchboard gives them one place to raise a
 hand. You see the draft and approve it, change it or say no. The assistant
@@ -42,11 +44,23 @@ watch. It keeps its own data and never touches a real board. Ctrl+C stops it.
 
 ## Install
 
-You need Claude Code or Claude Desktop on your own computer: a Mac or a Windows
-PC (Claude Code also runs on Linux). Claude on the web or on a phone cannot use
+The short way, in any assistant that can run commands on your computer (Claude
+Code, Claude Desktop, Codex), say:
+
+> Set up Switchboard for me: github.com/ZCOLLINSKY/switchboard
+
+It installs what your app needs, opens the board, and asks you three questions
+there, each one tap with the safe answer marked: what you want to keep up with,
+what must never happen without your tap, and how it should get your attention
+(nothing, a banner, or a text). A last "Setup check" tap proves it heard you.
+
+You need the assistant on your own computer: a Mac or a Windows PC (Claude Code
+and Codex also run on Linux). Claude on the web or on a phone cannot use
 Switchboard: those chats run in Anthropic's cloud and cannot reach a board on
 your computer. You can still open the board itself on your phone
 ([SETUP.md](SETUP.md), step 8).
+
+What each app needs, if you would rather do it yourself:
 
 **Claude Code** (needs [Node.js](https://nodejs.org) 18 or newer). Paste these
 two lines into a session:
@@ -56,18 +70,97 @@ two lines into a session:
 /plugin install switchboard@zcollinsky
 ```
 
-Start a new session and say "Open my Switchboard, then set it up for me."
+Start a new session and type `/switchboard:setup` (or say "Set up my
+Switchboard"). The three questions appear on your board.
 
 **Claude Desktop** (nothing else to install): download the `.mcpb` file from
 the [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest),
-double-click it, and click Install. In a new chat, say "Open my Switchboard,
-then set it up for me." Claude Desktop starts the board for you; keep the app
-open while you use it. Nothing checks the board between chats, so after you
-answer on the board, wait a minute or two (every answer can be taken back for
-20 seconds to 2 minutes), then start a chat and say "check my Switchboard".
+double-click it, and click Install (its settings can turn on banners or texts, or
+leave them off). In a new chat, say "Set up my Switchboard." The board runs
+while Claude Desktop is open, so keep the app open while you use it. Nothing
+checks the board between chats, so after you answer on the board, wait a minute
+or two (every answer can be taken back for 20 seconds to 2 minutes), then start
+a chat and say "check my Switchboard". To have Claude use the board in every
+chat, paste the rules from [SETUP.md](SETUP.md) step 4 into Settings, Profile,
+personal preferences.
+
+**Codex** (needs [Node.js](https://nodejs.org) 18 or newer): get the folder
+(`git clone` as above, or **Download ZIP**) and add this to
+`~/.codex/config.toml` (on Windows, `%USERPROFILE%\.codex\config.toml`), with
+the full path of node (`command -v node` on a Mac, `where.exe node` on Windows)
+and of the folder:
+
+```toml
+[mcp_servers.switchboard]
+command = "/full/path/to/node"
+args = ["/full/path/to/switchboard/mcp.js"]
+```
+
+On Windows, write the paths with forward slashes
+(`"C:/Program Files/nodejs/node.exe"`) or doubled backslashes
+(`"C:\\Program Files\\nodejs\\node.exe"`): a single backslash breaks the file.
+
+Start a new Codex session and say "Set up my Switchboard. Follow SETUP.md."
+Because it already has the tools, it skips installing and does
+[SETUP.md](SETUP.md) step 4, which keeps the rules for later Codex sessions.
 
 **Any other assistant, or no plugin:** get the folder (`git clone` as above, or
 **Download ZIP**) and follow [Let your AI assistant set it up](#let-your-ai-assistant-set-it-up).
+
+### If you installed the plugin
+
+- **Always allow its tools.** The first time Claude Code asks to use a
+  Switchboard tool, choose "Yes, and don't ask again" so it does not ask on
+  every check-in. None of its tools can approve or send anything.
+- **The board keeps running.** The first session that uses it starts the
+  board, and it stays on after that session ends, until you stop it or restart
+  the computer. The next session finds it.
+- **Port.** The board answers at http://127.0.0.1:4747 on your own computer.
+  If another program uses that port, set `SWITCHBOARD_PORT` (see Settings
+  below) and use the same value everywhere.
+
+## Update or remove
+
+**Update:**
+
+- Claude Code plugin: `/plugin marketplace update zcollinsky`, then
+  `/plugin update switchboard@zcollinsky`, then start a new session.
+- Claude Desktop: download the newer `.mcpb` from the
+  [latest release](https://github.com/ZCOLLINSKY/switchboard/releases/latest)
+  and install it over the old one.
+- A folder you cloned: `git pull` in it, then restart the board
+  (`node cli.js stop`, then start it the way you did before).
+- A folder from **Download ZIP**: stop the board (`node cli.js stop`),
+  download the new ZIP and unpack it over the old folder (same place, so the
+  paths in your settings still work), then start the board again. Your data is
+  not in that folder, so nothing is lost.
+
+**Remove:**
+
+1. Stop the board: `node cli.js stop` from any copy of the folder.
+2. Claude Code plugin: `/plugin uninstall switchboard@zcollinsky`, and
+   `/plugin marketplace remove zcollinsky`. Connected by hand instead:
+   `claude mcp remove --scope user switchboard`, and delete
+   `~/.claude/skills/switchboard`.
+3. Claude Desktop: Settings, Extensions, Switchboard, Uninstall. Remove the
+   rules you pasted into your personal preferences.
+4. Codex: delete the `[mcp_servers.switchboard]` block from
+   `~/.codex/config.toml`, the Switchboard lines from your Codex rules
+   (`~/.codex/AGENTS.md`), and the `~/.codex/skills/switchboard` folder.
+5. If you set it to start at login:
+   - macOS: `launchctl unload ~/Library/LaunchAgents/com.switchboard.plist`,
+     then delete that file.
+   - Linux: `systemctl --user disable --now switchboard` (or the name you gave
+     the service), then delete its file in `~/.config/systemd/user/`.
+   - Windows: open Task Scheduler and delete the Switchboard task, or in
+     PowerShell `Unregister-ScheduledTask -TaskName Switchboard` (the name you
+     gave it).
+6. Take the Switchboard line out of `~/.claude/CLAUDE.md` if setup added one.
+7. Delete the folder you cloned or unpacked, if you have one.
+
+Your data stays in `~/.local/share/switchboard/` (on Windows,
+`%USERPROFILE%\.local\share\switchboard`) until you delete that folder
+yourself. Nothing else is left behind once these steps are done.
 
 ## The idea
 
@@ -84,6 +177,17 @@ Every piece of work is a **light**, and a light always says who holds the ball:
 
 Clearing the gold lights is the whole job. When there are none, the screen says
 **"0 lights need you right now."**
+
+It is a command center, not a stream of suggestions. What shows is real:
+replies waiting on you, jobs in progress, money owed and things that broke,
+each with one recommended answer. Ideas you did not ask for, like texting an
+old lead, never show in the list and never ring. They wait folded in one
+drawer, **"Reach out?"**, oldest last contact first, where you can look up
+when you last talked to someone and choose. Nothing goes out without your tap.
+
+Setting it up for someone who runs a business? Give them
+[docs/FOR-OWNERS.md](docs/FOR-OWNERS.md): one page on using the board, no tech
+words.
 
 What makes it different from a to-do list:
 
@@ -137,22 +241,27 @@ Your data stays on your computer, in `~/.local/share/switchboard/data.json`.
 
 ## Let your AI assistant set it up
 
-If you use Claude Code (or any assistant that can run commands), open it in this
-folder and say:
+Claude Code users: the plugin is the easy path (see Install above). Told
+"Follow SETUP.md" without it, Claude Code gives you the two `/plugin` lines and
+asks you to start a new session; do that rather than also connecting it by
+hand, so it is not connected twice.
+
+Any other assistant that can run commands (Codex, for one), opened in this
+folder:
 
 > Set up Switchboard for me. Follow SETUP.md.
 
-It will start the board, connect itself, ask what you have going, and put your
-real lights on it. What it changes on your machine: it adds the `switchboard`
+It will start the board, connect itself, ask its questions on the board,
+and put your real lights on it. What it changes on your machine: it adds the `switchboard`
 MCP server to your assistant's settings and copies one skill into
 `~/.claude/skills`. Your assistant may ask you to approve (or paste) each of
 those. It asks before it adds a line to your `~/.claude/CLAUDE.md` or sets the
 board to start at login. The new tools load in its next session, so you start
-one more. Setup is done once you have tapped one light on the board and it has
+one more. Setup is done once you have tapped "Setup check" on the board and it has
 picked up your answer. [SETUP.md](SETUP.md) is short if you would rather read
 it first.
 
-To connect Claude Code by hand instead, from this folder:
+To connect Claude Code by hand instead of the plugin (not both), from this folder:
 
 ```sh
 claude mcp add --scope user switchboard -- node "$PWD/mcp.js"
@@ -243,15 +352,31 @@ days from the bar at the top of the page. Nothing touches your real board.
   (the name an assistant's connector uses on the board). `SWITCHBOARD_NOTIFY_TEXT=+1…` (your own number or Apple ID, on a Mac) texts your phone through your Messages app when something new needs you, with `SWITCHBOARD_PHONE_URL` added to tap open (for one new light the link ends in `#<id>` and opens that light); no service in between. Add the page to your phone's home screen and it opens like an app (the board serves its own icon and manifest). `SWITCHBOARD_NOTIFY=1` shows a banner on your computer
   when something new needs you (at most one every 30 minutes, none from 11 pm to
   7 am; `titles` names what came in, `1` only counts, so nothing private shows
-  on a locked screen). macOS and Linux.
-- **No dependencies, no build step, no account.** Switchboard's own code talks
-  only to your board. The one thing that can leave your computer is speech: the
-  Speak button uses your browser's speech recognition, which may send the audio
-  to your browser maker. Typing stays on your computer.
+  on a locked screen; a message to a customer is never named, only "a message to a customer is ready" and its
+  area). macOS and Linux. The switches at the bottom of the board, "Banners on this computer" and "Texts to your
+  phone", turn either on or off at any time. Texts are off on a new board until you turn them on. **New key:** `node cli.js rotate-key` writes a new page key (only you can read it).
+  Restart the board (a login item is stopped for you; start it again with `launchctl kickstart gui/$(id -u)/com.switchboard`),
+  then get the new link with `node cli.js link` in your own terminal. Every link opened before can only look.
+- **No dependencies, no build step, no account.** What can leave your computer
+  is listed just below.
 - **It was attacked on purpose before release.** Two adversarial runs, where
   attackers tried to break it and a skeptic had to reproduce every claim, found
   more than 260 problems. Each one's status, including the few still open, is in
   [docs/ADVERSARIAL-2026-11-13.md](docs/ADVERSARIAL-2026-11-13.md).
+
+### What leaves your computer
+
+> - **Switchboard sends nothing itself.** Its own code talks only to the board
+>   on your computer. It has no account, no cloud and no tracking.
+> - **Speech.** The Speak button uses your browser's speech recognition, which
+>   may send the audio to your browser maker. Typing stays on your computer.
+> - **Texts to your phone,** only if you turn them on, go out through your own
+>   Messages app on your Mac. They are off on a new board.
+> - **Your assistant sees what it raises** and the answers it collects, so those
+>   go wherever that assistant's chats already go (Anthropic for Claude, OpenAI
+>   for Codex).
+> - **Your phone,** only if you set it up ([SETUP.md](SETUP.md), step 8),
+>   reaches the board over your own private Tailscale network.
 
 ## Tests
 

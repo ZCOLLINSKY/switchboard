@@ -1,6 +1,74 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (Nov 15, 2026)
+
+- **Cloud drafts for a person are messages.** When the relay turns a queue question with a draft for a person
+  ("Reply to Dale about the quote", "Text Pat", or a draft that opens "Hi Sam,") into a light, it is now a
+  message to a person: approved one at a time, held longer, slowed down when approved too fast to read, banner
+  masked, and named in queue.md only as "the message to a customer". Words for a page or a post are not.
+  A question a cloud assistant takes back (its line goes from `[?]` to a plain `[ ]`) now leaves the board too.
+- **Docs.** Codex with the tools already connected still does SETUP.md step 4 (the rules later sessions need).
+  The README warns Windows users about backslashes in config.toml, says Claude Code users take the plugin rather
+  than also connecting by hand, and its Remove steps now cover the Windows logon task, the Linux service, the
+  Codex skill copy and a Download-ZIP update. "Let me change it" during setup gets one follow-up tap on the board,
+  and /switchboard:setup and SETUP.md now agree on reach-out suggestions.
+
+- **Clearer docs for newcomers.** The README says who Switchboard is for, starts Install with one sentence to
+  your assistant ("Set up Switchboard for me: github.com/ZCOLLINSKY/switchboard"), then gives the details for
+  Claude Code, Claude Desktop, Codex and a cloned folder. New sections: what to know once the plugin is in, how
+  to update or remove it (your data stays until you delete it), and a "What leaves your computer" box. SETUP.md
+  adds Codex, PowerShell commands for Windows, and pasting the rules into Claude Desktop's personal preferences.
+  New docs/FOR-OWNERS.md: one page for a business owner on using the board. The browser demo now says in one
+  sentence what Switchboard is.
+
+- **Setup is one sentence and three taps.** Say "Set up my Switchboard" (or type `/switchboard:setup` in Claude
+  Code). Claude opens the board with three questions, each one tap with the safe answer marked: what you want to
+  keep up with (each answer becomes a container), what must never happen without your tap (messages to people,
+  money, public posts, live sites and databases: all four on), and how it should get your attention ("Don't, I'll
+  open it myself", a banner, or a text). A last "Setup check" tap proves Claude heard you, and it reports "Setup
+  verified". Opening the board on your phone is a later, optional step.
+- **Your tap sets how it reaches you.** The attention answer switches banners and texts itself (Undo puts them
+  back). Texts to your phone are now off until you turn them on, on a new board and on the one you already have (a
+  board that never set the switch starts with texts off and says so once when it starts; turn them back on at the
+  bottom of the board). Only the three exact buttons switch anything: an assistant's own wording of the question
+  changes no setting. The question offers only what the computer can do: no text off a Mac, and no question at
+  all on Windows. If you later change the banner setting where the board starts (the Claude Desktop "Banners on
+  this computer" toggle), that newer choice wins over your earlier answer. Banners got their own switch beside the texts one at the bottom of the board.
+- **Command center, not suggestions.** Claude's rules now say: only real replies, jobs in progress, money owed and
+  broken things go on the board, each with one clear recommended answer and what is at stake. Outreach you did not
+  ask for waits folded in "Reach out?".
+- **Claude Desktop settings.** The extension's settings can turn on banners, texts to your phone (your number), the
+  phone address for tapping straight to the board, and extra host names. Empty ones count as not set.
+
+- **Customer details stay out of git and off the lock screen.** The relay's notes in queue.md name a message to a
+  customer only by its area, "a customer" and the light id: never the person's name, number or the words (the
+  session reads those on Switchboard). No note ever carries a phone number. With banner titles on, a message to
+  a customer shows as "a message to a customer is ready (Evening Glow)".
+- **Every customer message has one owner.** Raising a message to a customer with no name (or `for_anyone`) is
+  refused with a clear message, so two sessions can never both send it (marking it as an example through the
+  API does not get around this). The command line still works: it raises
+  as "command-line".
+- **"Yes (recommended)" works.** An option label marked "(recommended)" becomes the recommended answer, and the
+  mark comes off the button.
+- **Sessions outside a repo name their project.** A session started in the home folder (or Desktop, Documents,
+  Downloads, or the top of the disk) that names no project cannot ask Zach a question or approval (it is told to
+  pass `project`), so his answer always comes back to a session working on that project. Other lights get a
+  warning. A plain project folder that is not a git repository is fine: its name is the project.
+- **New page key.** `node cli.js rotate-key` makes a new key: links opened before can only look once the board
+  restarts. A login item is stopped for you; the command says how to start it and get the new link. Only the board
+  the login item actually starts (same data folder and port) counts as the login item: a practice board on another
+  port is never stopped that way.
+
+- **Reach out? stays folded.** A suggestion nobody asked for (texting an old lead, checking in with a past
+  customer) is raised with `optional: true` and a `last_contact` line ("Nov 9, texted the quote"). It never
+  shows in the list, Next up, the headline, the tab title, an area's waiting count or a banner or text. It waits
+  in one folded drawer, "Reach out? (n)", longest-quiet first, with who it is, when you last talked and its area.
+  Open a row to read the words, then Copy & open (and "Yes, it went"), or Not now with a short reason that goes
+  back to the assistant. The count line adds "n to reach out", so the parts still add up to the total. An
+  assistant can move its own light there with `optional: true`; you can push any message to a person there from
+  its More menu ("Move to Reach out", with Undo). Only a message to a person can wait there (a decision or to-do
+  marked optional stays in the list, with a warning to the assistant). Once you move one there, its assistant
+  cannot pull it back into your list; only you can. Its value no longer counts toward an area's "$ in play".
 
 - **Money sits with the people waiting.** A light with a value, or one about a
   payment, invoice, refund, deposit or Stripe step, now sorts with the people

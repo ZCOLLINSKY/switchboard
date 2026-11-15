@@ -164,6 +164,7 @@ test('a named project can never take a repository session\'s name, or another cl
 test('a session that names a project part-way through still collects what it raised before, and nobody else\'s', async () => {
   const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
   const env = { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port };
+  git(home, 'init', '-q'); // a session in a repository: one started outside any must name its project before it asks (connector.test.js)
   const s = mcp(env, home), named = mcp(env, home);
   try {
     await Promise.all([s.hello(), named.hello()]);
@@ -204,6 +205,7 @@ test('with a fixed name (Claude Desktop: one connector for every chat), a projec
 
 test('a session working on a collected approval keeps its claim with progress, under any name it used', async () => {
   const dir = tmp(), home = tmp(), a = await start({ port: 0, dir, holdMs: 0 });
+  git(home, 'init', '-q'); // started in a repository, so it may ask before naming a project
   const s = mcp({ SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: new URL(a.url).port }, home);
   try {
     await s.hello();

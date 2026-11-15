@@ -121,3 +121,52 @@ test('link --copy --at puts the other device\'s key link on the clipboard and pr
     assert.notEqual(bad.code, 0); assert.match(bad.out, /https:\/\//);
   } finally { a.close(); }
 });
+
+test('raise from the command line still makes a message to a customer: it is owned by "command-line"', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir }), port = new URL(a.url).port;
+  try {
+    const r = await run(['raise', '--area', 'Shop', '--title', 'Reply to Dale', '--draft', 'Hi Dale', '--to', 'Dale', '--outbound'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port });
+    assert.equal(r.code, 0, r.out); assert.match(r.out, /Light \w+ is on: Reply to Dale/);
+    const l = a.store.db.lights.find((x) => x.title === 'Reply to Dale');
+    assert.deepEqual([l.outbound, l.agent], [true, 'command-line']);
+  } finally { a.close(); }
+});
+
+test('rotate-key writes a new private page key; after a restart every old link can only look', async () => {
+  const dir = tmp();
+  // Not running: the key is replaced, and the board uses it when it starts.
+  fs.writeFileSync(path.join(dir, 'page.key'), 'a'.repeat(32) + '\n', { mode: 0o644 });
+  const off = await run(['rotate-key'], { SWITCHBOARD_HOME: dir });
+  assert.equal(off.code, 0, off.out);
+  const k1 = fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim();
+  assert.match(k1, /^[a-f0-9]{32}$/); assert.notEqual(k1, 'a'.repeat(32));
+  if (process.platform !== 'win32') assert.equal(fs.statSync(path.join(dir, 'page.key')).mode & 0o777, 0o600);
+  assert.match(off.out, /The board is not running; it uses the new key when it starts/); assert.match(off.out, /link/);
+  assert.doesNotMatch(off.out, new RegExp(k1), 'the key itself is never printed into a pipe');
+  // Running: it says to restart, and how to get the new link. The running board keeps its old key until then.
+  const a = await start({ port: 0, dir }), port = new URL(a.url).port, old = fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim();
+  const on = await run(['rotate-key'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port });
+  assert.equal(on.code, 0, on.out);
+  const k2 = fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim();
+  assert.notEqual(k2, old); assert.doesNotMatch(on.out, new RegExp(k2));
+  assert.match(on.out, /still uses the old key until it restarts\. Restart it now: .*stop --port \d+, then .*start --port \d+/);
+  assert.match(on.out, /links opened before can only look/);
+  // A login item for the usual board (its own folder, port 4747) is not this practice board: nothing is stopped, and
+  // it is told to restart the board whose key changed.
+  if (process.platform === 'darwin') {
+    const fake = tmp(); fs.mkdirSync(path.join(fake, 'Library', 'LaunchAgents'), { recursive: true });
+    fs.writeFileSync(path.join(fake, 'Library', 'LaunchAgents', 'com.switchboard.plist'), '<plist><dict><key>Label</key><string>com.switchboard</string><key>ProgramArguments</key><array><string>/usr/local/bin/node</string><string>/x/cli.js</string><string>start</string></array></dict></plist>');
+    const other = await run(['rotate-key'], { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port, HOME: fake });
+    assert.equal(other.code, 0, other.out);
+    assert.match(other.out, /still uses the old key until it restarts\. Restart it now/); assert.doesNotMatch(other.out, /login item|launchctl/);
+    assert.ok(await (await fetch(a.url + '/api/health')).json(), 'the practice board was not stopped');
+  }
+  a.close();
+  const b = await start({ port: 0, dir });
+  try {
+    const l = b.store.raise({ area: 'Shop', title: 'Go?', kind: 'decide', options: ['Yes', 'No'] });
+    const act = (key) => fetch(`${b.url}/api/lights/${l.id}/act`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-switchboard-key': key }, body: JSON.stringify({ action: 'answer', value: 'Yes' }) });
+    assert.equal((await act(old)).status, 403, 'the old link can no longer act');
+    assert.equal((await act(fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim())).status, 200, 'the new one can');
+  } finally { b.close(); }
+});

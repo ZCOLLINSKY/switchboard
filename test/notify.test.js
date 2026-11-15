@@ -109,12 +109,69 @@ test('the board texts when SWITCHBOARD_NOTIFY_TEXT is set, adding the phone link
   assert.deepEqual(calls[0], ['+18595550123', 'Switchboard: 1 new thing needs you https://box.tailnet.ts.net:8443/']);
   const both = sendersFromEnv({ SWITCHBOARD_NOTIFY: 'titles', SWITCHBOARD_NOTIFY_TEXT: '+18595550123' }, { platform: 'darwin', spawn });
   assert.equal(both.senders.length, 2, 'banner and text');
-  both.senders[1]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
+  both.senders[1]('Switchboard', 'Text Pat Lee (Evening Glow)', 1);
   assert.deepEqual(calls[1], ['+18595550123', 'Switchboard: 1 new thing needs you'], 'a text never names the item unless asked: the banner may, the locked phone screen does not');
   const named = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: '+18595550123', SWITCHBOARD_NOTIFY_TEXT_TITLES: '1' }, { platform: 'darwin', spawn });
-  named.senders[0]('Switchboard', 'Text Pat Lee (Acme Lighting)', 1);
-  assert.deepEqual(calls[2], ['+18595550123', 'Switchboard: Text Pat Lee (Acme Lighting)']);
+  named.senders[0]('Switchboard', 'Text Pat Lee (Evening Glow)', 1);
+  assert.deepEqual(calls[2], ['+18595550123', 'Switchboard: Text Pat Lee (Evening Glow)']);
   const bad = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: 'my phone' }, { platform: 'darwin', spawn });
   assert.equal(bad.senders.length, 0); assert.match(bad.warning, /SWITCHBOARD_NOTIFY_TEXT/);
   assert.equal(sendersFromEnv({}, { platform: 'darwin', spawn }).senders.length, 0, 'off unless asked for');
+});
+
+test('with titles on, a message to a customer is never named in a banner or a text: no name, no number', () => {
+  const sent = []; let now = at(10);
+  const n = notifier({ send: (t, b) => sent.push(b), now: () => now, titles: true });
+  n.check(view([]));
+  now = at(10, 5); n.check(view([gold('c', 'Text Pat Henderson at 859-555-0142', { outbound: true, to: 'Pat Henderson' })]));
+  assert.deepEqual(sent, ['a message to a customer is ready (Shop)']);
+  now = at(11); n.check(view([gold('c', 'x', { outbound: true }), gold('d', 'Reply to Dale (859) 555-0142', { outbound: true }), gold('e', 'Renew the domain')]));
+  assert.equal(sent.length, 2);
+  assert.doesNotMatch(sent.join(' | '), /Pat|Henderson|Dale|859|555|0142/);
+  assert.match(sent[1], /^2 new things need you: a message to a customer is ready \(Shop\) and 1 more$/);
+});
+
+test('banners follow the board\'s own switch: off on a new board, on from the page or setup\'s answer, and SWITCHBOARD_NOTIFY="false" is off', async () => {
+  const { sendersFromEnv } = require('../lib/notify');
+  const spawn = () => ({ on() {}, unref() {} });
+  for (const v of ['false', '0', 'off', 'no']) assert.equal(sendersFromEnv({ SWITCHBOARD_NOTIFY: v }, { platform: 'darwin', spawn }).senders.length, 0, v);
+  assert.equal(sendersFromEnv({ SWITCHBOARD_NOTIFY: 'true' }, { platform: 'darwin', spawn }).senders.length, 1);
+  const sent = [], dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sbn-'));
+  const a = await start({ port: 0, dir, banner: (t, b) => sent.push(b), quiet: [0, 0] });
+  const raise = (title) => fetch(a.url + '/api/lights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ agent: 't', area: 'Shop', title, kind: 'todo', link: 'https://x' }) });
+  const state = async (key) => (await fetch(a.url + '/api/state', { headers: key ? { 'x-switchboard-key': key } : {} })).json();
+  try {
+    let st = await state(a.key);
+    assert.equal(st.bannersSetUp, true); assert.equal(st.banners, false); assert.equal(st.texts, false, 'a new board: no texts either');
+    await raise('Order boxes');
+    assert.deepEqual(sent, [], 'off: nothing shown');
+    const r = await fetch(a.url + '/api/settings', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ banners: true }) });
+    assert.equal(r.status, 403, 'only the person\'s page switches it');
+    await fetch(a.url + '/api/settings', { method: 'POST', headers: { 'content-type': 'application/json', 'x-switchboard-key': a.key }, body: JSON.stringify({ banners: true }) });
+    st = await state(a.key); assert.equal(st.banners, true);
+    await raise('Renew the domain');
+    assert.equal(sent.length, 1, 'on: the next new light shows, with no 30-minute wait left over from while it was off');
+    assert.match(sent[0], /1 new thing needs you/);
+  } finally { a.close(); }
+});
+
+test('a board saved before the texts switch existed has texts off; a change to SWITCHBOARD_NOTIFY wins over an earlier banners answer', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sbn-'));
+  fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify({ version: 3, areas: [], lights: [], settings: { banners: false, notifyEnv: false } }));
+  const { open } = require('../lib/store');
+  assert.equal(open(dir).view().texts, false, 'no "texts" saved: off, not on');
+  const was = process.env.SWITCHBOARD_NOTIFY;
+  process.env.SWITCHBOARD_NOTIFY = '1';
+  const errs = [], err = console.error; console.error = (m) => errs.push(String(m));
+  let a;
+  try {
+    a = await start({ port: 0, dir, quiet: [0, 0] });
+    const st = await (await fetch(a.url + '/api/state', { headers: { 'x-switchboard-key': a.key } })).json();
+    assert.equal(st.banners, true, 'the Desktop toggle (SWITCHBOARD_NOTIFY) was turned on after the answer: it wins');
+    assert.ok(errs.some((m) => /SWITCHBOARD_NOTIFY changed/.test(m)), errs.join('\n'));
+  } finally { console.error = err; if (was === undefined) delete process.env.SWITCHBOARD_NOTIFY; else process.env.SWITCHBOARD_NOTIFY = was; if (a) a.close(); }
+  // Unchanged since the answer: the answer stands.
+  fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify({ version: 3, areas: [], lights: [], settings: { banners: false, notifyEnv: false } }));
+  const b = await start({ port: 0, dir, quiet: [0, 0] });
+  try { assert.equal((await (await fetch(b.url + '/api/state', { headers: { 'x-switchboard-key': b.key } })).json()).banners, false); } finally { b.close(); }
 });

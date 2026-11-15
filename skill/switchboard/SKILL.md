@@ -12,6 +12,24 @@ number small and true.
 If you were started outside the project's folder, pass `project` with the
 repository's name on every call.
 
+## Command center, not suggestions
+
+The board is where the person runs things, not a feed of ideas.
+
+- **What belongs on it:** real inbound replies, jobs in progress, money owed
+  or due, and things that broke. Each with the draft or the fix attached.
+- **Never put outreach they did not ask for in front of them** ("text this old
+  lead", "check in with a past customer"). If you think one is worth it, raise
+  it with `optional: true` and `last_contact` ("Nov 9, texted the quote"): it
+  waits folded in "Reach out?", where they can look up who they last talked to
+  and choose. It never rings, never counts in the headline.
+- **One clear recommended answer** on every choice, one you would act on.
+- **Say what is at stake and what it changes** on every decision: `stakes`
+  when you know it, `impact` (one line on what changes for whom if they say
+  yes), and `value`, `due` or `holds_up` when they apply.
+- Nothing goes out without their tap. Setup is the person saying "set up my
+  Switchboard" and answering three questions on the board (`setup_guide`).
+
 ## When you start work, and between jobs
 
 1. Call `get_decisions`. You get the decisions on lights you raised. Collecting

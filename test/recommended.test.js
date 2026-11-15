@@ -27,7 +27,7 @@ test('a recommendation must be one of the options, and follows them', () => {
 
 test('take every recommendation: each light is answered with its own, with the usual hold', () => {
   const s = fresh();
-  const a = yn(s, 'Terms fix (PR 614)?', 'Yes'), b = yn(s, 'Rehearse a rollback?', 'Yes'), c = yn(s, 'Rename the repo?', 'No');
+  const a = yn(s, 'Typo fix (PR 614)?', 'Yes'), b = yn(s, 'Rehearse a rollback?', 'Yes'), c = yn(s, 'Rename the repo?', 'No');
   const done = s.bulk([a.id, b.id, c.id], 'recommended', { revs: { [a.id]: rev(a), [b.id]: rev(b), [c.id]: rev(c) } }, T + 60e3);
   assert.equal(done.length, 3);
   for (const [l, v] of [[a, 'Yes'], [b, 'Yes'], [c, 'No']]) {
@@ -42,7 +42,7 @@ test('take every recommendation: each light is answered with its own, with the u
 
 test('refused as a whole when one has no recommendation, changed since it was seen, or is a message', () => {
   const s = fresh();
-  const a = yn(s, 'Terms fix?', 'Yes'), none = s.raise({ agent: 'x', area: 'Shop', title: 'Pick one', kind: 'decide', options: ['A', 'B'] }, T);
+  const a = yn(s, 'Typo fix?', 'Yes'), none = s.raise({ agent: 'x', area: 'Shop', title: 'Pick one', kind: 'decide', options: ['A', 'B'] }, T);
   assert.throws(() => s.bulk([a.id, none.id], 'recommended', { revs: { [a.id]: rev(a), [none.id]: rev(none) } }, T + 1000), /recommend/);
   assert.equal(s.db.lights.find((x) => x.id === a.id).decision, null, 'nothing was answered');
   const b = yn(s, 'Rollback rehearsal?', 'Yes'), seen = rev(b);

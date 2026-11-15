@@ -135,7 +135,7 @@ test('a fresh decision is held back, and can be undone until it is picked up', (
   assert.throws(() => s.act(l.id, 'undo', {}, T0 + 3000 + HOLD_MS + 1), /Too late/);
 });
 
-test('the queue puts deadlines first, then money and people waiting, then the rest by age, then background failures', () => {
+test('the queue pins broken jobs first, then deadlines, then money and people waiting, then the rest by age', () => {
   const s = fresh();
   s.raise({ area: 'A', title: 'old chore', kind: 'todo' }, T0 - 5 * DAY);
   s.raise({ area: 'A', title: 'reply to a person', draft: 'x', outbound: true }, T0 - DAY);
@@ -144,7 +144,7 @@ test('the queue puts deadlines first, then money and people waiting, then the re
   s.raise({ area: 'A', title: 'job failed', state: 'broken' }, T0);
   s.raise({ area: 'A', title: 'form due tonight', kind: 'todo', due: T0 + 3600e3 }, T0);
   const v = s.view(T0);
-  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['form due tonight', 'big quote', 'small quote', 'reply to a person', 'old chore', 'job failed']);
+  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['job failed', 'form due tonight', 'big quote', 'small quote', 'reply to a person', 'old chore']);
 });
 
 test('bulk approve works for changes and refuses messages to people', () => {
@@ -453,4 +453,245 @@ test('at equal money, a person waiting comes before a money step', () => {
   s.raise({ area: 'A', title: 'reply to a person', draft: 'x', outbound: true }, T0);
   const v = s.view(T0);
   assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['reply to a person', 'Turn off the old pay links in Stripe']);
+});
+
+test('texts to the phone are off on a new board and on a board from before, and the switch is remembered', () => {
+  const s = fresh();
+  assert.equal(s.view(T0).texts, false, 'a new board: off until the person turns them on');
+  s.setting('texts', true); s.save();
+  assert.equal(open(s.dir).view(T0).texts, true, 'remembered');
+  // A board saved before this setting existed (no texts key): off too, until the person turns them on (Nov 15: texts
+  // to his phone are off by default).
+  const old = fs.mkdtempSync(path.join(os.tmpdir(), 'sb-'));
+  fs.writeFileSync(path.join(old, 'data.json'), JSON.stringify({ version: 3, areas: [], lights: [], settings: {} }));
+  assert.equal(open(old).view(T0).texts, false);
+  s.setting('texts', false);
+  assert.equal(s.view(T0).texts, false);
+  assert.throws(() => s.setting('texts', 'off'), /true or false/);
+  assert.throws(() => s.setting('volume', true), /Unknown setting/);
+});
+
+test('setup\'s attention question: the person\'s tap sets banners and texts, and Undo puts them back', () => {
+  const { rev, ATTENTION_KEY, ATTENTION_OPTIONS } = require('../lib/store');
+  const s = fresh();
+  assert.equal(s.view(T0).banners, null, 'unset: the board follows how it was started');
+  const ask = () => s.raise({ title: 'How should it get your attention?', kind: 'decide', key: ATTENTION_KEY, options: ATTENTION_OPTIONS, recommended: ATTENTION_OPTIONS[0] }, T0);
+  let l = ask();
+  s.act(l.id, 'answer', { value: 'A banner on this computer', rev: rev(l) }, T0);
+  assert.equal(s.db.settings.banners, true); assert.equal(s.db.settings.texts, false);
+  assert.equal(s.view(T0).banners, true);
+  s.act(l.id, 'undo', {}, T0 + 1000);
+  assert.ok(!('banners' in s.db.settings), 'Undo: back to unset'); assert.equal(s.db.settings.texts, false);
+  s.act(l.id, 'answer', { value: 'A text to my phone', rev: rev(l) }, T0 + 2000);
+  assert.equal(s.db.settings.texts, true); assert.ok(!('banners' in s.db.settings), 'texts leave banners as they were');
+  s.save(); assert.equal(s.decisions(T0 + 10 * 60e3, { all: true }).decisions[0].value, 'A text to my phone', 'the assistant still gets the answer');
+  l = ask();
+  s.act(l.id, 'answer', { value: "Don't, I'll open it myself", rev: rev(l) }, T0 + 20 * 60e3);
+  assert.equal(s.db.settings.banners, false); assert.equal(s.db.settings.texts, false);
+  // The same answer on any other light changes nothing, and a typed answer it cannot read changes nothing.
+  const other = s.raise({ title: 'Banner or text?', kind: 'decide', key: 'other', options: ATTENTION_OPTIONS, recommended: ATTENTION_OPTIONS[0] }, T0);
+  s.act(other.id, 'answer', { value: 'A text to my phone', rev: rev(other) }, T0 + 21 * 60e3);
+  assert.equal(s.db.settings.texts, false);
+  l = ask();
+  s.act(l.id, 'answer', { text: 'ask me later', rev: rev(l) }, T0 + 22 * 60e3);
+  assert.equal(s.db.settings.texts, false); assert.equal(s.db.settings.banners, false);
+  s.setting('banners', true); assert.equal(s.view(T0).banners, true);
+  assert.throws(() => s.setting('banners', 'yes'), /true or false/);
+  // Only the three exact buttons switch anything. The same key raised with other buttons (an assistant's own wording)
+  // changes nothing, so "No texts, banner is fine" never turns banners off and "Only text me when it breaks" never
+  // turns texts on for everything.
+  for (const value of ['No texts, banner is fine', 'Only text me when something breaks', 'no']) {
+    l = s.raise({ title: 'How should it get your attention?', kind: 'decide', key: ATTENTION_KEY, options: [value, 'Other'], recommended: value }, T0);
+    s.act(l.id, 'answer', { value, rev: rev(l) }, T0 + 30 * 60e3);
+    assert.deepEqual([s.db.settings.banners, s.db.settings.texts], [true, false], value);
+  }
+  l = ask(); s.act(l.id, 'answer', { value: 'A text to my phone', rev: rev(l) }, T0 + 31 * 60e3);
+  assert.equal(s.db.settings.texts, true, 'the button still works');
+});
+
+test('the attention question offers only what this computer can do: all three on a Mac, no text on Linux, none on Windows', () => {
+  const { attentionOptions, ATTENTION_OPTIONS } = require('../lib/store');
+  assert.deepEqual(attentionOptions('darwin'), ATTENTION_OPTIONS);
+  assert.deepEqual(attentionOptions('linux'), ATTENTION_OPTIONS.slice(0, 2));
+  assert.deepEqual(attentionOptions('win32'), []);
+});
+
+test('a lined-up copy post can be marked sent or brought forward from the drawer; a lined-up assistant job cannot be approved', () => {
+  const s = fresh();
+  const post = s.raise({ area: 'School', title: 'Post the study group invite', state: 'queued', kind: 'approve', channel: 'copy', link: 'https://example.com/new', draft: 'Thursdays 7 pm.' }, T0);
+  const job = s.raise({ area: 'School', title: 'Queued build step', state: 'queued', kind: 'approve' }, T0);
+  assert.throws(() => s.act(job.id, 'approve', { rev: s.view(T0).lights.find((l) => l.id === job.id).rev }, T0), /already handled/, 'an assistant\'s lined-up job is not approved from the drawer');
+  const other = s.raise({ area: 'School', title: 'Post the second invite', state: 'queued', kind: 'approve', channel: 'copy', draft: 'Fridays.' }, T0);
+  s.act(post.id, 'approve', { rev: s.view(T0).lights.find((l) => l.id === post.id).rev }, T0);
+  assert.equal(s.view(T0).lights.find((l) => l.id === post.id), undefined, 'sent by the person: done');
+  s.act(other.id, 'ready', {}, T0);
+  const v = s.view(T0);
+  assert.equal(v.lights.find((l) => l.id === other.id).state, 'need_you');
+  assert.ok(v.queue.includes(other.id));
+  assert.equal(v.held.find((x) => x.id === other.id).what, 'Brought forward');
+  s.act(other.id, 'undo', {}, T0 + 1);
+  assert.equal(s.view(T0 + 1).lights.find((l) => l.id === other.id).state, 'queued', 'undo puts it back in line');
+  s.act(job.id, 'ready', {}, T0);
+  assert.throws(() => s.act(job.id, 'ready', {}, T0), /Only something lined up/, 'once it is in front of the person, it is not lined up');
+});
+
+test('a timed pass: broken jobs go in first, and safe answers that can be taken together cost one card', () => {
+  const s = fresh();
+  for (let i = 1; i <= 8; i++) s.raise({ area: 'App', title: `Duplicate ${i}`, kind: 'decide', options: ['Keep the first', 'Keep the second'], recommended: 'Keep the first', seconds: 30 }, T0 - i * 1000);
+  s.raise({ area: 'App', title: 'Nightly job failed', state: 'broken', options: ['Run it now', 'Leave it'], seconds: 20 }, T0);
+  s.raise({ area: 'App', title: 'Check the long report', kind: 'todo', seconds: 50 }, T0);
+  const v = s.view(T0), f = s.fit(2, T0), title = (id) => v.lights.find((l) => l.id === id).title;
+  assert.equal(title(f.ids[0]), 'Nightly job failed');
+  assert.equal(f.ids.filter((id) => /Duplicate/.test(title(id))).length, 8, 'all eight safe answers ride on one card');
+  assert.equal(f.seconds, 20 + 60, 'the broken job, then one minute for the group card');
+  assert.ok(!f.ids.some((id) => title(id) === 'Check the long report'), 'nothing past the budget');
+});
+
+// The "Reach out?" drawer: a suggestion the person did not ask for waits folded away, never in front of them.
+test('an optional light stays out of the queue, lanes, headline and area counts, and is counted as "to reach out"', () => {
+  const s = fresh();
+  const ask = s.raise({ area: 'Shop', title: 'Reply to Dale', draft: 'Thursday works.', outbound: true, to: 'Dale' }, T0);
+  const lead = s.raise({ area: 'Shop', title: 'Text Maria about the patio quote?', draft: 'Hi Maria, still thinking about the patio lights?', outbound: true, to: 'Maria', channel: 'copy', optional: true, last_contact: 'Nov 9, texted the quote' }, T0);
+  const rec = s.raise({ area: 'Shop', title: 'Check in with the Lees?', draft: 'Hi, how are the lights?', outbound: true, to: 'the Lees', optional: true }, T0);
+  const v = s.view(T0), byId = (id) => v.lights.find((l) => l.id === id);
+  assert.deepEqual(v.queue, [ask.id], 'only what the person asked for is in the queue');
+  assert.ok(!Object.values(v.lanes).flat().includes(rec.id), 'never in a group tap');
+  assert.equal(v.counts.waiting, 1); assert.equal(v.counts.need_you, 1, 'the headline counts only the queue');
+  assert.equal(v.counts.reachOut, 2); assert.equal(v.counts.total, 3);
+  const c = v.counts; assert.equal(c.waiting + c.broken + c.running + c.queued + c.others + c.aside + c.reachOut, c.total, 'the parts still add up');
+  const a = v.areas.find((x) => x.name === 'Shop'); assert.equal(a.waiting, 1); assert.equal(a.counts.reachOut, 2);
+  assert.ok(byId(lead.id).reachOut); assert.equal(byId(lead.id).lastContact, 'Nov 9, texted the quote');
+  assert.deepEqual(v.reachOut.slice().sort(), [lead.id, rec.id].sort());
+  assert.equal(s.fit(10, T0).ids.includes(lead.id), false, 'never in a timed pass');
+});
+
+test('the Reach out drawer lists the longest-quiet first, then the ones with no date it can read', () => {
+  const s = fresh(), now = Date.UTC(2026, 10, 15, 15);
+  const nodate = s.raise({ area: 'Shop', title: 'A', draft: 'Hi', outbound: true, to: 'A', optional: true, last_contact: 'a while ago' }, now - 3000);
+  const recent = s.raise({ area: 'Shop', title: 'B', draft: 'Hi', outbound: true, to: 'B', optional: true, last_contact: 'Nov 9, texted the quote' }, now - 2000);
+  const old = s.raise({ area: 'Shop', title: 'C', draft: 'Hi', outbound: true, to: 'C', optional: true, last_contact: '2026-08-01' }, now - 1000);
+  const dec = s.raise({ area: 'Shop', title: 'D', draft: 'Hi', outbound: true, to: 'D', optional: true, last_contact: 'Dec 20' }, now); // no year, later than today: last December
+  const v = s.view(now);
+  assert.deepEqual(v.reachOut, [dec.id, old.id, recent.id, nodate.id]);
+  assert.equal(new Date(v.lights.find((l) => l.id === dec.id).lastContactAt).getFullYear(), 2025);
+  assert.equal(v.lights.find((l) => l.id === nodate.id).lastContactAt, null);
+});
+
+test('an optional light never rings, and an approved one that failed comes back in front of the person', () => {
+  const { notifier } = require('../lib/notify');
+  const s = fresh(), sent = [];
+  const n = notifier({ send: (t, b, k) => sent.push(k), now: () => Date.UTC(2026, 0, 5, 15), quiet: [0, 0], everyMs: 0 });
+  n.check(s.view(T0));
+  const l = s.raise({ area: 'Shop', title: 'Text an old lead?', draft: 'Hi', outbound: true, to: 'Sam', optional: true }, T0);
+  assert.equal(n.check(s.view(T0)), null, 'nothing rings for a suggestion');
+  s.act(l.id, 'approve', { rev: s.view(T0).lights.find((x) => x.id === l.id).rev }, T0);
+  s.decisions(T0 + HOLD_MS, { all: true }); s.complete(l.id, 'failed', 'bounced', T0 + HOLD_MS);
+  const v = s.view(T0 + HOLD_MS);
+  assert.ok(v.queue.includes(l.id), 'he said yes to it; the failure is his to see');
+  assert.equal(v.reachOut.length, 0);
+});
+
+test('setting optional on an existing light moves it to Reach out: its own assistant or the person, never another assistant', () => {
+  const s = fresh();
+  const l = s.raise({ area: 'Shop', title: 'Text Maria?', draft: 'Hi', outbound: true, to: 'Maria', agent: 'relay', key: 'lead:1' }, T0);
+  assert.ok(s.view(T0).queue.includes(l.id));
+  assert.throws(() => s.update(l.id, { optional: true, agent: 'someone-else' }, 'someone-else', T0), /belongs to relay/);
+  s.update(l.id, { optional: true, last_contact: 'Nov 2, called', agent: 'relay' }, 'relay', T0);
+  let v = s.view(T0); assert.deepEqual(v.reachOut, [l.id]); assert.equal(v.queue.length, 0);
+  s.update(l.id, { optional: false, agent: 'relay' }, 'relay', T0);
+  assert.ok(s.view(T0).queue.includes(l.id), 'optional:false brings it back');
+  s.raise({ area: 'Shop', title: 'Text Maria?', agent: 'relay', key: 'lead:1', optional: true }, T0);
+  assert.deepEqual(s.view(T0).reachOut, [l.id], 'raising again with the same key moves it too');
+  const free = s.raise({ area: 'Shop', title: 'No name on this one', draft: 'Hi', outbound: true, to: 'Al' }, T0);
+  s.update(free.id, { optional: true, agent: 'anyone' }, 'anyone', T0);
+  assert.ok(s.view(T0).reachOut.includes(free.id), 'a light raised with no name can be moved by any assistant');
+  const mine = s.raise({ area: 'Shop', title: 'Assistant light', draft: 'Hi', outbound: true, to: 'Bo', agent: 'x' }, T0);
+  s.update(mine.id, { optional: true }, 'you', T0);
+  assert.ok(s.view(T0).reachOut.includes(mine.id), 'the person may move any light');
+  const odd = s.raise({ area: 'Shop', title: 'Odd one', optional: 'maybe' }, T0);
+  assert.equal(odd.optional, false); assert.ok(s.warnings.some((w) => /optional must be true or false/.test(w)));
+});
+
+test('the person moves a message to Reach out (undoable), and "Not now" drops it with a reason the assistant is handed', () => {
+  const s = fresh();
+  const l = s.raise({ area: 'Shop', title: 'Text Maria?', draft: 'Hi Maria', outbound: true, to: 'Maria', channel: 'copy', link: 'https://example.com/chat' }, T0);
+  const q = s.raise({ area: 'Shop', title: 'Pick a color', kind: 'decide', options: ['Red', 'Blue'] }, T0);
+  assert.throws(() => s.act(q.id, 'reach_out', {}, T0), /Only a message to a person/);
+  s.act(l.id, 'reach_out', {}, T0);
+  let v = s.view(T0); assert.deepEqual(v.reachOut, [l.id]); assert.equal(v.held.find((x) => x.id === l.id).what, 'Moved to Reach out');
+  assert.throws(() => s.act(l.id, 'reach_out', {}, T0), /already in Reach out/);
+  s.act(l.id, 'undo', {}, T0 + 1); v = s.view(T0 + 1);
+  assert.ok(v.queue.includes(l.id), 'undo puts it back in the list'); assert.equal(v.reachOut.length, 0);
+  s.act(l.id, 'reach_out', {}, T0 + 2);
+  // From the drawer: Copy & open, then "Yes, it went", with the rev of what was copied.
+  const rev = s.view(T0 + 2).lights.find((x) => x.id === l.id).rev;
+  s.act(l.id, 'approve', { rev }, T0 + 3);
+  assert.equal(s.view(T0 + 3).lights.find((x) => x.id === l.id), undefined, 'sent by the person: done');
+  const o = s.raise({ area: 'Shop', title: 'Check in with the Lees?', draft: 'Hi', outbound: true, to: 'Lee', optional: true, agent: 'a1' }, T0);
+  s.act(o.id, 'drop', { why: 'they hired someone else' }, T0);
+  const got = s.decisions(T0 + HOLD_MS, { agent: 'a1' }).decisions.find((d) => d.id === o.id);
+  assert.equal(got.action, 'drop'); assert.equal(got.text, 'they hired someone else');
+});
+
+test('only a message to a person can wait in Reach out: a decision or a to-do marked optional stays in the list, with a warning', () => {
+  const s = fresh();
+  const d = s.raise({ area: 'Shop', title: 'Text her?', kind: 'decide', options: ['Text her', 'Skip'], recommended: 'Skip', optional: true }, T0);
+  assert.equal(d.optional, false); assert.ok(s.warnings.some((w) => /only for a message to a person/.test(w)), s.warnings.join('; '));
+  const t = s.raise({ area: 'Shop', title: 'Call the Lees', kind: 'todo', link: 'https://x', optional: true }, T0);
+  const v = s.view(T0); assert.ok(v.queue.includes(d.id) && v.queue.includes(t.id)); assert.equal(v.reachOut.length, 0);
+  // A light already in the drawer that becomes something else comes back to the list.
+  const m = s.raise({ area: 'Shop', title: 'Text Al', draft: 'Hi', outbound: true, to: 'Al', optional: true, agent: 'a1', key: 'k' }, T0);
+  assert.deepEqual(s.view(T0).reachOut, [m.id]);
+  s.update(m.id, { kind: 'todo', agent: 'a1' }, 'a1', T0);
+  assert.equal(s.view(T0).reachOut.length, 0);
+});
+
+test('what the person moved to Reach out stays there: its assistant cannot pull it back into the list', () => {
+  const s = fresh();
+  const l = s.raise({ area: 'Shop', title: 'Text Dale (old lead)', draft: 'Hi Dale', outbound: true, to: 'Dale', agent: 'a1', key: 'lead:dale' }, T0);
+  s.act(l.id, 'reach_out', {}, T0);
+  s.raise({ area: 'Shop', title: 'Text Dale (old lead)', draft: 'Hi Dale', outbound: true, to: 'Dale', agent: 'a1', key: 'lead:dale', optional: false }, T0 + 1);
+  assert.ok(s.warnings.some((w) => /stays there until they bring it back/.test(w)), s.warnings.join('; '));
+  s.update(l.id, { optional: false, agent: 'a1' }, 'a1', T0 + 2);
+  let v = s.view(T0 + 2); assert.deepEqual(v.reachOut, [l.id]); assert.ok(!v.queue.includes(l.id));
+  s.update(l.id, { optional: false }, 'you', T0 + 3);
+  assert.ok(s.view(T0 + 3).queue.includes(l.id), 'the person brings it back');
+  // Moved by the person through an update: the same.
+  const m = s.raise({ area: 'Shop', title: 'Text Bo', draft: 'Hi', outbound: true, to: 'Bo', agent: 'a1', key: 'lead:bo' }, T0);
+  s.update(m.id, { optional: true }, 'you', T0);
+  s.update(m.id, { optional: false, agent: 'a1' }, 'a1', T0 + 1);
+  assert.ok(s.view(T0 + 1).reachOut.includes(m.id));
+});
+
+test('a message to a customer raised through the board\'s API with no owner is refused; examples and practice runs still work', () => {
+  const s = fresh();
+  const api = (o) => s.raise(o, T0, { api: true });
+  for (const o of [{ outbound: true }, { outbound: 'true' }, { to: 'Dale Henderson' }, { phone: '+18595550142' }])
+    assert.throws(() => api(Object.assign({ area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi' }, o)), /needs one owner/);
+  assert.throws(() => api({ area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi', outbound: true, agent: '' }), /without for_anyone/);
+  assert.throws(() => api({ area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi', to: 'Dale', demo: true }), /needs one owner/, 'an example flag through the API changes nothing');
+  const ok = api({ area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi', outbound: true, agent: 'claude:shop~1234' });
+  assert.equal(ok.agent, 'claude:shop~1234');
+  api({ area: 'Shop', title: 'Order boxes', kind: 'todo' }); // nothing to a customer: no owner needed
+  s.raise({ area: 'Shop', title: 'Practice reply', kind: 'approve', outbound: true, draft: 'Hi' }, T0); // the store itself (sims) is not the API
+  s.seedDemo(T0); assert.ok(s.db.lights.some((l) => l.demo && l.outbound));
+  // An unowned light cannot become a message to a customer later either, except by the person.
+  const loose = s.raise({ area: 'Shop', title: 'Think about Dale', kind: 'todo' }, T0);
+  assert.throws(() => s.update(loose.id, { to: 'Dale Henderson' }, 'claude:x', T0), /needs one owner/);
+  assert.equal(s.update(loose.id, { to: 'Dale Henderson' }, 'you', T0).outbound, true);
+});
+
+test('an option label marked "(recommended)" becomes the recommended answer, and the mark comes off the button', () => {
+  const s = fresh();
+  const l = s.raise({ area: 'Shop', title: 'Which supplier?', kind: 'decide', options: ['Acme (recommended)', 'Bolt'] }, T0);
+  assert.deepEqual([l.options, l.recommended], [['Acme', 'Bolt'], 'Acme']);
+  assert.ok(s.warnings.some((w) => /"\(recommended\)" mark was taken off the option "Acme" and it was set as the recommended answer/.test(w)), s.warnings.join('; '));
+  const named = s.raise({ area: 'Shop', title: 'Which day?', kind: 'decide', options: ['Monday [Recommended]', 'Friday'], recommended: 'Friday' }, T0);
+  assert.deepEqual([named.options, named.recommended], [['Monday', 'Friday'], 'Friday'], 'a recommended named outright wins');
+  const said = s.raise({ area: 'Shop', title: 'Go?', kind: 'decide', options: ['Yes (recommended)', 'No'], recommended: 'Yes (recommended)' }, T0);
+  assert.deepEqual([said.options, said.recommended], [['Yes', 'No'], 'Yes']);
+  const plain = s.raise({ area: 'Shop', title: 'Paint?', kind: 'decide', options: ['Blue', 'Green'], recommended: 'Green' }, T0);
+  assert.deepEqual([plain.options, plain.recommended], [['Blue', 'Green'], 'Green'], 'nothing changes without the mark');
+  s.update(plain.id, { options: ['Blue (recommended)', 'Green'] }, 'claude:x', T0);
+  assert.equal(s.db.lights.find((x) => x.id === plain.id).recommended, 'Blue', 'new options that mark one say what is recommended now');
 });

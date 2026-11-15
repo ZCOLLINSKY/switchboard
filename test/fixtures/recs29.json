@@ -1,0 +1,320 @@
+{
+ "about": "The 29 recommended lights on the board on Nov 15, 2026, hand-checked for stakes. Titles rewritten from their ids and summaries; no customer names. expect: high = always one at a time; read = shown as a list before a group tap; safe = fine to take together.",
+ "lights": [
+  {
+   "id": "7bfdd035",
+   "expect": "high",
+   "title": "One reply clears nine LightDeck yes/nos",
+   "note": "Routine items, but this tap is your yes on the database lock and the cleanup.",
+   "options": [
+    "Yes to all",
+    "Go one by one"
+   ],
+   "recommended": "Yes to all"
+  },
+  {
+   "id": "c07f07e9",
+   "expect": "high",
+   "title": "Publish the new /terms page wording?",
+   "note": "Changes what the Terms say about cancellations.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "e45d55d8",
+   "expect": "high",
+   "title": "Correct the invoice rows for the October event",
+   "note": "Two invoices carry the wrong totals.",
+   "options": [
+    "Fix them",
+    "Leave them"
+   ],
+   "recommended": "Fix them"
+  },
+  {
+   "id": "bd46205f",
+   "expect": "high",
+   "title": "Use the new refund wording on the booking page?",
+   "note": "Says refunds go back within 5 days.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "eed6997c",
+   "expect": "high",
+   "title": "Approve the Weekend Boost terms line",
+   "note": "Boost orders: how a cancelled Boost is handled in the order flow, and whether it is refunded.",
+   "options": [
+    "Approve",
+    "Change it"
+   ],
+   "recommended": "Approve"
+  },
+  {
+   "id": "95f7f4ff",
+   "expect": "high",
+   "title": "NEEDS ZACH (production data): 3 rules for old bookings",
+   "note": "Deletes production rows older than a year and changes who gets the text line.",
+   "options": [
+    "All 3",
+    "Pick",
+    "None"
+   ],
+   "recommended": "All 3"
+  },
+  {
+   "id": "99934bba",
+   "expect": "high",
+   "title": "NEEDS ZACH (production database change): apply the new unique index",
+   "note": "Stops two invoices sharing a number.",
+   "options": [
+    "Apply",
+    "Not yet"
+   ],
+   "recommended": "Apply"
+  },
+  {
+   "id": "173142b2",
+   "expect": "high",
+   "title": "NEEDS ZACH (production database changes): five small SQL fixes",
+   "note": "Each one is listed below.",
+   "options": [
+    "Run all five",
+    "Hold"
+   ],
+   "recommended": "Run all five"
+  },
+  {
+   "id": "b76ed082",
+   "expect": "high",
+   "title": "NEEDS ZACH (public legal wording): Terms 3a and the privacy line",
+   "note": "Yes both, or say which.",
+   "options": [
+    "Yes both",
+    "Only 3a",
+    "Neither"
+   ],
+   "recommended": "Yes both"
+  },
+  {
+   "id": "fe1f9a63",
+   "expect": "high",
+   "title": "Approve the next 10 sales notes",
+   "outbound": true,
+   "batch": 10,
+   "to": "10 venues",
+   "draft": "Hi, quick note about listing your events.",
+   "options": [
+    "Approve",
+    "Hold"
+   ],
+   "recommended": "Approve"
+  },
+  {
+   "id": "b2df351f",
+   "expect": "high",
+   "title": "Send cold invites to 3 contractors?",
+   "note": "From the list you started last week.",
+   "options": [
+    "Send",
+    "Not now"
+   ],
+   "recommended": "Send"
+  },
+  {
+   "id": "1d7aafed",
+   "expect": "read",
+   "title": "Add 4 checked Thanksgiving-week listings",
+   "note": "Each one checked against the venue's own page.",
+   "options": [
+    "Add",
+    "Skip"
+   ],
+   "recommended": "Add"
+  },
+  {
+   "id": "2839d2dd",
+   "expect": "read",
+   "title": "Let search index the separately ticketed series sessions?",
+   "note": "Each session gets its own page.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "08157e87",
+   "expect": "read",
+   "title": "Put the email signup after the first day's events on the homepage",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "6768466b",
+   "expect": "read",
+   "title": "New meta descriptions for the 12 venue pages",
+   "options": [
+    "Use them",
+    "Not yet"
+   ],
+   "recommended": "Use them"
+  },
+  {
+   "id": "28997401",
+   "expect": "read",
+   "title": "Show past events on the public pages for a month?",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "066d241a",
+   "expect": "read",
+   "title": "Publish the December weekend guide",
+   "options": [
+    "Publish",
+    "Hold"
+   ],
+   "recommended": "Publish"
+  },
+  {
+   "id": "42559ca2",
+   "expect": "read",
+   "title": "Mark sold-out shows on the listings",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "a1b4765a",
+   "expect": "read",
+   "title": "Add the sitemap for the new neighborhood pages",
+   "options": [
+    "Add",
+    "Skip"
+   ],
+   "recommended": "Add"
+  },
+  {
+   "id": "1ec71c19",
+   "expect": "read",
+   "title": "Let venues cancel their own listings?",
+   "note": "Today only you can.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "No"
+  },
+  {
+   "id": "90355ad5",
+   "expect": "safe",
+   "title": "Match sign-in emails without caring about capitals",
+   "note": "Code only. No database change.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "54528285",
+   "expect": "safe",
+   "title": "Merge the release branch into main",
+   "options": [
+    "Merge",
+    "Wait"
+   ],
+   "recommended": "Merge"
+  },
+  {
+   "id": "a55b3e16",
+   "expect": "safe",
+   "title": "Rename the internal dashboard tab to Today",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  },
+  {
+   "id": "9ffde6a0",
+   "expect": "safe",
+   "title": "Add RATE_LIMIT_SECRET to the preview build?",
+   "note": "Not needed until the next release.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "No"
+  },
+  {
+   "id": "344a3144",
+   "expect": "safe",
+   "title": "Keep the nightly check at 2 am",
+   "options": [
+    "Keep",
+    "Move to 4 am"
+   ],
+   "recommended": "Keep"
+  },
+  {
+   "id": "bc3a1222",
+   "expect": "safe",
+   "title": "Turn on the faster image loader",
+   "options": [
+    "Turn on",
+    "Leave off"
+   ],
+   "recommended": "Turn on"
+  },
+  {
+   "id": "d6ac22ec",
+   "expect": "high",
+   "title": "Build the 5 quick wins from the review",
+   "note": "Five small code changes, one release.",
+   "options": [
+    "Build them",
+    "Later"
+   ],
+   "recommended": "Build them",
+   "handChecked": "safe",
+   "why": "'Five small code changes' reads as several decisions in one light; the guess errs high, which only costs a tap"
+  },
+  {
+   "id": "9b1e9f99",
+   "expect": "safe",
+   "title": "Run the read-only check of last month's bookings",
+   "options": [
+    "Run it",
+    "Skip"
+   ],
+   "recommended": "Run it"
+  },
+  {
+   "id": "d70e0ec5",
+   "expect": "safe",
+   "title": "Send build failures to the alerts channel",
+   "note": "A code-only alert for the assistant.",
+   "options": [
+    "Yes",
+    "No"
+   ],
+   "recommended": "Yes"
+  }
+ ]
+}

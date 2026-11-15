@@ -7,7 +7,7 @@ const path = require('path');
 
 // A launcher that could not fill in a setting (an empty value, or "${user_config.port}" left as written) means "not set",
 // here and in the board this process may start.
-for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWITCHBOARD_AGENT']) {
+for (const k of ['SWITCHBOARD_HOME', 'SWITCHBOARD_PORT', 'SWITCHBOARD_URL', 'SWITCHBOARD_AGENT', 'SWITCHBOARD_NOTIFY', 'SWITCHBOARD_NOTIFY_TEXT', 'SWITCHBOARD_PHONE_URL', 'SWITCHBOARD_ALLOWED_HOSTS']) {
   const v = process.env[k]; if (v != null && (!v.trim() || v.includes('${'))) delete process.env[k];
 }
 // Any other port that is not a port (a typo such as "5937x") is an error on every call, never a quiet fall back to the
@@ -139,8 +139,12 @@ const lightFields = {
   work_minutes: { type: 'integer', description: 'For a job the person must go and do (a call, a form, a drive): minutes of work, 1 to 600. Listed apart from the quick taps.' },
   changed: S('After a request for changes: one line on what you changed ("Added the $1,008 deposit; offered Thursday only"). Shown next to their request. Keep note for background.'),
   question: S('A question back to the person, when their request needs a fact you do not have. Shown on the card; their answer comes back as a new request.'),
-  for_anyone: { type: 'boolean', description: 'Let any assistant collect the decision, not only sessions like this one (this assistant, started in this repository or folder, or naming the same project). Use it while setting up the person\'s board, and for work any session can finish.' },
-  holds_up: S('What is blocked until this is handled, in a few words ("Friday payroll"). A broken job that holds something up sorts near the top.'),
+  for_anyone: { type: 'boolean', description: 'Let any assistant collect the decision, not only sessions like this one (this assistant, started in this repository or folder, or naming the same project). Use it while setting up the person\'s board, and for work any session can finish. Never for a message to a customer: that is refused, since it needs one owner.' },
+  holds_up: S('What is blocked until this is handled, in a few words ("Friday payroll"). Broken jobs are pinned at the top; one that holds something up leads them, and the board shows "Holds up: ..." on it.'),
+  stakes: S('How carefully the person must read this before saying yes: "high" (production data, legal wording, money, people, several decisions in one light: always answered one at a time), "read" (public pages, listings, search: shown in a list before a group tap) or "safe". The board also reads the light itself, and your value can only raise what it finds, never lower it.', { enum: ['high', 'read', 'safe'] }),
+  impact: S('One line, 160 characters or fewer, on what changes for whom if the person says yes ("New bookings stop double-charging; 3 past orders are refunded $84"). Shown on high-stakes cards.'),
+  optional: { type: 'boolean', description: 'Use optional:true for any suggestion to contact someone who has not written to the person (reaching out to a past lead, checking in with an old customer); it goes in a folded "Reach out?" drawer, never in front of them, never in a count of what waits on them, and never rings their phone. They open the drawer when they choose. update_light with optional:true moves a light you own there.' },
+  last_contact: S('With optional: when the person last heard from or wrote to them, short, starting with the date ("Nov 9, texted the quote" or "2026-11-09"). Shown on the row; the drawer lists the longest-quiet first.'),
   next: S('One line on what happens after they act. Example: "waits 3 days for their reply, then drafts a follow-up for you".'),
   follow_up_days: { type: 'integer', description: 'For a message to someone: days to wait for a reply before the light comes back.' },
   follow_up_draft: S('Optional follow-up text to use when the wait runs out.'),
@@ -219,12 +223,38 @@ function openerFile(link) {
   return file;
 }
 
+// A session started outside any repository (the home folder, the desktop) has no project of its own: an answer on a
+// question it asks could reach no session working on that project. Known once per process (it asks git).
+let LOOSE = null;
+const outsideRepo = () => {
+  // Outside any project: the home folder, a catch-all folder in it (Desktop, Documents, Downloads) or the top of the disk.
+  // A plain folder that is not a git repository is still a project: its name is a stable identity.
+  if (LOOSE == null) {
+    const real = (d) => { try { return fs.realpathSync(d); } catch (e) { return path.resolve(d); } };
+    const cwd = real(process.cwd()), home = real(os.homedir()), same = (a, b) => (process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b);
+    const catchAll = [home, ...['Desktop', 'Documents', 'Downloads'].map((d) => path.join(home, d)), path.parse(cwd).root].some((d) => same(cwd, real(d)));
+    LOOSE = catchAll && names.rootOf(cwd) === cwd && !fs.existsSync(path.join(cwd, '.git'));
+  }
+  return LOOSE;
+};
+const NAME_PROJECT = 'This session was started outside a repository and names no project, so his answer could come back to no session working on it. Pass project with the repository\'s name (for example project: "around-lex") and raise it again.';
+// What raise_light will make: a question or approval for the person (refused without a project), or something else (a warning).
+const asksPerson = (a) => { const kind = a.kind || (a.state === 'broken' ? 'fix' : 'approve'), state = a.state || 'need_you'; return a.outbound === true || a.outbound === 'true' || !!a.to || !!a.phone || (kind === 'decide' || kind === 'approve') && !['auto', 'done', 'dropped', 'waiting_them'].includes(state); };
+
 async function callTool(name, a, signal) {
   let project = PROJECT;
   if ('project' in a) { project = names.projectName(a.project); if (!FIXED) PROJECT = project; a = Object.assign({}, a); delete a.project; } // never passed on as a field
   const me = agent(project), use = () => { if (!FIXED) USED.add(me); }, all = FIXED ? [me] : namesFor(me);
   const need = (k) => { if (typeof a[k] !== 'string' || !a[k]) throw new Error(`${k} is required (text).`); };
-  if (name === 'raise_light') { const b = Object.assign({}, a, { agent: a.for_anyone ? '' : me }); delete b.for_anyone; if (!a.for_anyone) use(); return api('POST', '/api/lights', b, signal); }
+  if (name === 'raise_light') {
+    // A light any session may collect (setup's questions) is the exception: its answer has no one session to reach.
+    const loose = !FIXED && !project && !a.for_anyone && outsideRepo();
+    if (loose && asksPerson(a)) throw new Error(NAME_PROJECT);
+    const b = Object.assign({}, a, { agent: a.for_anyone ? '' : me }); delete b.for_anyone; if (!a.for_anyone) use();
+    const out = await api('POST', '/api/lights', b, signal);
+    if (loose && out && typeof out === 'object') out.warnings = (out.warnings || []).concat('this session was started outside a repository and names no project; pass project with the repository\'s name on every call, so what comes back reaches a session working on it');
+    return out;
+  }
   // Name your own open light by the key you raised it with (a long key is stored as a fingerprint, as the board does).
   const byKey = async () => {
     const raw = typeof a.key === 'string' ? a.key.trim() : '';
@@ -265,8 +295,19 @@ async function callTool(name, a, signal) {
     const part = (from, to) => { const a = md.indexOf(from); if (a < 0) return ''; const b = to ? md.indexOf(to, a) : -1; return md.slice(a, b < 0 ? md.length : b).trim(); };
     // The skill too: Claude Desktop has no skills folder, so this is where its assistant learns the habits.
     let habits = ''; try { habits = fs.readFileSync(path.join(__dirname, 'skill', 'switchboard', 'SKILL.md'), 'utf8').replace(/^---\n[\s\S]*?\n---\n+/, '').trim(); } catch (e) { /* an install without the skill */ }
-    return { guide: [part('## 5.', '## 7.'), part('## Rules that always apply')].filter(Boolean).join('\n\n'), habits: habits || undefined,
-      note: 'You are already connected, so skip installing anything. Wherever the guide says to give the person the link, call open_board instead. Answers wait 20 to 120 seconds after the person taps them (their undo window) before you can collect them: use wait_for_decision, or call get_decisions again after "next_release_at". In Claude Desktop nothing checks the board between chats: tell the person that after they answer on the board, they wait a minute or two, then start a chat and say "check my Switchboard", so their answers are picked up.' };
+    const { ATTENTION_KEY, attentionOptions } = require('./lib/store'), reach = attentionOptions();
+    // The three setup questions and the check, ready to raise as they are (step 5 and 6 of the guide say what to do with each answer).
+    const q = (key, title, options, recommended, note) => Object.assign({ key, title, kind: 'decide', options, for_anyone: true, note }, recommended ? { recommended } : {});
+    const questions = [
+      q('setup:areas', 'What do you want to keep up with?', ['My business', 'Side project', 'School', 'Family', 'Home'], '', 'Tap one, or type several, separated by commas (Lighting business, School, Family). Each becomes a container on your board.'),
+      q('setup:never', 'What should never happen without your tap?', ['Keep all four', 'Let me change it'], 'Keep all four', 'Out of the box, each of these always waits for your tap: messages to people, anything with money, public posts, changes to live sites or databases.'),
+      // Only answers this computer can carry out: no texts off a Mac, and no question at all where there are no banners.
+      reach.length > 1 ? q(ATTENTION_KEY, 'How should it get your attention?', reach, reach[0], 'Your tap sets it. You can change it any time at the bottom of the board.') : null,
+      q('setup:check', 'Setup check', ['Check my setup'], 'Check my setup', 'Tap it and your assistant checks that it heard your answers.'),
+    ].filter(Boolean);
+    const attentionNote = reach.length > 1 ? '' : ' This computer cannot show banners or send texts, so there is no attention question: record "attention: none (this computer has no banners)" in the setup check, and tell the person they open the board themselves.';
+    return { guide: [part('## 5.', '## 7.'), part('## Rules that always apply')].filter(Boolean).join('\n\n'), questions, habits: habits || undefined,
+      note: 'Raise the questions in `questions` with raise_light as they are (the last one, the setup check, after the person has answered the others), call open_board, and tell the person in one sentence that ' + (questions.length === 4 ? 'three' : 'two') + ' quick questions are waiting on their board. Do not ask them in the chat. You are already connected, so skip installing anything. Wherever the guide says to give the person the link, call open_board instead. Answers wait 20 to 120 seconds after the person taps them (their undo window) before you can collect them: use wait_for_decision, or call get_decisions again after "next_release_at". In Claude Desktop nothing checks the board between chats: tell the person that after they answer on the board, they wait a minute or two, then start a chat and say "check my Switchboard", so their answers are picked up.' + attentionNote };
   }
   if (name === 'open_board') {
     const h = await api('GET', '/api/health', null, signal); // starts the board if it is not running

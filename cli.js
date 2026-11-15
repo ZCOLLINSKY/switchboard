@@ -24,6 +24,10 @@ const HELP = `Switchboard
   raise --area "Name" --title "What you need" [--kind approve|decide|sense|todo|fix]
         [--draft "..."] [--options "Yes,No"] [--state need_you|waiting_them|auto|queued|broken] [--due 2026-12-01] [--port N]
   list [--port N]                                     what needs you, from the command line
+  rotate-key [--port N]                               a new page key: every link opened before stops working; the
+                                                      board must restart to use it (a login item is stopped for you)
+  snapshot [--label before-0.4.0]                     copy the data file to backups/ with the time in its name, before a
+                                                      release or a restart, so the board can be put back exactly as it was
   mcp                                                 the assistant connector (MCP over stdio)
 
 Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`;
@@ -31,7 +35,7 @@ Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`
 // Which flags each command takes. true = takes a value, false = a switch.
 const FLAGS = {
   start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false, copy: false, at: true },
-  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, report: { port: true, days: true }, mcp: {},
+  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, snapshot: { label: true }, 'rotate-key': { port: true }, report: { port: true, days: true }, mcp: {},
   raise: { port: true, area: true, title: true, kind: true, draft: true, options: true, state: true, due: true, to: true, note: true, link: true, source: true, agent: true, key: true, value: true, 'follow-up-days': true, outbound: false },
 };
 const fail = (msg) => { console.error(msg); process.exit(1); };
@@ -129,6 +133,47 @@ async function startBoard(opts, label) {
 }
 
 (async () => {
+  if (cmd === 'snapshot') {
+    // Reads the data file and writes a copy beside the daily ones; the board keeps running and its file is not touched.
+    try { console.log(`Saved a copy of the board: ${require('./lib/store').snapshot(HOME, flags.label)}\nTo put it back: stop the board, copy that file over ${path.join(HOME, 'data.json')}, start it.`); }
+    catch (e) { fail(e.message); }
+    return;
+  }
+  // Does a com.switchboard plist start the board b? Its SWITCHBOARD_HOME (or the usual folder) and its port
+  // (SWITCHBOARD_PORT, --port, or 4747) must both match.
+  function loginItemIs(plist, b) {
+    if (!plist.includes('cli.js')) return false;
+    const env = (k) => (plist.match(new RegExp(`<key>${k}</key>\\s*<string>([^<]*)</string>`)) || [])[1];
+    const real = (d) => { try { return fs.realpathSync(expand(d)); } catch (e) { return path.resolve(expand(d)); } };
+    const home = env('SWITCHBOARD_HOME') || path.join(os.homedir(), '.local', 'share', 'switchboard');
+    const p = env('SWITCHBOARD_PORT') || (plist.match(/<string>--port<\/string>\s*<string>(\d+)<\/string>/) || [])[1] || '4747';
+    return real(home) === real(b.dir) && String(portOf(b.url) || '4747') === String(p);
+  }
+  if (cmd === 'rotate-key') {
+    // A new page key, for a link that was shared too widely or a device that is gone. The board reads its key when it
+    // starts, so the old one keeps working until the board restarts; after that every old link can only look.
+    const b = await board(HOME), dir = b ? b.dir : HOME, file = path.join(dir, 'page.key');
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    const tmpFile = file + '.' + process.pid + '.tmp';
+    fs.writeFileSync(tmpFile, require('crypto').randomBytes(16).toString('hex') + '\n', { mode: 0o600 });
+    fs.chmodSync(tmpFile, 0o600); fs.renameSync(tmpFile, file); // whole or not at all, and never readable by others
+    const linkHint = `Then get the new link: ${withHome()}${SELF} link${onPort(b ? b.url : BASE)} in your own terminal (or link --open, or link --copy for your phone). Open it once in each browser you use; links opened before can only look.`;
+    const phone = process.env.SWITCHBOARD_PHONE_URL && /[?&]key=/.test(process.env.SWITCHBOARD_PHONE_URL) ? ' SWITCHBOARD_PHONE_URL holds the old key: put the new link there too.' : '';
+    if (!b) { console.log(`New page key written to ${file}. The board is not running; it uses the new key when it starts. ${linkHint}${phone}`); return; }
+    // A login item (macOS LaunchAgent) restarts only after a crash, never after a deliberate stop: stop it here, so it
+    // is never left answering with the old key, and say how to start it again.
+    const agentFile = path.join(os.homedir(), 'Library', 'LaunchAgents', 'com.switchboard.plist');
+    // ...and only when that login item starts this very board: the same data folder and the same port. A practice board
+    // on another port is never mistaken for it.
+    let login = false; try { login = process.platform === 'darwin' && loginItemIs(fs.readFileSync(agentFile, 'utf8'), b); } catch (e) { /* no login item */ }
+    if (!login) { console.log(`New page key written to ${file}. The board at ${b.url} still uses the old key until it restarts. Restart it now: ${withHome()}${SELF} stop${onPort(b.url)}, then ${startHint(false)}. ${linkHint}${phone}`); return; }
+    let pid = null; try { pid = JSON.parse(fs.readFileSync(path.join(b.dir, 'server.lock'), 'utf8')).pid; } catch (e) { /* no lock */ }
+    let stopped = false;
+    if (pid) { try { process.kill(pid, 'SIGTERM'); for (let i = 0; i < 20 && !stopped; i++) { await new Promise((r) => setTimeout(r, 150)); stopped = !(await board(b.dir)); } } catch (e) { /* not ours to stop */ } }
+    const uid = typeof process.getuid === 'function' ? process.getuid() : '$(id -u)';
+    console.log(`New page key written to ${file}. ${stopped ? 'Your board (a login item) is stopped so it never answers with the old key.' : `Could not stop the board at ${b.url}; stop it yourself (${SELF} stop${onPort(b.url)}).`} Start it again: launchctl kickstart gui/${uid}/com.switchboard (or log out and back in). ${linkHint}${phone}`);
+    return;
+  }
   if (cmd === 'start') {
     const s = await startBoard({ port: port, host: flags.host, signals: true }, 'your board');
     console.log(`Switchboard is on.\n${toPerson() ? `Open it with this link (once per browser; it lets that browser approve things):\n  ${s.link}` : `It is at ${s.url}. Open it ready to approve with: ${openHint(s.url)}\n(The link with its key is printed only in a terminal.)`}\nData file: ${s.store.file}\nStop with Ctrl+C, or from another terminal: ${SELF} stop${onPort(s.url)}`);

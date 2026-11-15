@@ -84,12 +84,21 @@ const scenarios = {
       s.raise({ area: 'Family', title: 'Soccer snack week: buy for 14 kids by Saturday', kind: 'todo', work_minutes: 20 }, now - 1 * D);
       s.raise({ area: 'House admin', title: 'Pay the water bill (paper only)', kind: 'todo', seconds: 300, due: now + 10 * H }, now - 5 * D);
       s.raise({ area: 'House admin', title: 'Insurance renewal: accept the new rate?', kind: 'decide', options: ['Accept', 'Shop around'], note: 'Up $18 a month from last year.' }, now - 6 * D);
+      // Two that test the one-tap answer: a careful one with an impact line, and one whose recommendation is No.
+      s.raise({ area: 'TrailFork app', title: 'Add the unique index on trail bookings (production database)', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', impact: 'Stops double bookings. Locks the bookings table for about 2 seconds.', seconds: 20 }, now - 8 * H);
+      s.raise({ area: 'TrailFork app', title: 'Let trail hosts cancel their own bookings?', kind: 'decide', options: ['Yes', 'No'], recommended: 'No', note: 'Two hosts asked. Your assistant suggests keeping cancellations with you until the refund rule is written.', seconds: 15 }, now - 7 * H);
+      s.raise({ area: 'Night classes', title: 'Post the study group invite in the class forum', state: 'queued', kind: 'approve', channel: 'copy', link: 'https://example.com/forum/new', draft: 'Study group for the midterm: Thursdays 7 pm in the library, room 2B. Bring the practice set. All welcome.' }, now - 5 * H);
       s.raise({ area: 'Ortiz Lighting', title: 'Payroll export failed two nights running', state: 'broken', holds_up: 'Friday payroll', options: ['Run it now', 'Leave it'] }, now - 30 * H);
       s.raise({ area: 'TrailFork app', title: 'Photo upload queue is stuck (412 waiting)', state: 'broken', options: ['Restart the worker', 'Leave it'] }, now - 9 * H);
       s.raise({ area: 'Ortiz Lighting', title: 'Deposit reminders did not send: mail key expired', state: 'broken', kind: 'fix', work_minutes: 15, holds_up: '3 deposit reminders', note: 'Needs a new key from your email provider.' }, now - 26 * H);
       s.raise({ area: 'Ortiz Lighting', title: 'Quotes out, waiting on customers', state: 'waiting_them', outbound: true, batch: 9, follow_up_days: 4 }, now - 1 * D);
       s.raise({ area: 'TrailFork app', title: 'Outreach to trail clubs, no reply yet', state: 'waiting_them', outbound: true, batch: 40, follow_up_days: 7 }, now - 2 * D);
       for (let i = 1; i <= 7; i++) s.raise({ area: 'TrailFork app', title: `Queued build step ${i}`, state: 'queued' }, now - i * H);
+      // Suggestions nobody asked for: they wait in the folded "Reach out?" drawer, never in the list or the counts of what waits on you.
+      s.raise({ area: 'Ortiz Lighting', title: 'Check in with the Kowalskis about the patio quote?', kind: 'approve', outbound: true, channel: 'copy', to: 'Dana Kowalski', optional: true, last_contact: 'Oct 28, emailed the quote',
+        link: 'https://example.com/mail', note: 'Quote was $2,400. No reply since.', draft: 'Hi Dana, just checking whether the patio lighting quote still works for you. Happy to adjust it.' }, now - 2 * D);
+      s.raise({ area: 'Ortiz Lighting', title: 'Holiday lights offer to last year\'s customers?', kind: 'approve', outbound: true, to: '12 past customers', optional: true, last_contact: 'Dec 14, 2025, holiday install', batch: 12,
+        draft: 'Hi, it is Maya from Ortiz Lighting. I am booking holiday installs for December. Want the same setup as last year?' }, now - 1 * D);
       s.tick(now);
     },
   },

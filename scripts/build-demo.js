@@ -19,6 +19,7 @@ function build(outFile = out, scenarioName = scenario) {
   const runtime = safe(read('scripts/demo-runtime.js'));
   const version = JSON.parse(read('package.json')).version;
   const banner = `<div id="demo-bar" style="position:sticky;top:0;z-index:100;background:#1d2433;color:#e8ecf3;font:14px/1.4 system-ui,sans-serif;padding:10px 16px;text-align:center;border-bottom:1px solid #2c3547">`
+    + `<strong>Switchboard:</strong> one screen on your computer for everything your AI assistants are waiting on you for. Free; works with Claude Code, Claude Desktop and Codex. `
     + `Demo with made-up data. It runs only in your browser and sends nothing anywhere; reload to start over. `
     + `<a href="https://github.com/ZCOLLINSKY/switchboard#install" style="color:#f4c34f">Get Switchboard ${version}</a></div>`;
   let page = read('public/index.html');

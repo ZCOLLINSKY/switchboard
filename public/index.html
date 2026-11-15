@@ -163,12 +163,55 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
 .tg,.tag{white-space:normal;max-width:100%}
 .pane.wide{grid-column:1/-1} .pane.wide #edit-text{width:100%;min-height:96px;font:inherit} .tellbox{margin:10px 0 6px;padding-top:10px;border-top:1px solid var(--line)} .tellbox textarea{width:100%;min-height:52px;margin:4px 0 6px;font:inherit} .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0} .chip-btn{font:inherit;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--gold-line);background:transparent;color:var(--gold-soft);cursor:pointer} .pane.wide textarea{width:100%;min-height:58px;margin:4px 0 8px;font:inherit;resize:vertical} .allview{margin:18px 0} .allbar{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px} .allbar input{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:inherit} .allgroup{margin:14px 0} .allgroup .bh{margin:6px 0} .allrow{cursor:pointer} .allnote{display:block;white-space:pre-wrap;margin-top:6px;color:var(--muted);font-size:13px} .banner.since{flex-direction:column;align-items:stretch} .sincelist p{margin:4px 0} .checkline p{margin:2px 0} .warnline{color:#FF9C8E;font-weight:600} .pane .diff{white-space:pre-wrap;line-height:1.55} .pane .diff ins{background:rgba(76,176,90,.25);color:inherit;text-decoration:none;border-radius:3px;padding:0 2px} .pane .diff del{color:#FF9C8E;opacity:.8} .askback{margin:8px 0;padding:8px 10px;border-left:3px solid var(--gold);background:rgba(245,166,35,.06)} .askback textarea{width:100%;margin:6px 0;font:inherit} .pane.asked q{color:var(--gold-soft)} .pane.asked .before{opacity:.75;white-space:pre-wrap} .pane.asked details{margin-top:6px} .pane.asked summary{cursor:pointer;color:var(--muted)}
 @media (hover:none){ kbd,.keys{display:none} }
-@media (max-width:640px){ h1{font-size:24px;margin-top:14px} .pills{flex-wrap:nowrap!important;overflow-x:auto;padding-bottom:4px;scrollbar-width:none} .pills .pill{flex:0 0 auto} #sub{font-size:13px;gap:4px 12px} .grid.boxes{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px} .grid.boxes>.box{flex:0 0 78%;scroll-snap-align:start} .btn.gothrough{width:100%;justify-content:center;padding:14px;margin:10px 0;font-size:16px} .toast{top:max(10px,env(safe-area-inset-top));bottom:auto} }
+@media (max-width:640px){ h1{font-size:24px;margin-top:14px} #sub{font-size:13px;gap:4px 12px} .grid.boxes{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px} .grid.boxes>.box{flex:0 0 78%;scroll-snap-align:start} .btn.gothrough{width:100%;justify-content:center;padding:14px;margin:10px 0;font-size:16px} .toast{top:max(10px,env(safe-area-inset-top));bottom:auto} }
 .rcard h2{margin:0;font-size:clamp(22px,4vw,28px);line-height:1.15;letter-spacing:-.02em;text-wrap:balance}
 .rcard .more{padding:0}
 .rcard .btn{padding:13px 18px;font-size:15px}
 .rcard .snz{padding:0}
-@media (max-width:640px){ .more{padding-left:16px} .snz{padding-left:16px} .est{order:3} .head .btns{flex:1 1 100%} .btn{flex:1 1 auto;justify-content:center;padding:11px 10px} kbd{display:none} .pills{flex-wrap:wrap} }
+@media (max-width:640px){ .more{padding-left:16px} .snz{padding-left:16px} .est{order:3} .head .btns{flex:1 1 100%} .btn{flex:1 1 auto;justify-content:center;padding:11px 10px} kbd{display:none} .pill,.areasel,.drawer>summary,.btn,.mic{min-height:44px} .count .link,.foot .link{display:inline-flex;align-items:center;min-height:44px} .ck{min-height:44px} }
+/* The first screen: a broken box, three groups (safe, read first, needs you), a short list, and folded drawers. */
+.areasel{font-size:13px;font-weight:700;padding:8px 30px 8px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--soft);cursor:pointer;max-width:100%;min-width:0;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.areasel.on{border-color:var(--ink);color:var(--ink)}
+/* 16px on a phone: iPhone Safari zooms into any form control with smaller text, and stays zoomed. */
+@media (max-width:640px){ .areasel{font-size:16px} }
+.count{color:var(--muted);font-size:13.5px}
+.count .link{font-size:13.5px}
+.brokenbox{background:var(--red-bg);border-color:var(--red-line);margin-top:18px}
+.brokenbox .row{border-top-color:var(--red-line)}
+.brokenbox .mini .head{cursor:pointer;padding-top:8px;padding-bottom:8px} .brokenbox .mini p,.brokenbox .mini small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .brokenbox .mini .txt{min-width:0}
+@media (max-width:640px){ .brokenbox .txt>small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden} }
+.bbhead{padding:10px 16px 0;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.stk{font-size:11px;font-weight:800;letter-spacing:.06em;padding:3px 8px;border-radius:5px;border:1px solid var(--red-line);color:#FF9C8E;white-space:nowrap;flex:none}
+.stk.safe{border-color:#1F5A3E;color:var(--green)}.stk.read{border-color:var(--gold-line);color:var(--gold)}
+.impact{display:block;font-size:13px;color:var(--soft);margin-top:4px}
+.impact.none{color:#F0B060}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ck{display:flex;gap:12px;align-items:center;padding:9px 16px;border-top:1px solid var(--line);cursor:pointer}
+.ck:first-child{border-top:0}
+.ck input{width:20px;height:20px;flex:none;accent-color:var(--gold)}
+.ck span{flex:1;min-width:0;overflow-wrap:anywhere}
+.ck small{display:block;color:var(--muted);font-size:12.5px}
+.lanego{padding:12px 16px;border-top:1px solid var(--line);align-items:center}
+.lanego .note{color:var(--muted);font-size:12.5px;flex:1 1 180px}
+.drawer{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-top:10px;overflow:hidden}
+.drawer>summary{cursor:pointer;padding:12px 16px;font-weight:700;color:var(--soft);list-style:none;display:flex;align-items:center;gap:8px}
+.drawer>summary::-webkit-details-marker{display:none}
+.drawer>summary::after{content:'\25B8';margin-left:auto;color:var(--muted)}
+.drawer[open]>summary::after{content:'\25BE'}
+.drawer>summary small{color:var(--muted);font-weight:600}
+.drawer .list,.drawer .lane{border:0;border-radius:0;border-top:1px solid var(--line)}
+.drawer .grid{padding:12px}
+.drawer .sincelist{padding:4px 16px 0}
+.drawer.read{margin-top:0}
+.subhead{padding:8px 16px 0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.boxpills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:22px}
+.bp{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--gold-line);color:var(--gold)}
+.bp.r{border-color:var(--red);color:#FF9C8E}
+.cols{display:grid;gap:0 28px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){ .cols.two{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)} .top{flex-wrap:nowrap} .top .pills{flex:0 1 auto} }
+.finish{display:grid;gap:12px}
+.finish .btns{margin-top:4px}
+.rtop .clock{color:var(--gold);font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:no-preference){ .lt.y,.lt.r{animation:pulse 2.4s ease-in-out infinite} @keyframes pulse{50%{opacity:.6}} }
 </style>
 </head>
@@ -193,6 +236,12 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   var filter = 'all', areaFilter = null, fit = null, showAll = false, expanded = {}, rapid = false, skipped = {};
   var busy = false, mark = Date.now(), adding = false, hist = { open: false, q: '', items: [] };
   var selAt = 0, lastSel = null, lastInput = 0, pendingNew = {}, heldTimer = null, fitIds = [], asked = {}, redoId = null, autoOpen = false, shown = {}, seenAt = {}, changedAt = {}, mine = {}, pos = {}, posAt = {}, fitAt = 0, rapidPin = null, editBase = null, renaming = null, edits = {}, heldAll = false, simOpen = false, seeAll = false, allState = 'all', allQ = '', allOpen = {}, connectOpen = false;
+  // pass: a timed (or Focus) run through the cards. needIdx: which "Needs you" card is showing. fold: which drawers are open.
+  // picked: a safe or read-first line the person unticked stays unticked.
+  var pass = null, needIdx = 0, fold = {}, picked = {};
+  // The "Reach out?" drawer: which row is open, the words it showed when opened, and which row is asking why "Not now".
+  // moreId: which card shows its More menu.
+  var roOpen = null, roShown = {}, roWhy = null, moreId = null;
   var engaged = false; document.addEventListener('pointerdown', function () { engaged = true; }, true);
   ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchmove', 'touchstart', 'scroll'].forEach(function (n) { document.addEventListener(n, function () { lastInput = Date.now(); }, true); });
   var $ = function (id) { return document.getElementById(id); };
@@ -263,50 +312,53 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     S.lights.forEach(function (l) {
       if (l.lastSent && l.lastSent.at > lastLook) add(l.area, 'went out: ' + l.title);
       else if (l.state === 'broken' && (l.goldSince || 0) > lastLook) add(l.area, 'broke: ' + l.title);
-      else if ((l.state === 'need_you') && (l.createdAt || 0) > lastLook) add(l.area, 'new: ' + l.title);
+      else if (l.state === 'need_you' && !l.reachOut && (l.createdAt || 0) > lastLook) add(l.area, 'new: ' + l.title);
     });
     var areas = Object.keys(by); if (!areas.length) { markSeen(); return null; }
     sinceShown = true;
-    var box = h('div', { class: 'banner since' }, h('span', {}, h('b', { text: 'Since you last looked (' + new Date(lastLook).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(/\b(AM|PM)\b/, function (x) { return x.toLowerCase(); }) + '). ' })));
+    var box = h('div', {});
     var list = h('div', { class: 'sincelist' });
     areas.forEach(function (a) { list.appendChild(h('p', {}, h('b', { text: area(a).name + ': ' }), by[a].slice(0, 4).join('; ') + (by[a].length > 4 ? '; and ' + (by[a].length - 4) + ' more' : '') + '.')); });
     box.appendChild(list);
-    box.appendChild(h('div', { class: 'btns' }, S.queue.length ? B('Go through them', function () { markSeen(); startRapid(); }) : null, B('Got it', function () { markSeen(); sinceShown = false; render(); }, 'plain')));
-    return box;
+    box.appendChild(h('div', { class: 'btns lanego' }, B('Got it', function () { markSeen(); sinceShown = false; render(); }, 'plain')));
+    return drawer('since', 'Since you looked', new Date(lastLook).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }).replace(/\b(AM|PM)\b/, function (x) { return x.toLowerCase(); }), box);
   }
   var WORD = { need_you: 'needs you', broken: 'broken', approved: 'approved, not done yet', waiting_them: 'waiting on others', auto: 'running', queued: 'lined up' };
   var DOT = { need_you: 'y', broken: 'r', approved: 'a', waiting_them: 'b', auto: 'g', queued: '' };
+  // A light in the "Reach out?" drawer is listed under Reach out, not under Needs you.
+  function inState(l, st) { return st === 'reach' ? !!l.reachOut : l.state === st && !(st === 'need_you' && l.reachOut); }
   function everything() {
     var box = h('div', { class: 'allview', id: 'all-view' });
     var q = h('input', { id: 'all-q', placeholder: 'Find anything on the board', 'aria-label': 'Find on the board', oninput: function () { allQ = q.value; render(); var x = $('all-q'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } } }); q.value = allQ;
-    var filters = h('div', { class: 'pills' });
-    [['all', 'All'], ['need_you', 'Needs you'], ['broken', 'Broken'], ['auto', 'Running'], ['queued', 'Lined up'], ['waiting_them', 'Waiting on others'], ['approved', 'Approved']].forEach(function (f) {
-      var n = f[0] === 'all' ? S.lights.length : S.lights.filter(function (l) { return l.state === f[0]; }).length; if (!n && f[0] !== 'all') return;
+    var filters = h('div', { class: 'pills' }), pool = S.lights.filter(function (l) { return !areaFilter || l.area === areaFilter; }); // the same lights the count line added up
+    [['all', 'All'], ['need_you', 'Needs you'], ['broken', 'Broken'], ['auto', 'Running'], ['queued', 'Lined up'], ['waiting_them', 'Waiting on others'], ['approved', 'Approved'], ['reach', 'Reach out']].forEach(function (f) {
+      var n = f[0] === 'all' ? pool.length : pool.filter(function (l) { return inState(l, f[0]); }).length; if (!n && f[0] !== 'all') return;
       filters.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(allState === f[0]), onclick: function () { allState = f[0]; render(); } }, f[1] + ' \u00b7 ' + n));
     });
-    box.appendChild(h('div', { class: 'lab' }, 'Everything on the board', h('button', { class: 'link', type: 'button', onclick: function () { seeAll = false; render(); } }, 'Close')));
+    box.appendChild(h('div', { class: 'lab' }, areaFilter ? 'Everything in ' + area(areaFilter).name : 'Everything on the board', h('button', { class: 'link', type: 'button', onclick: function () { seeAll = false; render(); } }, 'Close')));
     box.appendChild(h('div', { class: 'allbar' }, q, filters));
     var words = allQ.toLowerCase().split(/\s+/).filter(Boolean);
-    var match = function (l) { if (allState !== 'all' && l.state !== allState) return false; var t = (l.title + ' ' + (l.note || '') + ' ' + (l.draft || '') + ' ' + (l.key || '')).toLowerCase(); return words.every(function (w) { return t.indexOf(w) >= 0; }); };
+    var match = function (l) { if (allState !== 'all' && !inState(l, allState)) return false; var t = (l.title + ' ' + (l.note || '') + ' ' + (l.draft || '') + ' ' + (l.key || '')).toLowerCase(); return words.every(function (w) { return t.indexOf(w) >= 0; }); };
     var order = ['need_you', 'broken', 'approved', 'waiting_them', 'auto', 'queued'], shownCount = 0;
     S.areas.forEach(function (a) {
-      var ls = S.lights.filter(function (l) { return l.area === a.id && match(l); }).sort(function (x, y) { return order.indexOf(x.state) - order.indexOf(y.state); });
+      var ls = pool.filter(function (l) { return l.area === a.id && match(l); }).sort(function (x, y) { return order.indexOf(x.state) - order.indexOf(y.state); });
       if (!ls.length) return; shownCount += ls.length;
       var list = h('div', { class: 'list' });
       ls.forEach(function (l) {
         var open = allOpen[l.id], asking = l.state === 'need_you' || l.state === 'broken';
         list.appendChild(h('div', { class: 'li allrow', onclick: function () { allOpen[l.id] = !allOpen[l.id]; render(); } },
           h('i', { class: 'lt ' + (l.late ? 'late' : DOT[l.state] || ''), title: WORD[l.state], role: 'img', 'aria-label': WORD[l.state] }),
-          h('p', {}, l.title, h('small', { text: WORD[l.state] + (l.snoozed ? ' (snoozed)' : '') + (l.due ? ' \u00b7 ' + dueText(l.due) : '') + (l.key ? ' \u00b7 ' + l.key : '') }),
+          h('p', {}, l.title, h('small', { text: (l.reachOut ? 'reach out? (only if you choose)' : WORD[l.state]) + (l.snoozed ? ' (snoozed)' : '') + (l.due ? ' \u00b7 ' + dueText(l.due) : '') + (l.key ? ' \u00b7 ' + l.key : '') }),
             open && (l.note || l.draft) ? h('span', { class: 'allnote', text: (l.draft ? '\u201c' + l.draft + '\u201d\n' : '') + (l.note || '') }) : null),
-          asking ? h('span', { class: 'btns' }, B('Go to it', function () { seeAll = false; switchTo(l.area); sel = l.id; openId = l.id; render(); var r = document.getElementById('row-' + l.id); if (r) r.scrollIntoView({ block: 'center' }); }, 'plain')) : null));
+          asking && l.reachOut ? h('span', { class: 'btns' }, B('Go to it', function () { seeAll = false; setArea(l.area); fold.reachout = true; roOpen = l.id; render(); var r = document.getElementById('ro-' + l.id); if (r) r.scrollIntoView({ block: 'center' }); }, 'plain'))
+          : asking ? h('span', { class: 'btns' }, B('Go to it', function () { seeAll = false; setArea(l.area); sel = l.id; openId = l.id; render(); var r = document.getElementById('row-' + l.id); if (r) r.scrollIntoView({ block: 'center' }); }, 'plain')) : null));
       });
       box.appendChild(h('div', { class: 'allgroup' }, h('div', { class: 'bh' }, h('i', { style: 'background:' + a.color }), a.name + ' \u00b7 ' + ls.length), list));
     });
     if (!shownCount) box.appendChild(h('p', { class: 'note', text: 'Nothing matches.' }));
     return box;
   }
-  function typing() { var a = document.activeElement; return !!(selecting() || editId || noteId || redoId || snoozeId || adding || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.id !== 'dump-text' && a.id !== 'hist-q' && a.id !== 'all-q' && (a.value || '') !== '')); }
+  function typing() { var a = document.activeElement; return !!(selecting() || editId || noteId || redoId || snoozeId || roWhy || adding || (a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.id !== 'dump-text' && a.id !== 'hist-q' && a.id !== 'all-q' && a.id !== 'area-sel' && a.type !== 'checkbox' && (a.value || '') !== '')); }
   function fitLeft() { return fit ? fit - (Date.now() - fitAt) / 60000 : 0; }
   function api(method, path, body) {
     var hd = body ? { 'content-type': 'application/json' } : {}; if (pageKey) hd['x-switchboard-key'] = pageKey;
@@ -339,6 +391,9 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       // If what a light says changed while it was on screen, its buttons stop working until the person has looked again.
       // The stopwatch for a light starts when it first appears (or changes), not at the previous tap.
       var inQueue = {}; v.queue.forEach(function (id) { inQueue[id] = 1; });
+      // "Did it go?" is about the words that were copied. If the draft changed since, the question is void: copy again.
+      var byId = {}; v.lights.forEach(function (l) { byId[l.id] = l; });
+      Object.keys(asked).forEach(function (id) { var l = byId[id]; if (!l || l.rev !== asked[id]) { if (l && S) toast('The words changed after you copied them. Copy the new ones before you send.'); delete asked[id]; } });
       v.lights.forEach(function (l) {
         // Only what was in front of the person can have "changed while it was on screen". A light arriving from blue,
         // green or a failure is new to them, and one still waiting behind the "new" pill has not been seen yet.
@@ -351,9 +406,6 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       applyHash();
       clearTimeout(heldTimer);
       if (S.held.length) heldTimer = setTimeout(function again() { if (typing()) { heldTimer = setTimeout(again, 2000); return; } load(true); }, Math.min(30000, Math.max(300, Math.min.apply(null, S.held.map(function (x) { return x.until; })) - Date.now() + 250)));
-      // "I have N minutes" is answered by the same rule the tests check, on the server.
-      if (fit && fitLeft() <= 0) { toast('That was your ' + fit + (fit === 1 ? ' minute.' : ' minutes.')); fit = null; }
-      if (fit) return api('GET', '/api/fit?minutes=' + Math.max(1, Math.ceil(fitLeft()))).then(function (f) { fitIds = f.ids; render(); });
       render();
     }).catch(function (e) {
       // Reached from another device (a phone through tailscale serve) without the key: the board answers, it just will not
@@ -398,7 +450,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function pretty(type) { return type.replace(/-/g, ' '); }
 
   /* ---------- acting ---------- */
-  function after() { mark = Date.now(); selAt = Date.now(); if (editId) delete edits[editId]; editBase = null; editId = null; noteId = null; snoozeId = null; openId = null; redoId = null; }
+  function after() { mark = Date.now(); selAt = Date.now(); if (editId) delete edits[editId]; editBase = null; editId = null; noteId = null; snoozeId = null; openId = null; redoId = null; moreId = null; }
   var pageBusy = false;
   function page(path, body) { if (pageBusy) return Promise.resolve(); pageBusy = true; return api('POST', path, body).then(function (x) { pageBusy = false; return x; }, function (e) { pageBusy = false; throw e; }).catch(function (e) { toast(e.message); }).then(function () { return load(true); }); }
   function act(l, action, extra) {
@@ -410,9 +462,9 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     busy = true;
     mine[l.id] = 1;
     api('POST', '/api/lights/' + l.id + '/act', Object.assign({ action: action, tookMs: Date.now() - Math.max(mark, seenAt[l.id] || 0), rev: shown[l.id] || l.rev }, extra || {})).then(function (r) {
-      after(); if (hist.open) loadHist();
+      after(); if (hist.open) loadHist(); counted([l], action);
       var v = extra && extra.value, until = r && r.snoozeUntil ? new Date(r.snoozeUntil) : null;
-      var said = action === 'approve' ? (l.channel === 'agent' ? 'Approved' : 'Marked sent') : action === 'snooze' && until ? 'Snoozed until ' + until.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : action === 'answer' && v === 'Flag it' ? 'Flagged. This kind of change asks you every time again' : action === 'answer' ? 'Answered' : action === 'no' ? 'Declined' : action === 'done' ? 'Done' : action === 'drop' ? 'Dropped' : action === 'wake' ? 'Back in your list' : action === 'redo' ? (l.demo ? 'Note sent. This is an example, so nothing gets rewritten' : 'Note sent. The new draft will show up here') : 'Done';
+      var said = action === 'approve' ? (l.channel === 'agent' ? 'Approved' : 'Marked sent') : action === 'snooze' && until ? 'Snoozed until ' + until.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : action === 'answer' && v === 'Flag it' ? 'Flagged. This kind of change asks you every time again' : action === 'answer' ? 'Answered' : action === 'no' ? 'Declined' : action === 'done' ? 'Done' : action === 'drop' ? 'Dropped' : action === 'wake' ? 'Back in your list' : action === 'ready' ? 'Brought forward' : action === 'reach_out' ? 'Moved to Reach out' : action === 'redo' ? (l.demo ? 'Note sent. This is an example, so nothing gets rewritten' : 'Note sent. The new draft will show up here') : 'Done';
       toast(said + ': ' + l.title, action === 'wake' ? null : 'Undo', function () { takeBack(l.id); });
     }, function (e) { toast(e.message); }).then(function () { busy = false; return load(true); });
   }
@@ -420,12 +472,15 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (busy) return; busy = true;
     var ids = ls.map(function (l) { return l.id; }), revs = {};
     ls.forEach(function (l) { revs[l.id] = shown[l.id] || l.rev; });
-    api('POST', '/api/bulk', Object.assign({ ids: ids, action: action, revs: revs, tookMs: Date.now() - Math.max.apply(null, [mark].concat(ls.map(function (l) { return seenAt[l.id] || 0; }))) }, extra || {})).then(function () { after(); toast((action === 'approve' ? 'Approved ' : action === 'snooze' ? 'Snoozed ' : action === 'recommended' ? 'Took the recommendation on ' : 'Done: ') + ids.length + (extra && extra.until ? ' until ' + new Date(extra.until).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '') + '.', 'Undo all', function () { takeBackAll(ids); }); })
+    api('POST', '/api/bulk', Object.assign({ ids: ids, action: action, revs: revs, tookMs: Date.now() - Math.max.apply(null, [mark].concat(ls.map(function (l) { return seenAt[l.id] || 0; }))) }, extra || {})).then(function () { after(); counted(ls, action); toast((action === 'approve' ? 'Approved ' : action === 'snooze' ? 'Snoozed ' : action === 'recommended' ? 'Took the recommendation on ' : 'Done: ') + ids.length + (extra && extra.until ? ' until ' + new Date(extra.until).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '') + '.', 'Undo all', function () { takeBackAll(ids); }); })
       .catch(function (e) { toast(e.message); }).then(function () { busy = false; return load(true); });
   }
+  // What a pass has answered, for its finish card: who can move now, and what can still be taken back.
+  function counted(ls, action) { if (!pass || /^(snooze|wake|undo|move)$/.test(action)) return; ls.forEach(function (l) { pass.done.push({ id: l.id, who: l.agent || l.area }); }); }
   var backing = false;
-  function takeBack(id) { if (backing) return; backing = true; mine[id] = 1; api('POST', '/api/lights/' + id + '/act', { action: 'undo' }).then(function () { toast('Undone.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
-  function takeBackAll(ids) { if (backing) return; backing = true; ids.forEach(function (id) { mine[id] = 1; }); api('POST', '/api/bulk', { ids: ids, action: 'undo' }).then(function () { toast('Undid ' + ids.length + '.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
+  function uncount(ids) { if (pass) pass.done = pass.done.filter(function (x) { return ids.indexOf(x.id) < 0; }); }
+  function takeBack(id) { if (backing) return; backing = true; mine[id] = 1; api('POST', '/api/lights/' + id + '/act', { action: 'undo' }).then(function () { uncount([id]); toast('Undone.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
+  function takeBackAll(ids) { if (backing) return; backing = true; ids.forEach(function (id) { mine[id] = 1; }); api('POST', '/api/bulk', { ids: ids, action: 'undo' }).then(function () { uncount(ids); toast('Undid ' + ids.length + '.'); }, function (e) { toast(e.message); }).then(function () { backing = false; return load(true); }); }
   // Everything decided in the last few seconds, read from the server so a reload keeps it.
   function heldStrip() {
     if (!S.held.length) return null;
@@ -458,15 +513,17 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
 
   /* ---------- what is on screen ---------- */
   function queueLights() {
-    var ls = S.queue.map(light).filter(function (l) { return l && !pendingNew[l.id] && (!areaFilter || l.area === areaFilter) && (filter !== 'quick' || (l.est <= 120 && !l.chore && !l.unsized)); });
-    if (fit) ls = ls.filter(function (l) { return fitIds.indexOf(l.id) >= 0; });
-    return ls;
+    return S.queue.map(light).filter(function (l) { return l && !pendingNew[l.id] && (!areaFilter || l.area === areaFilter) && (filter !== 'quick' || (l.est <= 120 && !l.chore && !l.unsized)); });
   }
+  // Which group the server put each recommended answer in: safe to take together, read first, or needs you (one at a time).
+  // A light that changed while it was on screen leaves its group until the person has looked again.
+  function laneOf() { var m = {}; ['safe', 'read', 'high'].forEach(function (k) { ((S.lanes || {})[k] || []).forEach(function (id) { if (!changedAt[id]) m[id] = k; }); }); return m; }
   // Look-alike changes (same action type, nothing sent to a person) collapse into one row.
-  function items() {
-    var ls = queueLights(), by = {}, out = [], seen = {};
-    // Only changes that are word-for-word the same fold together. An odd one out stays on its own row.
-    var gk = function (l) { return !changedAt[l.id] && !l.note && l.kind === 'approve' && !l.outbound && l.actionType && l.channel === 'agent' && !l.draft && (l.changeFrom || l.changeTo) && !expanded[l.actionType] ? l.actionType + '\u0000' + l.changeFrom + '\u0000' + l.changeTo : null; };
+  function items(ls) {
+    var by = {}, out = [], seen = {};
+    // Only changes that are word-for-word the same fold together. An odd one out stays on its own row, and so does a
+    // high-stakes one: it is answered one at a time, so it never sits behind an "Approve all" button.
+    var gk = function (l) { return !changedAt[l.id] && l.stakes !== 'high' && !l.note && l.kind === 'approve' && !l.outbound && l.actionType && l.channel === 'agent' && !l.draft && (l.changeFrom || l.changeTo) && !expanded[l.actionType] ? l.actionType + '\u0000' + l.changeFrom + '\u0000' + l.changeTo : null; };
     ls.forEach(function (l) { var k = gk(l); if (k) (by[k] = by[k] || []).push(l); });
     ls.forEach(function (l) {
       var k = gk(l), g = k && by[k].length >= 3 ? by[k] : null;
@@ -475,23 +532,38 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     });
     return out;
   }
-  // A long queue shows its top five. A deadline or a broken job that holds something up is never folded away.
-  // Chores (work away from the board) get their own list: they are not taps.
+  // The first screen, in groups: broken (always shown), safe to take together, read first, needs you (one card), then a
+  // short list of the rest. A long list shows its top five; a deadline is never folded away. Chores get their own drawer.
   function visible() {
-    var apart = !fit && filter !== 'quick';
-    var its = items().filter(function (it) { return !(apart && it.light && it.light.chore); });
-    var chores = apart ? queueLights().filter(function (l) { return l.chore; }).map(function (l) { return { key: l.id, light: l }; }) : [];
-    var collapse = !showAll && !areaFilter && filter === 'all' && !fit && its.length > 7;
+    var ql = queueLights(), lane = laneOf();
+    var broken = ql.filter(function (l) { return l.state === 'broken'; });
+    var safe = ql.filter(function (l) { return lane[l.id] === 'safe'; }), read = ql.filter(function (l) { return lane[l.id] === 'read'; }), high = ql.filter(function (l) { return lane[l.id] === 'high'; });
+    var rest = ql.filter(function (l) { return l.state !== 'broken' && !lane[l.id]; });
+    var its = items(rest.filter(function (l) { return !l.chore; }));
+    var chores = rest.filter(function (l) { return l.chore; }).map(function (l) { return { key: l.id, light: l }; });
+    var collapse = !showAll && !areaFilter && filter === 'all' && its.length > 7;
     var shown = collapse ? its.filter(function (it, i) { return i < 5 || (it.light ? it.light.keep : it.lights.some(function (l) { return l.keep; })); }) : its;
-    return { all: its, shown: shown, hidden: its.length - shown.length, chores: chores, keys: shown.concat(chores) };
+    var need = high.length ? high[needIdx % high.length] : null;
+    var keys = broken.map(function (l) { return { key: l.id, light: l }; }).concat(need ? [{ key: need.id, light: need }] : [], shown, chores);
+    return { all: its, shown: shown, hidden: its.length - shown.length, chores: chores, broken: broken, safe: safe, read: read, high: high, need: need, keys: keys };
   }
   function lookAgain(l) { delete changedAt[l.id]; if (editId !== l.id) editBase = null; shown[l.id] = l.rev; seenAt[l.id] = Date.now(); openId = l.id; sel = l.id; selAt = Date.now(); render(); }
+  // Enter, Y and the gold button answer the recommended option when there is one, never simply the first.
+  function yesOf(l) { var o = l.options || []; if (!o.length) return null; return l.recommended && o.indexOf(l.recommended) >= 0 ? l.recommended : o[0]; }
+  // N answers the other option, only when there is exactly one other.
+  function noOf(l) { var y = yesOf(l); if (y == null) return null; var rest = l.options.filter(function (o) { return o !== y; }); return rest.length === 1 ? rest[0] : null; }
   function primary(l) {
     if (changedAt[l.id] || editId === l.id || redoId === l.id || noteId === l.id || l.board || l.brake || l.kind === 'sense') return null;
     if (l.kind === 'approve') return l.channel === 'agent' && !(l.needsDraft && !l.draft) ? function () { act(l, 'approve'); } : null;
     if (l.kind === 'todo') return function () { act(l, 'done'); };
-    if (l.options.length) return function () { act(l, 'answer', { value: l.options[0] }); };
+    if (l.options.length && !(careful(l) && !(l.recommended && l.options.indexOf(l.recommended) >= 0))) return function () { act(l, 'answer', { value: yesOf(l) }); };
     return null;
+  }
+  function secondary(l) {
+    if (changedAt[l.id] || editId === l.id || redoId === l.id || noteId === l.id || l.board || l.brake || l.kind === 'sense') return null;
+    if (l.kind === 'approve') return l.channel === 'agent' && !l.followUps ? function () { act(l, 'no'); } : null;
+    var n = l.kind === 'todo' ? null : noOf(l);
+    return n != null ? function () { act(l, 'answer', { value: n }); } : null;
   }
   var quietUntil = 0; // after any tap that changes the board, a second click within 400 ms is the same click, not a new one
   function B(label, fn, cls, key) { return h('button', { class: 'btn' + (cls ? ' ' + cls : ''), type: 'button', onclick: function (e) { e.stopPropagation(); if (Date.now() < quietUntil) return; quietUntil = Date.now() + 400; fn(); }, 'aria-keyshortcuts': key && key.length === 1 && /[A-Z]/.test(key) ? key : null }, label, key ? h('kbd', { text: key, 'aria-hidden': 'true' }) : null); }
@@ -503,17 +575,18 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (editId === l.id) return b; // the box below has its own Save & approve and Cancel
     var edit = function () { editId = l.id; editBase = l.draft; openId = l.id; sel = l.id; render(); };
     if (l.kind === 'approve') {
-      if (l.channel === 'sms' && l.phone && asked[l.id]) {
+      if (l.channel !== 'agent' && asked[l.id]) {
         // They came back from Messages: ask, don't assume.
-        b.appendChild(B('Yes, it went', function () { delete asked[l.id]; act(l, 'approve'); })); b.appendChild(B('Not yet', function () { delete asked[l.id]; render(); }, 'gh'));
+        b.appendChild(B('Yes, it went', function () { var r = asked[l.id]; delete asked[l.id]; act(l, 'approve', { rev: r }); })); b.appendChild(B('Not yet', function () { delete asked[l.id]; render(); }, 'gh'));
       } else if (l.channel !== 'agent' && l.needsDraft && !l.draft) {
         b.appendChild(B('Write it', edit)); b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
       } else if (l.channel === 'sms' && l.phone) {
-        b.appendChild(h('a', { class: 'btn', href: 'sms:' + l.phone + '?&body=' + encodeURIComponent(l.draft), onclick: function (e) { e.stopPropagation(); setTimeout(function () { asked[l.id] = 1; render(); }, 500); } }, 'Open in Messages'));
+        b.appendChild(h('a', { class: 'btn', href: 'sms:' + l.phone + '?&body=' + encodeURIComponent(l.draft), onclick: function (e) { e.stopPropagation(); var r0 = l.rev; setTimeout(function () { asked[l.id] = r0; render(); }, 500); } }, 'Open in Messages'));
         b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
       }
       else if (l.channel !== 'agent') {
-        if (l.draft) b.appendChild(B('Copy text', function () { try { navigator.clipboard.writeText(l.draft).then(function () { toast('Copied.'); }, function () { openId = l.id; render(); }); } catch (e) { openId = l.id; render(); } }));
+        if (l.draft && l.link) b.appendChild(copyOpen(l));
+        else if (l.draft) b.appendChild(B('Copy text', function () { try { navigator.clipboard.writeText(l.draft).then(function () { toast('Copied.'); }, function () { openId = l.id; render(); }); } catch (e) { openId = l.id; render(); } }));
         b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
       }
       else if (l.needsDraft && !l.draft) b.appendChild(B('Write it myself', edit));
@@ -526,13 +599,20 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       b.appendChild(B('Done', function () { act(l, 'done'); }, l.link ? 'gh' : '', enter));
     } else {
       if (l.link) b.appendChild(A('Open page ↗', l.link));
-      l.options.forEach(function (o, i) { var rec = l.recommended === o; b.appendChild(B(rec ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, (l.recommended ? !rec : i || l.link) ? 'gh' : '', (l.recommended ? rec : !i && !l.link) ? enter : null)); });
+      var yes = yesOf(l), no = noOf(l);
+      l.options.forEach(function (o, i) { var rec = l.recommended === o; b.appendChild(B(rec ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, (l.recommended ? !rec : i || l.link) ? 'gh' : '', isSel && o === yes ? '⏎' : isSel && o === no ? 'N' : null)); });
       if (l.kind !== 'fix' && !l.spot && !l.board && !l.brake) b.appendChild(B(l.kind === 'sense' ? 'Type what it says' : 'Other…', function () { noteId = l.id; openId = l.id; sel = l.id; render(); }, 'gh'));
       if (l.kind === 'fix' && !l.options.length) b.appendChild(B('Fixed', function () { act(l, 'done'); }));
     }
     if (!l.spot) b.appendChild(B('Snooze', function () { snoozeId = snoozeId === l.id ? null : l.id; sel = l.id; render(); }, 'gh', isSel ? 'S' : null));
+    if (canReachOut(l)) b.appendChild(B('More\u2026', function () { moreId = moreId === l.id ? null : l.id; sel = l.id; render(); }, 'gh'));
     if (l.stale || l.kind === 'todo' || l.kind === 'fix' || l.channel !== 'agent') b.appendChild(B('Drop', function () { act(l, 'drop'); }, 'gh'));
     return b;
+  }
+  // A message to a person can be pushed into the folded "Reach out?" drawer by the person: out of the list, nothing decided.
+  function canReachOut(l) { return S.canAct && l.kind === 'approve' && l.outbound && l.state === 'need_you' && !l.reachOut && !l.demo; }
+  function moreMenu(l) {
+    return h('div', { class: 'snz' }, 'More:', B('Move to Reach out', function () { moreId = null; act(l, 'reach_out'); }, 'gh'), h('span', { class: 'note', text: 'It waits folded away until you open it. Nothing is sent.' }));
   }
   function snoozeMenu(l) {
     if (l.snoozes >= 2) {
@@ -633,7 +713,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (changedAt[l.id]) s.push('This changed while it was on your screen. Look again before you decide.');
     if (l.alert) s.push(l.alert);
     if (l.noRecipient) s.push('No name on this yet. Check who it goes to before you send.');
-    if (asked[l.id]) s.push('Did it go out?');
+    if (asked[l.id]) s.push('Did it go?');
     // Say who or what is waiting. A due date speaks for itself; "still worth doing?" is only for your own old tasks.
     if (l.stale && !l.due) {
       var days = Math.floor((S.now - l.goldSince) / 864e5) + ' days', who = l.to ? l.to.charAt(0).toUpperCase() + l.to.slice(1) : '';
@@ -648,15 +728,20 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (preview && !(openId === l.id && l.draft)) s.push(preview);
     return s.join(' ');
   }
+  // A high-stakes question or change (not a message to a person, which has its own checks): its chip and impact line show
+  // wherever it is listed, and Enter or Y first opens it; only the next press answers.
+  function careful(l) { return l.stakes === 'high' && l.state === 'need_you' && !l.outbound && l.kind !== 'todo'; }
   function row(l, i) {
     var a = area(l.area), isSel = sel === l.id, isOpen = openId === l.id, small = smallLine(l);
     var r = h('div', { class: 'row' + (l.state === 'broken' ? ' red' : '') + (isSel ? ' sel' : ''), id: 'row-' + l.id },
       h('div', { class: 'head', onclick: function () { if (selecting()) return; sel = l.id; openId = isOpen ? null : l.id; editId = null; noteId = null; snoozeId = null; render(); } },
-        l.state === 'broken' ? h('span', { class: 'n', text: '!' }) : null, h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+        l.state === 'broken' ? h('span', { class: 'n', text: '!' }) : null, careful(l) ? h('span', { class: 'stk', text: l.stakesWhy || 'CAREFUL' }) : null, h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
         h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)), l.changeFrom || l.changeTo ? h('small', { class: 'chgline' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })) : null,
+          careful(l) ? h('span', { class: 'impact' + (l.impact ? '' : ' none'), text: l.impact ? 'Impact: ' + l.impact : 'No impact line from the assistant' }) : null,
           small ? h('small', { text: small }) : null, l.next ? h('span', { class: 'next', text: 'After: ' + l.next }) : null),
         h('span', { class: 'est', text: estText(l) }), buttons(l, isSel)));
     if (snoozeId === l.id) r.appendChild(snoozeMenu(l));
+    if (moreId === l.id && canReachOut(l)) r.appendChild(moreMenu(l));
     if (isOpen) { var d = details(l); if (d) r.appendChild(d); }
     return r;
   }
@@ -676,33 +761,197 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     return r;
   }
 
-  function lightsRow(ls) {
-    var wrap = h('div', { class: 'lights' });
-    ls.filter(function (l) { return l.late; }).forEach(function () { wrap.appendChild(h('i', { class: 'lt late', title: 'Gone quiet' })); });
-    [['y', 'need_you'], ['r', 'broken'], ['a', 'approved'], ['b', 'waiting_them'], ['g', 'auto'], ['', 'queued']].forEach(function (p) {
-      var n = ls.filter(function (l) { return l.state === p[1] && !l.snoozed && !(p[1] === 'auto' && l.late); }).reduce(function (s, l) { return s + (l.batch || 1); }, 0);
-      if (!n) return;
-      var word = { need_you: 'needs you', broken: 'broken', approved: 'approved, not done yet', waiting_them: 'waiting on others', auto: 'running', queued: 'lined up' }[p[1]];
-      if (n > 5) { wrap.appendChild(h('i', { class: 'lt ' + p[0], title: n + ' ' + word, role: 'img', 'aria-label': n + ' ' + word })); wrap.appendChild(h('span', { class: 'x', text: '×' + n })); }
-      else for (var i = 0; i < n; i++) wrap.appendChild(h('i', { class: 'lt ' + p[0], title: word, role: 'img', 'aria-label': word }));
-    });
-    return wrap;
+  // An area card says, in words, how many are waiting and how many are broken: the same numbers as the select and headline.
+  function boxPills(a) {
+    var w = h('div', { class: 'boxpills' });
+    if (a.waiting) w.appendChild(h('span', { class: 'bp', text: a.waiting + ' waiting' }));
+    if (a.broken) w.appendChild(h('span', { class: 'bp r', text: a.broken + ' broken' }));
+    return w;
   }
   function summary(a, ls) {
     if (a.wakeAt) return 'Paused until ' + new Date(a.wakeAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '.';
-    var c = function (s) { return ls.filter(function (l) { return l.state === s && !l.snoozed; }).reduce(function (n, l) { return n + (l.batch || 1); }, 0); }, parts = [];
-    if (c('need_you')) parts.push(c('need_you') + ' for you');
-    if (c('broken')) parts.push(c('broken') + ' broken');
+    var c = function (s) { return ls.filter(function (l) { return l.state === s && !l.snoozed; }).length; }, parts = [];
     if (c('approved')) parts.push(c('approved') + ' approved (not done yet)');
     if (c('waiting_them')) parts.push(c('waiting_them') + ' waiting on others');
     var quiet = ls.filter(function (l) { return l.late; }).length, running = c('auto') - quiet;
     if (quiet) parts.push(quiet + ' late, no update');
     if (running) parts.push(running + ' running');
-    var money = ls.filter(function (l) { return l.value && (l.state === 'need_you' || l.state === 'waiting_them' || l.state === 'approved'); }).reduce(function (n, l) { return n + l.value; }, 0);
+    if (c('queued')) parts.push(c('queued') + ' lined up');
+    var money = ls.filter(function (l) { return l.value && !l.reachOut && (l.state === 'need_you' || l.state === 'waiting_them' || l.state === 'approved'); }).reduce(function (n, l) { return n + l.value; }, 0);
     // The live counts always come first: a note (anyone can write one) never hides what is waiting.
-    return (parts.length ? parts.join(', ') + '.' : 'Nothing open.') + (money ? ' $' + money.toLocaleString() + ' in play.' : '') + (a.note ? ' ' + a.note : '');
+    return (parts.length ? parts.join(', ') + '.' : a.waiting || a.broken ? '' : 'Nothing open.') + (money ? ' $' + money.toLocaleString() + ' in play.' : '') + (a.note ? ' ' + a.note : '');
   }
-  function switchTo(id) { if (!areaFilter && id) { try { history.pushState({ sb: 'area' }, ''); } catch (e) {} } areaFilter = areaFilter === id ? null : id; fit = null; sel = null; openId = null; editId = null; noteId = null; snoozeId = null; render(); window.scrollTo(0, 0); }
+  // A folded drawer that stays open or shut across redraws.
+  function drawer(id, title, note, body, cls) {
+    var d = h('details', { class: 'drawer' + (cls ? ' ' + cls : ''), id: 'dr-' + id, open: !!fold[id] });
+    d.addEventListener('toggle', function () { fold[id] = d.open; });
+    d.appendChild(h('summary', {}, title, note ? h('small', { text: note }) : null));
+    d.appendChild(body);
+    return d;
+  }
+  function preview(l) { var t = l.draft ? '“' + l.draft + '”' : l.note || ''; return t.length > 150 ? t.slice(0, 150) + '…' : t; }
+  // A post the person makes themselves: copy the words, open the page, then ask whether it went.
+  function copyOpen(l) {
+    return B('Copy & open ↗', function () { copyText(l.draft); try { window.open(l.link, '_blank', 'noopener'); } catch (e) {} asked[l.id] = l.rev; render(); });
+  }
+  // The safe (or read-first) answers as a checklist: every line shows the answer that will be given; one button takes the ticked ones.
+  function laneBox(kind, ls) {
+    var box = h('div', { class: 'lane' }), chosen = ls.filter(function (l) { return picked[l.id] !== false; });
+    ls.forEach(function (l) {
+      var cb = h('input', { type: 'checkbox', id: 'ck-' + l.id });
+      cb.checked = picked[l.id] !== false;
+      cb.addEventListener('change', function () { picked[l.id] = cb.checked; render(); });
+      box.appendChild(h('label', { class: 'ck', for: 'ck-' + l.id }, cb, h('span', {}, h('b', { text: l.recommended }), ' · ' + l.title, h('small', { text: area(l.area).name + (l.stakesWhy ? ' · ' + l.stakesWhy.toLowerCase() : '') + (l.impact ? ' · ' + l.impact : '') }))));
+    });
+    box.appendChild(h('div', { class: 'btns lanego' }, chosen.length && S.canAct ? B(chosen.length === 1 ? 'Take this one' : 'Take these ' + chosen.length, function () { bulkAct(chosen, 'recommended'); }, kind === 'safe' ? '' : 'gh') : null,
+      h('span', { class: 'note', text: chosen.length ? 'Each can be taken back for ' + dur(Math.round((S.holdMs || 120000) / 1000)) + '.' : 'Nothing ticked.' })));
+    return box;
+  }
+  // Needs you: one card at a time, never in a group. Its stakes chip, the whole title, what it changes, and the impact.
+  function needCard(l, n) {
+    var isSel = sel === l.id, a = area(l.area), yes = yesOf(l), no = noOf(l);
+    var b = h('div', { class: 'btns' });
+    if (changedAt[l.id]) b.appendChild(B('Look again', function () { lookAgain(l); }));
+    else {
+      if (l.link) b.appendChild(A('Open page ↗', l.link, 'gh'));
+      l.options.forEach(function (o) { b.appendChild(B(o === yes ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, o === yes ? '' : 'gh', isSel && o === yes ? '⏎' : isSel && o === no ? 'N' : null)); });
+    }
+    b.appendChild(B(openId === l.id ? 'Close' : 'Inspect', function () { sel = l.id; openId = openId === l.id ? null : l.id; render(); }, 'gh'));
+    b.appendChild(B('Snooze', function () { snoozeId = snoozeId === l.id ? null : l.id; sel = l.id; render(); }, 'gh', isSel ? 'S' : null));
+    if (n > 1) b.appendChild(B('Next →', function () { needIdx++; sel = null; openId = null; render(); }, 'plain'));
+    var r = h('div', { class: 'row' + (isSel ? ' sel' : ''), id: 'row-' + l.id },
+      h('div', { class: 'head', onclick: function () { sel = l.id; render(); } },
+        h('span', { class: 'stk', text: l.stakesWhy || 'CAREFUL' }), h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+        h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)),
+          l.changeFrom || l.changeTo ? h('small', { class: 'chgline' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })) : null,
+          h('span', { class: 'impact' + (l.impact ? '' : ' none'), text: l.impact ? 'Impact: ' + l.impact : 'No impact line from the assistant' }),
+          changedAt[l.id] ? h('small', { text: 'This changed while it was on your screen. Look again before you decide.' }) : null),
+        b));
+    if (snoozeId === l.id) r.appendChild(snoozeMenu(l));
+    if (openId === l.id) { var d = details(l, true); if (d) r.appendChild(d); }
+    return r;
+  }
+  // Broken: always first, never folded. Open the page, try again (or leave it), inspect, or say it is fixed.
+  function brokenBox(ls) {
+    var box = h('div', { class: 'q brokenbox', role: 'region', 'aria-label': 'Broken' }, h('div', { class: 'bbhead', text: ls.length === 1 ? 'Broken' : ls.length + ' broken' }));
+    // With two or more, only the selected one shows its buttons; the others are one line each (title and what it holds up),
+    // so the box never pushes the groups off a phone screen. Every broken light is still listed, and a tap opens it.
+    ls.forEach(function (l) {
+      var isSel = sel === l.id, a = area(l.area), b = h('div', { class: 'btns' }), small = smallLine(l), yes = yesOf(l);
+      if (ls.length > 1 && !isSel && openId !== l.id) {
+        var short = l.holdsUp ? 'Holds up: ' + l.holdsUp : l.alert || '';
+        box.appendChild(h('div', { class: 'row red mini', id: 'row-' + l.id },
+          h('div', { class: 'head', onclick: function () { if (selecting()) return; sel = l.id; render(); } },
+            h('span', { class: 'n', text: '!' }), h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+            h('div', { class: 'txt' }, h('p', { text: l.title }), short ? h('small', { text: short.length > 90 ? short.slice(0, 90) + '…' : short }) : null))));
+        return;
+      }
+      if (changedAt[l.id]) b.appendChild(B('Look again', function () { lookAgain(l); }));
+      else {
+        if (l.link) b.appendChild(A('Open ↗', l.link));
+        l.options.forEach(function (o) { b.appendChild(B(o, function () { act(l, 'answer', { value: o }); }, o === yes && !l.link ? '' : 'gh', isSel && o === yes ? '⏎' : null)); });
+      }
+      b.appendChild(B(openId === l.id ? 'Close' : 'Inspect', function () { sel = l.id; openId = openId === l.id ? null : l.id; render(); }, 'gh'));
+      if (!changedAt[l.id] && !l.failure && !l.unsure && !l.stuck) b.appendChild(B('Fixed', function () { act(l, 'done'); }, l.options.length || l.link ? 'gh' : '', isSel && !l.options.length ? '⏎' : null));
+      var r = h('div', { class: 'row red' + (isSel ? ' sel' : ''), id: 'row-' + l.id },
+        h('div', { class: 'head', onclick: function () { if (selecting()) return; sel = l.id; render(); } },
+          h('span', { class: 'n', text: '!' }), h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+          h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)), small ? h('small', { text: small }) : null), b));
+      if (openId === l.id) {
+        var d = details(l, true) || h('div', { class: 'more' });
+        d.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'Your assistants' }), h('p', { text: (l.agent ? 'Raised by ' + l.agent + '. ' : '') + (S.lastCheckIn ? 'An assistant last checked in ' + when2(S.lastCheckIn) + '.' : 'No assistant has checked in yet.') })));
+        r.appendChild(d);
+      }
+      box.appendChild(r);
+    });
+    return box;
+  }
+  function when2(t) { var m = Math.round((S.now - t) / 60000); return m < 1 ? 'just now' : m < 90 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; }
+  // A row in a drawer: the title, a 150-character preview, and what can be done from there.
+  function drawerRow(l) {
+    var tag = l.snoozed ? h('span', { class: 'tag', text: 'Snoozed, back ' + when(l.snoozeUntil) }) : l.state === 'approved' ? h('span', { class: 'tag warn', text: 'Approved, not yet sent' })
+      : l.state === 'waiting_them' ? h('span', { class: 'tag b', text: l.followUpAt ? 'Follow-up comes due ' + when(l.followUpAt) : 'Waiting on them' })
+      : l.state === 'auto' ? h('span', { class: 'tag' + (l.late ? ' warn' : ''), text: l.late ? 'Gone quiet: no word since it was due' : 'Running' }) : null;
+    var post = l.state === 'queued' && l.kind === 'approve' && l.channel !== 'agent' && !l.redraftWaiting, btns = h('span', { class: 'btns' });
+    if (post && asked[l.id]) { btns.appendChild(B('Yes, it went', function () { var r = asked[l.id]; delete asked[l.id]; act(l, 'approve', { rev: r }); })); btns.appendChild(B('Not yet', function () { delete asked[l.id]; render(); }, 'gh')); }
+    else if (post) {
+      if (l.draft && l.link) btns.appendChild(copyOpen(l)); else if (l.draft) btns.appendChild(B('Copy text', function () { copyText(l.draft); }, 'plain'));
+      btns.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
+      btns.appendChild(B('Ready now', function () { act(l, 'ready'); }, 'plain'));
+    }
+    else if (l.state === 'waiting_them' && !l.snoozed) { btns.appendChild(B('They replied', function () { act(l, 'replied'); }, 'plain')); if (l.followUpAt) btns.appendChild(B('Stop following up', function () { act(l, 'stop_followups'); }, 'plain')); }
+    else if (l.snoozed) btns.appendChild(B('Bring it back now', function () { act(l, 'wake'); }, 'plain'));
+    else if (l.canTakeBack) btns.appendChild(B('Undo', function () { takeBack(l.id); }, 'plain'));
+    else if (l.late || (l.state === 'queued' && !l.redraftWaiting)) btns.appendChild(B(l.late ? 'Dismiss' : 'Cancel it', function () { act(l, 'drop'); }, 'plain'));
+    var pv = preview(l);
+    return h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.snoozed ? '' : l.state === 'approved' ? 'a' : l.state === 'waiting_them' ? 'b' : l.state === 'auto' ? (l.late ? 'late' : 'g') : '') }),
+      h('p', {}, l.title + (l.batch > 1 ? ' ×' + l.batch : ''), l.value ? h('span', { class: 'tg val', text: '$' + l.value.toLocaleString() }) : null, pv || asked[l.id] ? h('small', { text: (asked[l.id] ? 'Did it go? ' : '') + pv }) : null),
+      l.state === 'auto' && l.progress != null ? h('span', { class: 'bar' }, h('i', { style: 'width:' + l.progress + '%' })) : null, tag, btns.childNodes.length ? btns : null);
+  }
+  // Lined-up rows grouped by what their key starts with ("release:", "post:" ...), so twenty steps of one job read as one job.
+  function drawerList(ls, grouped) {
+    var list = h('div', { class: 'list' }), by = {}, order = [];
+    ls.forEach(function (l) { var k = grouped && l.key ? String(l.key).split(/[:/]/)[0] : ''; if (!by[k]) { by[k] = []; order.push(k); } by[k].push(l); });
+    order.forEach(function (k) { if (order.length > 1) list.appendChild(h('div', { class: 'subhead', text: k || 'Other' })); by[k].forEach(function (l) { list.appendChild(drawerRow(l)); }); });
+    return list;
+  }
+  // The "Reach out?" drawer: suggestions nobody asked for (an old lead, a past customer). Each row says who, when you last
+  // talked, and where it belongs; opening it shows the words. Nothing goes out without your tap, and "Not now" says why.
+  function reachList(ls) {
+    var list = h('div', { class: 'list' });
+    ls.forEach(function (l) {
+      var a = area(l.area), isOpen = roOpen === l.id, btns = h('span', { class: 'btns' });
+      if (isOpen && !roShown[l.id]) roShown[l.id] = l.rev;
+      var changed = isOpen && roShown[l.id] !== l.rev;
+      if (!isOpen) btns.appendChild(B('Open', function () { roOpen = l.id; roShown[l.id] = l.rev; roWhy = null; render(); }, 'plain'));
+      var head = h('div', { class: 'li', id: 'ro-' + l.id, onclick: function () { if (selecting()) return; roOpen = isOpen ? null : l.id; if (!isOpen) roShown[l.id] = l.rev; roWhy = null; render(); } },
+        h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }),
+        h('p', {}, l.title + (l.to ? ' \u00b7 ' + l.to : ''), h('small', { text: l.lastContact ? 'Last contact: ' + l.lastContact : 'No last contact given' })), btns.childNodes.length ? btns : null);
+      list.appendChild(head);
+      if (!isOpen) return;
+      var more = h('div', { class: 'more' });
+      if (l.source) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'What came in' }), h('p', { text: l.source })));
+      if (l.note) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'Why it was suggested' }), h('p', { text: l.note })));
+      if (l.draft) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.to ? 'What would go to ' + l.to : 'What would go out' }), h('p', { text: l.draft })));
+      var b = h('div', { class: 'btns' });
+      if (changed) b.appendChild(B('Look again', function () { roShown[l.id] = l.rev; delete asked[l.id]; render(); }));
+      else if (!S.canAct) b = null;
+      else if (l.kind === 'approve' && l.channel !== 'agent' && asked[l.id]) {
+        // They came back from the page: ask, don't assume. The approval carries the words that were copied.
+        b.appendChild(B('Yes, it went', function () { var r = asked[l.id]; delete asked[l.id]; roOpen = null; act(l, 'approve', { rev: r }); }));
+        b.appendChild(B('Not yet', function () { delete asked[l.id]; render(); }, 'gh'));
+      } else if (l.kind === 'approve' && l.channel === 'sms' && l.phone && l.draft) {
+        b.appendChild(h('a', { class: 'btn', href: 'sms:' + l.phone + '?&body=' + encodeURIComponent(l.draft), onclick: function (e) { e.stopPropagation(); var r0 = l.rev; setTimeout(function () { asked[l.id] = r0; render(); }, 500); } }, 'Open in Messages'));
+      } else if (l.kind === 'approve' && l.channel !== 'agent' && l.draft) {
+        b.appendChild(l.link ? copyOpen(l) : B('Copy text', function () { copyText(l.draft); asked[l.id] = l.rev; render(); }));
+      } else if (l.kind === 'approve' && l.channel === 'agent' && l.draft) {
+        b.appendChild(B(l.outbound ? 'Send it' : 'Approve', function () { roOpen = null; act(l, 'approve', { rev: roShown[l.id] }); }));
+      } else if (l.link) b.appendChild(A('Open ↗', l.link));
+      if (b && !changed) {
+        b.appendChild(B('Not now', function () { roWhy = roWhy === l.id ? null : l.id; render(); var x = $('ro-why'); if (x) x.focus(); }, 'gh'));
+        b.appendChild(B('Close', function () { roOpen = null; roWhy = null; render(); }, 'plain'));
+      }
+      if (b) more.appendChild(h('div', { class: 'pane wide' }, b));
+      if (roWhy === l.id) {
+        var why = h('input', { id: 'ro-why', maxlength: '200', placeholder: 'Why not? (optional) e.g. they hired someone else', 'aria-label': 'Why not now' });
+        var drop = function () { roWhy = null; roOpen = null; act(l, 'drop', why.value.trim() ? { why: why.value.trim() } : {}); };
+        more.appendChild(h('div', { class: 'pane wide' }, h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); drop(); } }, why, h('button', { class: 'btn gh', type: 'submit', text: 'Drop it' }))));
+      }
+      list.appendChild(more);
+    });
+    return list;
+  }
+  function setArea(id) { if (!areaFilter && id) { try { history.pushState({ sb: 'area' }, ''); } catch (e) {} } areaFilter = id || null; needIdx = 0; fit = null; sel = null; openId = null; editId = null; noteId = null; snoozeId = null; render(); window.scrollTo(0, 0); }
+  // The time pills: one tap starts a pass straight away. Focus has no clock and takes the chores too.
+  function startPass(min) {
+    if (!S || !S.canAct) return;
+    var go = function () { pass = { min: min || 0, at: Date.now(), done: [], last: null }; startRapid(); };
+    fit = min || null; fitAt = Date.now(); fitIds = [];
+    if (!min) { go(); return; }
+    api('GET', '/api/fit?minutes=' + min + (areaFilter ? '&area=' + encodeURIComponent(areaFilter) : '')).then(function (f) { fitIds = f.ids; fitAt = Date.now(); go(); }, function (e) { fit = null; toast(e.message); });
+  }
+  function clock() { var left = Math.round((fit * 60000 - (Date.now() - fitAt)) / 1000); return left > 0 ? Math.floor(left / 60) + ':' + ('0' + left % 60).slice(-2) + ' left' : 'time’s up: finish this one'; }
+  function switchTo(id) { setArea(areaFilter === id ? null : id); }
   function simBar() {
     var cur = S.sim.scenarios.filter(function (x) { return x.name === S.sim.current; })[0] || {};
     var narrow = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
@@ -748,136 +997,133 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (rapid) { renderRapid(); return; }
     $('rapid').hidden = true;
     if (!S.areas.length && !S.lights.length) return renderWelcome();
-    var v = visible(), mine = queueLights(), all = mine.length;
+    var v = visible(), mine = queueLights(), waitingLs = mine.filter(function (l) { return l.state === 'need_you'; }), c = (areaFilter && area(areaFilter).counts) || S.counts;
     if (!v.keys.some(function (it) { return it.key === sel; })) sel = v.keys.length ? v.keys[0].key : null;
     if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
-    var H = $('headline'); H.textContent = ''; H.className = all ? '' : 'zero';
-    if (fit) { var fl = Math.max(1, Math.ceil(fitLeft())); H.appendChild(document.createTextNode(fl >= fit ? 'You have ' + fit + (fit === 1 ? ' minute. ' : ' minutes. ') : fl + ' of your ' + fit + ' minutes left. ')); }
-    else if (areaFilter) H.appendChild(document.createTextNode(area(areaFilter).name + ': '));
-    if (fit && !all) { H.textContent = 'Nothing fits in ' + Math.max(1, Math.ceil(fitLeft())) + (Math.ceil(fitLeft()) === 1 ? ' minute.' : ' minutes.'); } else H.appendChild(h('em', { text: all + (all === 1 ? ' light' : ' lights') }));
-    if (!(fit && !all)) H.appendChild(document.createTextNode(fit ? (all === 1 ? ' fits. About ' : ' fit. About ') + about(mine.reduce(function (n, l) { return n + size(l); }, 0)) + (mine.some(function (l) { return l.unsized; }) ? ' (partly a guess: ' + mine.filter(function (l) { return l.unsized; }).length + ' not timed yet).' : '.') : all ? (all === 1 ? ' needs you.' : ' need you.') + shortTime(mine) : areaFilter ? ' need you here.' : ' need you right now.'));
-    document.title = (S.queue.length ? '(' + S.queue.length + ') ' : '') + 'Switchboard';
+    // The headline: how many are waiting on you and about how long they take. Untimed ones count at the usual time, marked ~.
+    var H = $('headline'); H.textContent = ''; H.className = waitingLs.length || v.broken.length ? '' : 'zero';
+    if (areaFilter) H.appendChild(document.createTextNode(area(areaFilter).name + ': '));
+    var taps = waitingLs.filter(function (l) { return !l.chore; }), guess = taps.some(function (l) { return l.unsized; });
+    if (waitingLs.length) { H.appendChild(h('em', { text: waitingLs.length + ' waiting on you' })); if (taps.length) H.appendChild(document.createTextNode(' · ' + (guess ? '~' : 'about ') + Math.max(1, Math.round(sum(taps) / 60)) + ' min')); }
+    else H.appendChild(h('em', { text: v.broken.length ? 'Nothing waiting on you' : areaFilter ? 'Nothing needs you here' : 'Nothing needs you right now' }));
+    document.title = (S.counts.waiting || S.counts.broken ? '(' + S.counts.waiting + (S.counts.broken ? ', ' + S.counts.broken + ' broken' : '') + ') ' : '') + 'Switchboard';
+    // One line that adds up to the whole board. The total opens the full list.
     var sub = $('sub'); sub.textContent = '';
-    var rest = !fit && all ? restLine(mine) : ''; if (rest) sub.appendChild(h('span', { class: 'restline', text: rest }));
-    [['Y', S.counts.need_you, 'to decide'], ['R', S.counts.broken, 'broken'], ['A', S.counts.approved, 'approved, not done yet'], ['B', S.counts.waiting_them, 'waiting on other people'], ['G', S.counts.auto, 'jobs running'], ['L', S.counts.late, 'late, no update'], ['L', S.counts.unreported, 'picked up, no word back'], ['L', S.counts.uncollected, 'answers not picked up yet'], ['D', S.counts.queued, 'lined up'], ['D', S.counts.snoozed, 'snoozed']]
-      .forEach(function (p) { if (p[1] || p[0] === 'Y') sub.appendChild(h('span', {}, h('i', { class: 'dotk ' + p[0] }), p[1] + ' ' + p[2])); });
+    var parts = [c.waiting + ' waiting' + (c.recommended ? ' (' + c.recommended + (c.recommended === 1 ? ' has' : ' have') + ' a recommended answer)' : '')];
+    if (c.broken) parts.push(c.broken + ' broken'); if (c.running) parts.push(c.running + ' running'); if (c.queued) parts.push(c.queued + ' lined up');
+    if (c.others) parts.push(c.others + ' with others'); if (c.aside) parts.push(c.aside + ' snoozed or paused'); if (c.reachOut) parts.push(c.reachOut + ' to reach out');
+    sub.appendChild(h('span', { class: 'count' }, parts.join(' · ') + ' = ', h('button', { class: 'link', type: 'button', 'aria-pressed': String(seeAll), onclick: function () { seeAll = !seeAll; render(); if (seeAll) { var x = $('all-view'); if (x) x.scrollIntoView({ block: 'start' }); } } }, c.total + (areaFilter ? ' in ' + area(areaFilter).name : ' on the board'))));
     if (!S.queue.length && S.nextLightAt) sub.appendChild(h('span', { text: 'Next light expected ' + when(S.nextLightAt) + '.' }));
     var fresh = Object.keys(pendingNew).length;
     if (fresh) {
-      var urgent = Object.keys(pendingNew).map(light).filter(function (l) { return l && l.tier === 0; }).length;
-      H.appendChild(document.createTextNode(' Plus ' + fresh + ' new.'));
-      sub.appendChild(h('button', { class: 'pill go', id: 'newpill', type: 'button', onclick: function () { showPending(); } }, fresh + ' new' + (urgent ? ', ' + (urgent === fresh ? '' : urgent + ' ') + 'due soon' : '') + ' · show'));
+      var urgent = Object.keys(pendingNew).map(light).filter(function (l) { return l && l.tier <= 0; }).length;
+      sub.appendChild(h('button', { class: 'pill go', id: 'newpill', type: 'button', onclick: function () { showPending(); } }, fresh + ' new' + (urgent ? ', ' + (urgent === fresh ? '' : urgent + ' ') + 'urgent' : '') + ' · show'));
     }
 
+    // Under the bar: the three ways to start a pass, and one select for the areas.
     var pills = $('pills'); pills.textContent = '';
-    var quick = S.queue.map(light).filter(function (l) { return l && l.est <= 120 && !l.chore && !l.unsized && !l.board && !l.brake && (!areaFilter || l.area === areaFilter); });
-    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(filter === 'all' && !areaFilter && !fit), onclick: function () { filter = 'all'; areaFilter = null; fit = null; render(); } }, h('kbd', { text: '0' }), 'Everything'));
-    S.areas.forEach(function (a, i) {
-      var n = S.queue.map(light).filter(function (l) { return l && l.area === a.id; }).length;
-      pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(areaFilter === a.id), title: 'Switch to ' + a.name, onclick: function () { switchTo(a.id); } },
-        i < 9 ? h('kbd', { text: String(i + 1) }) : null, h('i', { class: 'sw', style: 'background:' + a.color }), a.name, n ? h('b', { class: 'ct', text: String(n) }) : null));
+    if (S.canAct && S.queue.length) [[2, '2 min', '2'], [10, '10 min', '0'], [0, 'Focus', 'F']].forEach(function (p) {
+      pills.appendChild(h('button', { class: 'pill go', type: 'button', title: p[0] ? 'Answer what fits in ' + p[0] + ' minutes, one card at a time' : 'Go through everything, one card at a time, no clock', onclick: function () { startPass(p[0]); } }, h('kbd', { text: p[2] }), p[1]));
     });
-    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(seeAll), onclick: function () { seeAll = !seeAll; render(); if (seeAll) { var x = $('all-view'); if (x) x.scrollIntoView({ block: 'start' }); } } }, 'See everything \u00b7 ' + S.lights.length));
-    pills.appendChild(h('button', { class: 'pill', type: 'button', 'aria-pressed': String(filter === 'quick'), onclick: function () { filter = filter === 'quick' ? 'all' : 'quick'; render(); } }, 'Under 2 min · ' + quick.length));
-    if (S.queue.length >= 2) pills.appendChild(h('button', { class: 'pill go', type: 'button', onclick: function () { startRapid(); } }, h('kbd', { text: 'R' }), 'Go through them'));
+    var live = S.areas.filter(function (a) { return a.waiting || a.broken || S.lights.some(function (l) { return l.area === a.id; }); });
+    if (live.length > 1 || areaFilter) {
+      var pick = h('select', { id: 'area-sel', class: 'areasel' + (areaFilter ? ' on' : ''), 'aria-label': 'Show one area', onchange: function () { setArea(pick.value); } });
+      pick.appendChild(h('option', { value: '', text: 'All areas · ' + c.waiting }));
+      live.forEach(function (a) { pick.appendChild(h('option', { value: a.id, text: a.name + ' · ' + a.waiting + (a.broken ? ', ' + a.broken + ' broken' : '') })); });
+      pick.value = areaFilter || '';
+      pills.appendChild(pick);
+    }
 
     var main = $('main'), kept = keepFields(main);
-    var phone = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+    var wide = window.matchMedia && window.matchMedia('(min-width: 1000px)').matches;
     document.querySelector('.wrap').inert = false;
     v.keys.forEach(function (it, i) { if (pos[it.key] !== i) { pos[it.key] = i; posAt[it.light ? it.light.id : it.key] = Date.now(); } });
     main.textContent = '';
-    if (phone && S.queue.length >= 2 && !fit) main.appendChild(h('button', { class: 'btn gothrough', type: 'button', onclick: function () { startRapid(); } }, 'Go through them, one at a time (' + S.queue.length + ')'));
-    // Questions whose assistant recommended an answer: all of them in one tap, each listed first, each on its own hold.
-    var recs = S.queue.map(function (id) { return S.lights.find(function (l) { return l.id === id; }); }).filter(function (l) { return l && l.state === 'need_you' && l.recommended && !l.outbound && l.options.indexOf(l.recommended) >= 0 && !changedAt[l.id]; });
-    if (S.canAct && recs.length >= 2 && !fit) {
-      var rp = h('div', { class: 'pane grouplist' }, h('h5', { text: 'Takes these ' + recs.length + ' answers' }));
-      recs.forEach(function (l) { rp.appendChild(h('p', { text: l.recommended + ': ' + l.title + '  \u00b7  ' + area(l.area).name })); });
-      main.appendChild(h('div', { class: 'row recs' }, h('div', { class: 'head' }, h('div', { class: 'txt' }, h('p', { text: recs.length + ' questions have a recommended answer' }), h('small', { text: 'Each still waits on its own hold, so any one can be taken back.' })),
-        h('div', { class: 'btns' }, B('Take all ' + recs.length + ' recommendations', function () { bulkAct(recs, 'recommended'); }))), h('div', { class: 'more' }, rp)));
-    }
     if (S.sim) main.appendChild(simBar());
-    var away = sinceBlock(); if (away) main.appendChild(away);
     if (!S.canAct) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'View only in this browser. ' }), 'To approve here, open your Switchboard link: ask your assistant to open Switchboard for you.')));
     var strip = heldStrip(); if (strip) main.appendChild(strip);
+    if (v.broken.length) main.appendChild(brokenBox(v.broken));
     S.suggest.forEach(function (g) {
       main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have said “' + g.why + '” ' + (g.times === 2 ? 'twice' : g.times + ' times') + ' in ' + g.name + '. ' }), 'Always do this? It is added to how drafts for ' + g.name + ' should sound.'),
         B('Yes, every draft', function () { page('/api/learn', { area: g.area, why: g.why, yes: true }); }), B('No', function () { page('/api/learn', { area: g.area, why: g.why, yes: false }); }, 'plain')));
     });
-    if (S.hasDemo) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'These are examples. ' }), 'Try the buttons, then clear them and add your own.'), B('Clear the examples', function () { api('POST', '/api/demo', { clear: true }).then(function () { return load(true); }, function (e) { toast(e.message); }); }, 'plain')));
-    if (v.shown.length) {
-      main.appendChild(h('div', { class: 'lab gold' }, fit ? 'What fits in ' + fit + ' minutes' : areaFilter ? 'Yours in ' + area(areaFilter).name : filter === 'quick' ? 'Quick ones' : v.hidden ? 'Start with these ' + v.shown.length : 'Needs you now',
-        fit || filter === 'quick' ? h('button', { class: 'link', type: 'button', onclick: function () { fit = null; filter = 'all'; render(); } }, 'Show everything') : null));
-      var box = h('div', { class: 'q' });
-      v.shown.forEach(function (it, i) { box.appendChild(it.light ? row(it.light, i) : groupRow(it, i)); });
-      if (v.hidden) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = true; render(); } }, 'Show ' + (function () { return v.all.filter(function (it) { return v.shown.indexOf(it) < 0; }).reduce(function (k, it) { return k + (it.light ? 1 : it.lights.length); }, 0); })() + ' more', h('small', { text: 'Order: due soon, people waiting, broken jobs that block something, then the rest by age.' })));
-      else if (showAll && v.all.length > 7) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = false; render(); window.scrollTo(0, 0); } }, 'Back to the short list'));
-      main.appendChild(box);
-    }
-    if (v.chores.length) {
-      main.appendChild(h('div', { class: 'lab gold' }, 'Chores · work away from the board, not counted in the minutes above'));
-      var cbox = h('div', { class: 'q' }); v.chores.forEach(function (it, i) { cbox.appendChild(row(it.light, i)); }); main.appendChild(cbox);
-    }
-    if (v.shown.length || v.chores.length) { /* something is showing */ } else if (S.queue.length) {
-      main.appendChild(h('div', { class: 'lab' }, fit ? 'Nothing fits in ' + fit + ' minutes' : 'Nothing matches', h('button', { class: 'link', type: 'button', onclick: function () { filter = 'all'; areaFilter = null; fit = null; render(); } }, 'Show everything')));
-    } else {
-      main.appendChild(h('div', { class: 'lab' }, ''));
-      main.appendChild(h('div', { class: 'calm' }, h('b', { text: S.clearedToday ? 'Cleared ' + S.clearedToday + ' today' + (S.spentToday >= 5 ? ' in about ' + (S.spentToday < 90 ? S.spentToday + ' seconds' : about(S.spentToday)) : '') : 'All clear' }),
-        S.counts.late ? S.counts.late + (S.counts.late === 1 ? ' job is' : ' jobs are') + ' late with no update. See below.' : S.counts.approved ? S.counts.approved + ' approved and waiting for your assistant. The rest is moving without you.' : S.counts.auto || S.counts.waiting_them ? 'Everything else is moving without you.' : 'Nothing is waiting. Type something in the bar above, or let your assistants add things.'));
-    }
     S.promote.forEach(function (p) {
-      main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have approved ' + p.streak + ' “' + pretty(p.type) + '” changes in ' + p.area + ', one at a time, without changing a word. ' }), 'Let that kind of change run by itself in ' + p.area + '? You approved changes like ' + (p.samples || []).map(function (x) { return '\u201c' + x + '\u201d'; }).join(', ') + '. Money amounts, removals, free text and anything with a recipient still ask you. The first five all come back for a look, then one now and then.'),
+      main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'You have approved ' + p.streak + ' “' + pretty(p.type) + '” changes in ' + p.area + ', one at a time, without changing a word. ' }), 'Let that kind of change run by itself in ' + p.area + '? You approved changes like ' + (p.samples || []).map(function (x) { return '“' + x + '”'; }).join(', ') + '. Money amounts, removals, free text and anything with a recipient still ask you. The first five all come back for a look, then one now and then.'),
         B('Let it run', function () { page('/api/promote', { key: p.key, yes: true }); }), B('Keep asking me', function () { page('/api/promote', { key: p.key, yes: false }); }, 'plain')));
     });
+    if (S.hasDemo) main.appendChild(h('div', { class: 'banner' }, h('span', {}, h('b', { text: 'These are examples. ' }), 'Try the buttons, then clear them and add your own.'), B('Clear the examples', function () { api('POST', '/api/demo', { clear: true }).then(function () { return load(true); }, function (e) { toast(e.message); }); }, 'plain')));
 
-    if (seeAll) main.appendChild(everything());
-    main.appendChild(h('div', { class: 'lab' }, 'Everything you have going', areaFilter ? h('button', { class: 'link', type: 'button', onclick: function () { areaFilter = null; render(); } }, 'Show everything') : null));
-    var grid = h('div', { class: 'grid boxes' });
+    // The three groups, then the short list. On a wide screen the list sits on the left and the groups on the right.
+    var groups = document.createDocumentFragment(), list = document.createDocumentFragment(), drawers = document.createDocumentFragment();
+    if (v.safe.length) { groups.appendChild(h('div', { class: 'lab gold' }, 'Safe to take together (' + v.safe.length + ')')); groups.appendChild(laneBox('safe', v.safe)); }
+    if (v.read.length) { groups.appendChild(h('div', { class: 'lab' }, '')); groups.appendChild(drawer('read', 'Read first (' + v.read.length + ')', 'public pages, listings, change nothing', laneBox('read', v.read), 'read')); }
+    if (v.need) { groups.appendChild(h('div', { class: 'lab gold' }, 'Needs you (' + v.high.length + ')', v.high.length > 1 ? h('span', { class: 'count', text: 'one at a time · ' + ((needIdx % v.high.length) + 1) + ' of ' + v.high.length }) : null)); groups.appendChild(h('div', { class: 'q' }, needCard(v.need, v.high.length))); }
+    if (v.shown.length) {
+      list.appendChild(h('div', { class: 'lab gold' }, areaFilter ? 'Yours in ' + area(areaFilter).name : v.hidden ? 'Start with these ' + v.shown.length : v.safe.length || v.read.length || v.need ? 'Also waiting' : 'Needs you now'));
+      var box = h('div', { class: 'q' });
+      v.shown.forEach(function (it, i) { box.appendChild(it.light ? row(it.light, i) : groupRow(it, i)); });
+      if (v.hidden) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = true; render(); } }, 'Show ' + v.all.filter(function (it) { return v.shown.indexOf(it) < 0; }).reduce(function (k, it) { return k + (it.light ? 1 : it.lights.length); }, 0) + ' more', h('small', { text: ' People and money first, then the rest by age.' })));
+      else if (showAll && v.all.length > 7) box.appendChild(h('button', { class: 'rest', type: 'button', onclick: function () { showAll = false; render(); window.scrollTo(0, 0); } }, 'Back to the short list'));
+      list.appendChild(box);
+    }
+    if (v.chores.length) { var cbox = h('div', { class: 'q' }); v.chores.forEach(function (it, i) { cbox.appendChild(row(it.light, i)); }); list.appendChild(drawer('chores', 'Chores away from the board (' + v.chores.length + ')', 'not counted in the minutes', cbox)); }
+    if (!S.queue.length) {
+      list.appendChild(h('div', { class: 'lab' }, ''));
+      list.appendChild(h('div', { class: 'calm' }, h('b', { text: S.clearedToday ? 'Cleared ' + S.clearedToday + ' today' + (S.spentToday >= 5 ? ' in about ' + (S.spentToday < 90 ? S.spentToday + ' seconds' : about(S.spentToday)) : '') : 'All clear' }),
+        S.counts.late ? S.counts.late + (S.counts.late === 1 ? ' job is' : ' jobs are') + ' late with no update. See below.' : S.counts.approved ? S.counts.approved + ' approved and waiting for your assistant. The rest is moving without you.' : S.counts.auto || S.counts.waiting_them ? 'Everything else is moving without you.' : 'Nothing is waiting. Type something in the bar above, or let your assistants add things.'));
+    } else if (!v.keys.length && !v.safe.length && !v.read.length) list.appendChild(h('div', { class: 'lab' }, 'Nothing matches', h('button', { class: 'link', type: 'button', onclick: function () { filter = 'all'; setArea(null); } }, 'Show all areas')));
+
+    // Folded drawers: what is lined up, what moves by itself, what waits on others, what waits on an assistant.
+    var inArea = function (l) { return !areaFilter || l.area === areaFilter; };
+    var queued = S.lights.filter(function (l) { return l.state === 'queued' && inArea(l) && !l.redraftWaiting; });
+    var running = S.lights.filter(function (l) { return l.state === 'auto' && inArea(l); });
+    var others = S.lights.filter(function (l) { return (l.state === 'waiting_them' || (l.state === 'approved' && !l.canTakeBack)) && !l.snoozed && inArea(l); });
+    var snoozed = S.lights.filter(function (l) { return l.snoozed && inArea(l) && S.queue.indexOf(l.id) < 0; });
+    var stuckOut = S.lights.filter(function (l) { return inArea(l) && !S.held.some(function (x) { return x.id === l.id; }) && (l.canTakeBack || l.late || l.redraftWaiting); });
+    if (queued.length) drawers.appendChild(drawer('queued', 'Lined up (' + queued.length + ')', null, drawerList(queued, true)));
+    if (running.length) drawers.appendChild(drawer('running', 'Moving by itself (' + running.length + ')', S.counts.late ? S.counts.late + ' late' : null, drawerList(running)));
+    if (others.length) drawers.appendChild(drawer('others', 'Waiting on others (' + others.length + ')', null, drawerList(others)));
+    if (snoozed.length) drawers.appendChild(drawer('snoozed', 'Snoozed (' + snoozed.length + ')', null, drawerList(snoozed)));
+    var reach = (S.reachOut || []).map(light).filter(function (l) { return l && inArea(l); });
+    if (reach.length) drawers.appendChild(drawer('reachout', 'Reach out? (' + reach.length + ')', 'only if you choose', reachList(reach)));
+    if (stuckOut.length) {
+      var sl = h('div', { class: 'list' });
+      stuckOut.forEach(function (l) {
+        sl.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.late ? 'late' : 'a'), title: l.late ? 'Gone quiet' : 'Approved, not yet sent' }), h('p', {}, l.title, h('small', { text: area(l.area).name + ' · ' + (l.late ? 'Gone quiet: no word since it was due.' : l.redraftWaiting ? 'You asked for changes: “' + (l.askedFor ? l.askedFor.why : '') + '”. Waiting for your assistant to redraft.' : (l.waitingCheckIn ? l.alert + ' You can still take it back.' : 'Approved, no assistant has picked it up yet. You can still take it back.')) })),
+          h('span', { class: 'btns' }, l.late ? B('Dismiss', function () { act(l, 'drop'); }, 'plain') : l.redraftWaiting && l.canTakeBack ? h('span', {}, B('Write it myself', function () { takeBack(l.id); editId = l.id; editBase = l.draft; openId = l.id; }, 'plain'), B('Undo', function () { takeBack(l.id); }, 'plain')) : l.redraftWaiting ? null : B('Undo', function () { takeBack(l.id); }, 'plain'))));
+      });
+      drawers.appendChild(drawer('assistant', 'With your assistants (' + stuckOut.length + ')', stuckOut.some(function (l) { return l.late; }) ? 'some gone quiet' : null, sl));
+    }
+    var away = areaFilter ? null : sinceBlock(); if (away) drawers.appendChild(away);
+    // The areas, folded: each card says how many are waiting and broken, the same numbers as the select.
+    var grid = h('div', { class: 'grid' });
     S.areas.forEach(function (a) {
       var ls = S.lights.filter(function (l) { return l.area === a.id; });
       grid.appendChild(h('button', { class: 'box' + (a.wakeAt ? ' sleep' : ''), type: 'button', 'aria-pressed': String(areaFilter === a.id), onclick: function () { switchTo(a.id); } },
-        lightsRow(ls), h('div', { class: 'bh' }, h('i', { style: 'background:' + a.color }), a.name), h('div', { class: 'say', text: summary(a, ls) })));
+        boxPills(a), h('div', { class: 'bh' }, h('i', { style: 'background:' + a.color }), a.name), h('div', { class: 'say', text: summary(a, ls) })));
     });
     if (adding) {
       var ai = h('input', { id: 'area-name', maxlength: '60', placeholder: 'Name it: a business, school, family…', 'aria-label': 'New container name' });
       grid.appendChild(h('form', { class: 'box', onsubmit: function (e) { e.preventDefault(); if (!ai.value.trim()) return; api('POST', '/api/areas', { name: ai.value }).then(function () { adding = false; return load(); }).catch(function (er) { toast(er.message); }); } },
         h('div', { class: 'bh', text: 'New container' }), h('div', { class: 'inline' }, ai, h('button', { class: 'btn', type: 'submit', text: 'Add' }))));
-    } else grid.appendChild(h('button', { class: 'box addbox', type: 'button', onclick: function () { adding = true; render(); var x = $('area-name'); if (x) x.focus(); } }, '+ Add a container'));
-    main.appendChild(grid);
+    } else grid.appendChild(h('button', { class: 'box addbox', type: 'button', onclick: function () { adding = true; fold.areas = true; render(); var x = $('area-name'); if (x) x.focus(); } }, '+ Add a container'));
+    drawers.appendChild(drawer('areas', 'Areas (' + S.areas.length + ')', null, grid));
 
-    var stuckOut = areaFilter ? [] : S.lights.filter(function (l) { return !S.held.some(function (x) { return x.id === l.id; }) && (l.canTakeBack || l.late || l.redraftWaiting); });
-    if (stuckOut.length) {
-      main.appendChild(h('div', { class: 'lab' }, 'Waiting on an assistant'));
-      var sl = h('div', { class: 'list' });
-      stuckOut.forEach(function (l) {
-        sl.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.late ? 'late' : 'a'), title: l.late ? 'Gone quiet' : 'Approved, not yet sent' }), h('p', {}, l.title, h('small', { text: area(l.area).name + ' · ' + (l.late ? 'Gone quiet: no word since it was due.' : l.redraftWaiting ? 'You asked for changes: \u201c' + (l.askedFor ? l.askedFor.why : '') + '\u201d. Waiting for your assistant to redraft.' : (l.waitingCheckIn ? l.alert + ' You can still take it back.' : 'Approved, no assistant has picked it up yet. You can still take it back.')) })),
-          h('span', { class: 'btns' }, l.late ? B('Dismiss', function () { act(l, 'drop'); }, 'plain') : l.redraftWaiting && l.canTakeBack ? h('span', {}, B('Write it myself', function () { takeBack(l.id); editId = l.id; editBase = l.draft; openId = l.id; }, 'plain'), B('Undo', function () { takeBack(l.id); }, 'plain')) : l.redraftWaiting ? null : B('Undo', function () { takeBack(l.id); }, 'plain'))));
-      });
-      main.appendChild(sl);
+    if (wide) {
+      var L = h('div', {}), R = h('div', {});
+      L.appendChild(list); R.appendChild(groups); R.appendChild(h('div', { class: 'lab' }, '')); R.appendChild(drawers);
+      main.appendChild(h('div', { class: 'cols two' }, L, R));
+    } else {
+      var one = h('div', { class: 'cols' }); one.appendChild(groups); one.appendChild(list); one.appendChild(h('div', { class: 'lab' }, '')); one.appendChild(drawers); main.appendChild(one);
     }
+
+    if (seeAll) main.appendChild(everything());
     if (areaFilter) {
       var fa = area(areaFilter), openHere = S.lights.filter(function (l) { return l.area === areaFilter; }).length;
-      main.appendChild(h('div', { class: 'lab' }, fa.name, S.canAct ? h('span', {}, B('Rename', function () { renaming = areaFilter; render(); var x = $('rename-area'); if (x) x.focus(); }, 'plain'), !openHere ? B('Remove', function () { page('/api/areas/remove', { id: areaFilter }).then(function () { areaFilter = null; }); }, 'plain') : null) : null));
+      main.appendChild(h('div', { class: 'lab' }, fa.name, h('button', { class: 'link', type: 'button', onclick: function () { setArea(null); } }, 'Show all areas'), S.canAct ? h('span', {}, B('Rename', function () { renaming = areaFilter; render(); var x = $('rename-area'); if (x) x.focus(); }, 'plain'), !openHere ? B('Remove', function () { page('/api/areas/remove', { id: areaFilter }).then(function () { areaFilter = null; }); }, 'plain') : null) : null));
       if (renaming === areaFilter) {
         var rn = h('input', { id: 'rename-area', maxlength: '60', 'aria-label': 'New name' }); rn.value = fa.name;
         main.appendChild(h('form', { class: 'inline', onsubmit: function (e) { e.preventDefault(); page('/api/areas/rename', { id: areaFilter, name: rn.value }).then(function () { renaming = null; }); } }, rn, h('button', { class: 'btn', type: 'submit', text: 'Save' }), B('Cancel', function () { renaming = null; render(); }, 'gh')));
-      }
-      var rest = S.lights.filter(function (l) { return l.area === areaFilter && (l.state === 'approved' || l.state === 'waiting_them' || l.state === 'auto' || l.state === 'queued' || l.snoozed); });
-      if (rest.length) {
-        main.appendChild(h('div', { class: 'lab' }, 'Moving without you in ' + area(areaFilter).name));
-        var list = h('div', { class: 'list' });
-        rest.forEach(function (l) {
-          var tag = l.snoozed ? h('span', { class: 'tag', text: 'Snoozed, back ' + when(l.snoozeUntil) }) : l.state === 'approved' ? h('span', { class: 'tag warn', text: 'Approved, not yet sent' })
-            : l.state === 'waiting_them' ? h('span', { class: 'tag b', text: l.followUpAt ? 'Follow-up comes due ' + when(l.followUpAt) : 'Waiting on them' })
-            : l.state === 'auto' ? h('span', { class: 'tag' + (l.late ? ' warn' : ''), text: l.late ? 'Gone quiet: no word since it was due' : 'Running' }) : h('span', { class: 'tag', text: 'Queued' });
-          var chase = l.state === 'waiting_them' && !l.snoozed ? h('span', { class: 'btns' }, B('They replied', function () { act(l, 'replied'); }, 'plain'), l.followUpAt ? B('Stop following up', function () { act(l, 'stop_followups'); }, 'plain') : null)
-            : l.snoozed ? h('span', { class: 'btns' }, B('Bring it back now', function () { act(l, 'wake'); }, 'plain'))
-            : l.canTakeBack ? h('span', { class: 'btns' }, B('Undo', function () { takeBack(l.id); }, 'plain'))
-            : l.late || l.state === 'queued' ? h('span', { class: 'btns' }, B(l.late ? 'Dismiss' : 'Cancel it', function () { act(l, 'drop'); }, 'plain')) : null;
-          list.appendChild(h('div', { class: 'li' }, h('i', { class: 'lt ' + (l.snoozed ? '' : l.state === 'approved' ? 'a' : l.state === 'waiting_them' ? 'b' : l.state === 'auto' ? (l.late ? 'late' : 'g') : '') }),
-            h('p', {}, l.title + (l.batch > 1 ? ' (' + l.batch + ')' : ''), l.value ? h('span', { class: 'tg val', text: '$' + l.value.toLocaleString() }) : null, l.note ? h('small', { text: l.note }) : null),
-            l.state === 'auto' && l.progress != null ? h('span', { class: 'bar' }, h('i', { style: 'width:' + l.progress + '%' })) : null, tag, chase));
-        });
-        main.appendChild(list);
       }
     }
     if (hist.open) {
@@ -912,8 +1158,10 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     var foot = $('foot'); foot.textContent = '';
     if (S.connect && !S.connected) foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { connectOpen = !connectOpen; render(); if (connectOpen) window.scrollTo(0, document.body.scrollHeight); } }, 'Connect an assistant'));
     foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { autoOpen = !autoOpen; render(); if (autoOpen) window.scrollTo(0, document.body.scrollHeight); } }, 'Your rules' + (S.autonomy.rules.length ? ' (' + S.autonomy.rules.length + ')' : '')));
+    if (S.bannersSetUp && S.canAct) foot.appendChild(h('button', { class: 'link', type: 'button', title: 'A banner on this computer when something new needs you', onclick: function () { page('/api/settings', { banners: !S.banners }); } }, 'Banners on this computer: ' + (S.banners ? 'on' : 'off')));
+    if (S.textsSetUp && S.canAct) foot.appendChild(h('button', { class: 'link', type: 'button', title: 'Texts to your own phone when something new needs you', onclick: function () { page('/api/settings', { texts: !S.texts }); } }, 'Texts to your phone: ' + (S.texts ? 'on' : 'off')));
     foot.appendChild(h('button', { class: 'link', type: 'button', onclick: function () { hist.open = !hist.open; if (hist.open) loadHist(); else render(); } }, hist.open ? 'Hide past decisions' : 'Past decisions'));
-    foot.appendChild(h('span', { class: 'keys', text: '1–9 pick a container · 0 everything · ← → next container · ↑ ↓ move · Space open · Enter does the gold button · E change · S snooze · Z undo · R one at a time' }));
+    foot.appendChild(h('span', { class: 'keys', text: '2 / 0 / F start a pass · Y yes · N no · E edit · S snooze · → skip · Z undo · ← → areas (in a pass, → skips) · ↑ ↓ move · Space open' }));
     putFields(kept);
     if (editId && !$('edit-text')) { editId = null; editBase = null; } if (noteId && !$('note-text')) noteId = null; if (redoId && !$('redo-text')) redoId = null;
     // A box that has just opened takes the keyboard. One that was already there keeps whatever it had.
@@ -935,49 +1183,88 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   }
   function loadHist() { api('GET', '/api/history?q=' + encodeURIComponent(hist.q)).then(function (d) { hist.items = d.items; render(); }); }
 
-  /* ---------- rapid mode ---------- */
+  /* ---------- rapid mode: a pass ---------- */
   function rapidCur() { var ls = rapidList(); for (var i = 0; i < ls.length; i++) if (ls[i].id === rapidPin) return ls[i]; return ls[0]; }
-  function rapidList() { var ls = S.queue.map(light).filter(function (l) { return l && !pendingNew[l.id] && !skipped[l.id] && (!areaFilter || l.area === areaFilter); }); return ls.filter(function (l) { return !l.chore; }).concat(ls.filter(function (l) { return l.chore; })); }
-  function startRapid() { try { history.pushState({ sb: 'rapid' }, ''); } catch (e) {} rapid = true; skipped = {}; rapidPin = null; startRapid.total = rapidList().length; editId = null; noteId = null; snoozeId = null; render(); }
-  function stopRapid() { if (history.state && history.state.sb === 'rapid') { ignorePop = true; history.back(); } rapid = false; editId = null; noteId = null; snoozeId = null; render(); }
+  // The order of a pass: broken, due, people and money, then the safe answers as one card, the read-first ones as one card,
+  // then what needs you one at a time, then the rest. A timed pass is cut to what fits; Focus keeps everything, chores last.
+  function rapidList() {
+    var lane = laneOf(), early = [], safe = [], read = [], high = [], rest = [], chores = [];
+    S.queue.map(light).forEach(function (l) {
+      if (!l || pendingNew[l.id] || (areaFilter && l.area !== areaFilter) || (fit && fitIds.indexOf(l.id) < 0)) return;
+      var k = l.tier > 0 ? lane[l.id] : null;
+      if (l.tier <= 1) early.push(l); else if (k === 'safe') safe.push(l); else if (k === 'read') read.push(l); else if (k === 'high') high.push(l); else if (l.chore) chores.push(l); else rest.push(l);
+    });
+    var grp = function (kind, g) { return g.length >= 2 ? [{ id: 'g:' + kind, group: kind, lights: g }] : g; };
+    return early.concat(grp('safe', safe), grp('read', read), high, rest, chores).filter(function (x) { return !skipped[x.id]; });
+  }
+  function startRapid() { if (!rapid) { try { history.pushState({ sb: 'rapid' }, ''); } catch (e) {} } if (!pass) pass = { min: 0, at: Date.now(), done: [], last: null }; rapid = true; skipped = {}; rapidPin = null; startRapid.total = rapidList().length; editId = null; noteId = null; snoozeId = null; render(); }
+  function stopRapid() { if (history.state && history.state.sb === 'rapid') { ignorePop = true; history.back(); } rapid = false; pass = null; fit = null; fitIds = []; editId = null; noteId = null; snoozeId = null; render(); }
+  // The end of a pass: what was answered and how fast, who can move now, what can still be taken back, and what is next.
+  function finishCard() {
+    var ids = pass.done.map(function (x) { return x.id; }), took = Math.round((Date.now() - pass.at) / 1000), who = uniq(pass.done.map(function (x) { return x.who; })).length;
+    var back = S.held.filter(function (x) { return ids.indexOf(x.id) >= 0; });
+    var next = S.queue.map(light).filter(function (x) { return x && ids.indexOf(x.id) < 0 && (!areaFilter || x.area === areaFilter); })[0];
+    var line = ids.length + ' answered in ' + Math.floor(took / 60) + ':' + ('0' + took % 60).slice(-2) + (who ? ' \u00b7 ' + who + (who === 1 ? ' assistant can move' : ' assistants can move') : '') + (back.length ? ' \u00b7 ' + back.length + ' can still be taken back' : '');
+    var again = pass.min || 10;
+    return h('div', { class: 'rcard finish' }, h('h2', { text: ids.length ? 'Pass done' : (S.queue.length ? 'Nothing more in this pass' : 'Nothing waiting right now') }), h('p', { class: 'say', text: line }),
+      next ? h('p', { class: 'say' }, h('b', { text: 'Next up: ' }), next.title) : h('p', { class: 'say', text: 'Nothing else is waiting on you.' }),
+      h('div', { class: 'btns' }, back.length ? B('Take one back', function () { takeBack(back[0].id); }, 'plain') : null, S.queue.length ? B('Another ' + again + ' min', function () { startPass(again); }) : null, B('Back to board', stopRapid, 'plain', 'Esc')));
+  }
   function renderRapid() {
-    var el = $('rapid'), ls = rapidList(), l = rapidCur(), skippedN = Object.keys(skipped).filter(function (id) { return S.queue.indexOf(id) >= 0; }).length;
+    var el = $('rapid'), ls = rapidList(), l = rapidCur(), skippedN = Object.keys(skipped).filter(function (id) { return S.queue.indexOf(id) >= 0 || /^g:/.test(id); }).length;
+    // When the clock runs out, the card on screen is finished first; then the finish card.
+    if (pass && pass.min && fitLeft() <= 0 && l) { if (!pass.last) pass.last = rapidPin || l.id; if (l.id !== pass.last) l = null; }
     var total = Math.max(startRapid.total || 0, ls.length + skippedN), done = Math.max(0, total - ls.length - skippedN);
     if (l && rapidPin !== l.id) { rapidPin = l.id; posAt[l.id] = Date.now(); }
     var kept = keepFields(el);
     document.querySelector('.wrap').inert = true;
     el.hidden = false; el.textContent = '';
     var wrap = h('div', { class: 'rwrap' });
-    wrap.appendChild(h('div', { class: 'rtop' }, h('span', { text: l ? 'One at a time · ' + ls.length + ' left' + (skippedN ? ' · ' + skippedN + ' skipped' : '') : 'Quick ones' }), B('Close', stopRapid, 'plain', 'Esc')));
+    var top = pass && pass.min ? h('span', {}, pass.min + ' min \u00b7 ', h('span', { class: 'clock', id: 'clock', text: clock() }), l ? ' \u00b7 ' + Math.min(done + 1, total) + ' of ~' + total : '')
+      : h('span', { text: l ? 'Focus \u00b7 ' + ls.length + ' left' + (skippedN ? ' \u00b7 ' + skippedN + ' skipped' : '') : 'Focus' });
+    wrap.appendChild(h('div', { class: 'rtop' }, top, B('Close', stopRapid, 'plain', 'Esc')));
     var pr = h('div', { class: 'prog' });
     if (total <= 40) for (var i = 0; i < total; i++) pr.appendChild(h('i', { class: i < done ? 'on' : '' }));
     else pr.appendChild(h('i', { class: 'on', style: 'flex:none;width:' + Math.round(100 * done / total) + '%' }));
     wrap.appendChild(pr);
     if (!l) {
-      var longer = S.queue.length;
-      wrap.appendChild(h('div', { class: 'calm' }, h('b', { text: done || skippedN ? 'That was everything' : 'Nothing waiting right now' }), (done || skippedN ? 'Decided ' + done + (skippedN ? ', skipped ' + skippedN : '') + '. ' : '') + (longer ? longer + (longer === 1 ? ' is' : ' are') + ' still on the board.' : '') || 'Nothing else needs you.'));
+      if (pass) wrap.appendChild(finishCard());
+      else wrap.appendChild(h('div', { class: 'calm' }, h('b', { text: 'Nothing waiting right now' }), 'Nothing else needs you.'));
+    } else if (l.group) {
+      // The safe answers (or the read-first ones) are one card: each line is listed with the answer it gets.
+      sel = l.id; if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
+      wrap.appendChild(h('div', { class: 'rcard', id: 'card-' + l.id }, h('div', {}, h('span', { class: 'stk ' + l.group, text: l.group === 'safe' ? 'SAFE TO TAKE TOGETHER' : 'READ FIRST' })),
+        h('h2', { text: l.lights.length + ' answers your assistants recommend' }), laneBox(l.group, l.lights)));
+      wrap.appendChild(h('div', { class: 'rtop' }, h('span', { class: 'keys', text: 'Enter takes the ticked ones \u00b7 → skip' }), B('Skip', function () { skipped[l.id] = 1; render(); }, 'plain', '→')));
     } else {
       var a = area(l.area);
       sel = l.id; if (sel !== lastSel) { lastSel = sel; selAt = Date.now(); }
-      var card = h('div', { class: 'rcard' + (l.state === 'broken' ? ' red' : ''), id: 'card-' + l.id }, h('div', {}, h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }), tags(l)), h('h2', { text: l.title }));
+      var card = h('div', { class: 'rcard' + (l.state === 'broken' ? ' red' : ''), id: 'card-' + l.id }, h('div', {}, l.stakes === 'high' ? h('span', { class: 'stk', text: l.stakesWhy || 'CAREFUL' }) : null, ' ', h('span', { class: 'chip', style: 'background:' + a.color, text: a.name }), tags(l)), h('h2', { text: l.title }));
+      if (l.stakes === 'high' && l.state === 'need_you' && l.kind !== 'todo') card.appendChild(h('span', { class: 'impact' + (l.impact ? '' : ' none'), text: l.impact ? 'Impact: ' + l.impact : 'No impact line from the assistant' }));
       var d = details(l, true); if (d) card.appendChild(d);
       if (l.next) card.appendChild(h('span', { class: 'next', style: 'color:#8FB4DF;font-weight:600;font-size:13px', text: 'After: ' + l.next }));
       card.appendChild(buttons(l, true));
       if (snoozeId === l.id) card.appendChild(snoozeMenu(l));
       wrap.appendChild(card);
-      wrap.appendChild(h('div', { class: 'rtop' }, h('span', { class: 'keys', text: 'Enter does the gold button · E change · S snooze · Z undo' }), B('Skip', function () { skipped[l.id] = 1; render(); }, 'plain', '→')));
+      wrap.appendChild(h('div', { class: 'rtop' }, h('span', { class: 'keys', text: 'Y yes \u00b7 N no \u00b7 E change \u00b7 S snooze \u00b7 Z undo' }), B('Skip', function () { skipped[l.id] = 1; render(); }, 'plain', '→')));
     }
     var rs = heldStrip(); if (rs) wrap.appendChild(rs);
     el.appendChild(wrap);
     putFields(kept);
     ['note-text', 'redo-text', 'edit-text'].forEach(function (id) { var on = id === 'note-text' ? noteId : id === 'redo-text' ? redoId : editId; if (on && $(id) && !kept[id]) $(id).focus(); });
   }
+  // On a phone, swiping left skips the card. Nothing is ever accepted by a swipe.
+  (function () {
+    var t0 = null, r = $('rapid');
+    r.addEventListener('touchstart', function (e) { var t = e.touches[0]; t0 = /INPUT|TEXTAREA/.test(e.target.tagName) ? null : { x: t.clientX, y: t.clientY }; }, { passive: true });
+    r.addEventListener('touchend', function (e) { if (!t0 || !rapid) return; var t = e.changedTouches[0], dx = t.clientX - t0.x, dy = t.clientY - t0.y; t0 = null; if (dx < -80 && Math.abs(dy) < 60) { var l = rapidCur(); if (l) { skipped[l.id] = 1; render(); } } }, { passive: true });
+  })();
 
   /* ---------- the bar ---------- */
   $('dump').addEventListener('submit', function (e) {
     e.preventDefault(); var t = $('dump-text'), text = t.value.trim(); if (!text) return;
     var m = text.match(/^(?:i(?:'ve| have)(?: got)? |got |only )?(?:about )?(\d{1,3}|an?|half an?|one|two|three|five|ten|fifteen|twenty|thirty|forty|forty-five|fifty)\s*(m|min|mins|minutes?|h|hr|hrs|hours?)(?:\s+(?:free|left|now|spare|to spare|(?:before|until|till) .{1,40}))?\.?$/i);
-    if (m) { var words = { a: 1, an: 1, one: 1, two: 2, three: 3, five: 5, ten: 10, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'forty-five': 45, fifty: 50 }, q = /^half/i.test(m[1]) ? 0.5 : words[m[1].toLowerCase()] || +m[1]; fit = Math.max(1, Math.round(q * (/^h/i.test(m[2]) ? 60 : 1))); fitAt = Date.now(); fitIds = []; areaFilter = null; filter = 'all'; t.value = ''; t.blur(); load(true); return; }
+    if (m) { var words = { a: 1, an: 1, one: 1, two: 2, three: 3, five: 5, ten: 10, fifteen: 15, twenty: 20, thirty: 30, forty: 40, 'forty-five': 45, fifty: 50 }, q = /^half/i.test(m[1]) ? 0.5 : words[m[1].toLowerCase()] || +m[1]; areaFilter = null; filter = 'all'; t.value = ''; t.blur(); startPass(Math.max(1, Math.round(q * (/^h/i.test(m[2]) ? 60 : 1)))); return; }
     if (text[0] === '?') { hist.open = true; hist.q = text.slice(1).trim(); t.value = ''; api('GET', '/api/history?q=' + encodeURIComponent(hist.q)).then(function (d) { hist.items = d.items; if (!d.items.length) toast('Nothing you decided matches \u201c' + hist.q + '\u201d. (A line starting with ? searches; it is not filed.)'); render(); }); return; }
     api('POST', '/api/dump', { text: text }).then(function (d) {
       t.value = ''; return load(true).then(function () {
@@ -1015,11 +1302,12 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (pend && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey && !/INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); e.stopImmediatePropagation(); typed(e.key); }
   }, true);
   var ignorePop = false;
-  window.addEventListener('popstate', function () { if (ignorePop) { ignorePop = false; return; } if (rapid) { rapid = false; editId = null; noteId = null; snoozeId = null; render(); } else if (areaFilter) { areaFilter = null; render(); } });
+  window.addEventListener('popstate', function () { if (ignorePop) { ignorePop = false; return; } if (rapid) { rapid = false; pass = null; fit = null; fitIds = []; editId = null; noteId = null; snoozeId = null; render(); } else if (areaFilter) { areaFilter = null; render(); } });
   function follow() { var el = sel && document.getElementById('row-' + sel); if (el) el.scrollIntoView({ block: 'nearest' }); }
   document.addEventListener('keydown', function (e) {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (rapid) stopRapid(); $('dump-text').focus(); return; }
-    var tag = (document.activeElement && document.activeElement.tagName) || '', typing = /INPUT|TEXTAREA|SELECT/.test(tag);
+    // A checkbox is not typing: after ticking a line, Enter, Y, 2/0/F and the arrows still work.
+    var tag = (document.activeElement && document.activeElement.tagName) || '', typing = /INPUT|TEXTAREA|SELECT/.test(tag) && document.activeElement.type !== 'checkbox';
     if (e.key === 'Escape') { if (typing) { var was = document.activeElement.id; document.activeElement.blur(); if (was === 'edit-text') { editId = null; editBase = null; } if (was === 'note-text') noteId = null; if (was === 'redo-text') redoId = null; if (was !== 'dump-text') render(); } else if (rapid) stopRapid(); else { editId = null; noteId = null; snoozeId = null; fit = null; render(); } return; }
     if (typing || e.metaKey || e.ctrlKey || e.altKey || !S) return;
     var k = e.key.toLowerCase(), nav = /^Arrow/.test(e.key) || k === 'j' || k === 'k';
@@ -1027,7 +1315,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     if (e.repeat && !nav) { e.preventDefault(); return; }
     var settled = Date.now() - selAt >= 400;
     // A key that decides something (Enter, S, E) only works once the person has touched this tab, and only on a row they can see.
-    var deciding = e.key === 'Enter' || k === 's' || k === 'e';
+    var deciding = e.key === 'Enter' || k === 's' || k === 'e' || k === 'y' || k === 'n';
     var onControl = /^(BUTTON|A|SUMMARY|DETAILS|LABEL|SELECT)$/.test(tag) || (document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('tabindex') != null);
     if ((e.key === 'Enter' || e.key === ' ') && onControl) return; // the browser's own meaning wins: Enter opens a toggle or presses that button
     if (deciding && !rapid) {
@@ -1040,26 +1328,38 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     var its = rapid ? [] : visible().keys, i = its.map(function (x) { return x.key; }).indexOf(sel), it = rapid ? null : its[i], l = rapid ? rapidCur() : it && it.light;
     if (rapid) {
       if (e.key === 'ArrowRight' && l) { e.preventDefault(); skipped[l.id] = 1; render(); return; }
+      // The safe (or read-first) card: Enter or Y takes the ticked ones. Nothing else on it has a key.
+      if (l && l.group) {
+        if ((e.key === 'Enter' || k === 'y') && tag !== 'BUTTON') { e.preventDefault(); var ch = l.lights.filter(function (x) { return picked[x.id] !== false; }); if (settled && ch.length) bulkAct(ch, 'recommended'); }
+        return;
+      }
     } else {
-      if (k === 'r') { e.preventDefault(); later(e.key, startRapid); return; }
-      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); if (e.key === '0') { areaFilter = null; filter = 'all'; fit = null; render(); } else if (S.areas[+e.key - 1]) switchTo(S.areas[+e.key - 1].id); return; }
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var ids = [null].concat(S.areas.map(function (a) { return a.id; })), at = ids.indexOf(areaFilter); areaFilter = ids[(at + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]; fit = null; sel = null; openId = null; render(); return; }
+      // 2, 0 and F start a pass (2 minutes, 10 minutes, Focus); R is Focus too.
+      if (e.key === '2' || e.key === '0') { e.preventDefault(); startPass(e.key === '2' ? 2 : 10); return; }
+      if (k === 'f' || k === 'r') { e.preventDefault(); later(e.key, function () { startPass(0); }); return; }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); var ids = [null].concat(S.areas.filter(function (a) { return a.waiting || a.broken; }).map(function (a) { return a.id; })), at = Math.max(0, ids.indexOf(areaFilter)); setArea(ids[(at + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length]); return; }
       if (e.key === 'ArrowDown' || k === 'j') { e.preventDefault(); if (its.length) { sel = its[Math.min(i + 1, its.length - 1)].key; snoozeId = null; render(); follow(); } return; }
       if (e.key === 'ArrowUp' || k === 'k') { e.preventDefault(); if (its.length) { sel = its[Math.max(i - 1, 0)].key; snoozeId = null; render(); follow(); } return; }
       if (it && !it.light) {
         if (e.key === 'Enter' && tag !== 'BUTTON') { e.preventDefault(); if (settled) bulkAct(it.lights, 'approve'); }
         return;
       }
-      if (l && e.key === ' ' && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); openId = openId === l.id ? null : l.id; render(); return; }
+      if (l && e.key === ' ' && tag !== 'BUTTON' && tag !== 'A' && tag !== 'INPUT') { e.preventDefault(); openId = openId === l.id ? null : l.id; render(); return; }
     }
     if (!l) return;
-    if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') {
-      var p = primary(l); if (!p) return; e.preventDefault(); if (!settled) return;
+    // Enter and Y do the gold button: the recommended answer when there is one. N does the other one.
+    var yes = function () {
+      var p = primary(l); if (!p || !settled) return;
       // In the list, the first Enter on a message to a person opens it. The second one sends it.
       if (l.firstTime) { if (!rapid && openId !== l.id) { openId = l.id; render(); } toast('First time writing to them: use the button, not Enter.'); return; }
       if (!rapid && l.kind === 'approve' && (l.outbound || (l.draft || '').length > 120) && openId !== l.id) { openId = l.id; selAt = Date.now(); render(); return; }
+      var nd = rapid ? null : visible().need;
+      if (!rapid && careful(l) && openId !== l.id && !(nd && nd.id === l.id)) { openId = l.id; selAt = Date.now(); render(); toast('High stakes: read it, then press again.'); return; }
       p();
-    }
+    };
+    if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A') { if (!primary(l)) return; e.preventDefault(); yes(); }
+    else if (k === 'y' && primary(l)) { e.preventDefault(); later(e.key, yes); }
+    else if (k === 'n' && secondary(l)) { e.preventDefault(); later(e.key, function () { var q = secondary(l); if (q && Date.now() - selAt >= 400) q(); }); }
     else if (k === 'e' && l.kind === 'approve' && l.draft) { e.preventDefault(); later(e.key, function () { editId = l.id; editBase = l.draft; openId = l.id; render(); }); }
     else if (k === 's' && !l.spot) { e.preventDefault(); later(e.key, function () { if (l.snoozes >= 2) { snoozeId = l.id; render(); } else act(l, 'snooze', { until: snoozeChoices().filter(function (c) { return /Tomorrow|This morning/.test(c[0]); })[0][1] }); }); }
   });
@@ -1082,6 +1382,10 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   if (!lead()) live(!document.hidden);
   function showPending() { Object.keys(pendingNew).forEach(function (id) { seenAt[id] = Date.now(); }); pendingNew = {}; render(); }
   setInterval(function () { if (Object.keys(pendingNew).length && Date.now() - lastInput >= 45000 && !typing()) showPending(); }, 5000);
+  setInterval(function () { var ck = $('clock'); if (ck && rapid && fit) ck.textContent = clock(); }, 1000);
+  // Crossing 1000 px wide switches between one column and two.
+  var wasWide = window.matchMedia && window.matchMedia('(min-width: 1000px)').matches;
+  window.addEventListener('resize', function () { var w = window.matchMedia && window.matchMedia('(min-width: 1000px)').matches; if (w !== wasWide) { wasWide = w; render(); } });
   setInterval(function () { var c = document.querySelectorAll('.cd'); for (var i = 0; i < c.length; i++) { var left2 = Math.max(0, Math.round((+c[i].getAttribute('data-until') - Date.now()) / 1000)); c[i].textContent = left2 ? ' · ' + left2 + ' sec to undo' : ' · with your assistant now'; } }, 1000);
   setInterval(function () { if (!document.hidden && !typing()) load(); }, 60000);
   load();

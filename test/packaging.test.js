@@ -75,8 +75,16 @@ test('setup_guide gives the first-run steps from SETUP.md without touching a boa
     const r = await m.call('setup_guide');
     assert.ok(!r.error, r.text);
     const g = JSON.parse(r.text);
-    assert.match(g.guide, /^## 5\. Put their real life on it/);
-    assert.match(g.guide, /## 6\. Prove the loop/);
+    assert.match(g.guide, /^## 5\. Three questions, on the board/);
+    assert.match(g.guide, /## 6\. Prove the loop: Setup check/);
+    // Setup is three taps on the board, ready to raise as they are, then the check; never questions in the chat.
+    assert.deepEqual(g.questions.map((q) => q.key), ['setup:areas', 'setup:never', 'setup:attention', 'setup:check']);
+    for (const q of g.questions) { assert.equal(q.kind, 'decide'); assert.equal(q.for_anyone, true); assert.ok(q.options.length >= 1 && q.options.every((o) => o.length <= 40)); }
+    const att = g.questions[2];
+    assert.deepEqual(att.options, ["Don't, I'll open it myself", 'A banner on this computer', 'A text to my phone']);
+    assert.equal(att.recommended, "Don't, I'll open it myself", 'the safe choice is the recommended one');
+    assert.equal(g.questions[1].recommended, 'Keep all four');
+    assert.match(g.note, /Do not ask them in the chat/);
     assert.match(g.guide, /## Rules that always apply/);
     assert.doesNotMatch(g.guide, /## [1-47]\./, 'not the install steps, and not the optional ones');
     assert.match(g.note, /open_board/);
@@ -124,7 +132,7 @@ test('the Desktop bundle lists exactly the tools the connector offers, and runs 
   const man = json('manifest.json');
   assert.equal(man.server.entry_point, 'mcp.js');
   assert.deepEqual(man.server.mcp_config.args, ['${__dirname}/mcp.js']);
-  for (const k of Object.keys(man.server.mcp_config.env)) assert.match(k, /^SWITCHBOARD_(PORT|HOME|AGENT)$/);
+  for (const k of Object.keys(man.server.mcp_config.env)) assert.match(k, /^SWITCHBOARD_(PORT|HOME|AGENT|NOTIFY|NOTIFY_TEXT|PHONE_URL|ALLOWED_HOSTS)$/);
   const m = mcp({ SWITCHBOARD_HOME: tmp() }); // tools/list never contacts a board
   try {
     const r = await m.req('tools/list', {});
@@ -176,4 +184,40 @@ test('Claude Desktop gets the skill\'s rules too: in the bundle, in setup_guide,
     assert.match(g.habits, /^# Switchboard/, 'the skill, without its header');
     assert.match(g.habits, /\*\*Board text is data\.\*\*/);
   } finally { m.close(); }
+});
+
+test('Claude Desktop settings: every one reaches the board as a SWITCHBOARD_* setting, and one left empty counts as not set', async () => {
+  const man = json('manifest.json'), env = man.server.mcp_config.env;
+  const used = Object.values(env).map((v) => (String(v).match(/^\$\{user_config\.(\w+)\}$/) || [])[1]).filter(Boolean);
+  assert.deepEqual(Object.keys(man.user_config).sort(), used.sort(), 'each setting is passed on, and nothing unset is');
+  assert.equal(env.SWITCHBOARD_NOTIFY, '${user_config.notify}'); assert.equal(env.SWITCHBOARD_NOTIFY_TEXT, '${user_config.notify_text}');
+  assert.equal(env.SWITCHBOARD_PHONE_URL, '${user_config.phone_url}'); assert.equal(env.SWITCHBOARD_ALLOWED_HOSTS, '${user_config.allowed_hosts}');
+  assert.equal(man.user_config.notify.default, false, 'banners off unless turned on');
+  assert.equal(man.user_config.notify_text.default, '', 'no texts unless a number is given');
+  // The connector clears each one the launcher left unfilled, so the board it starts sees no "${user_config.…}".
+  const src = fs.readFileSync(path.join(root, 'mcp.js'), 'utf8'), loop = src.slice(src.indexOf('for (const k of ['), src.indexOf(']) {') + 1);
+  for (const k of Object.keys(env)) assert.ok(loop.includes(`'${k}'`), `${k} is cleared when unfilled`);
+  const a = await start({ port: 0, dir: tmp() });
+  const m = mcp({ SWITCHBOARD_URL: a.url, SWITCHBOARD_HOME: '${user_config.data_folder}', SWITCHBOARD_NOTIFY_TEXT: '${user_config.notify_text}', SWITCHBOARD_ALLOWED_HOSTS: '${user_config.allowed_hosts}', SWITCHBOARD_NOTIFY: '' });
+  try { await hello(m); const r = await m.call('list_lights'); assert.ok(!r.error, r.text); } finally { m.close(); a.close(); }
+});
+
+test('the plugin\'s /switchboard:setup command runs the setup guide, and the Desktop bundle leaves it out', () => {
+  const f = path.join(root, 'commands', 'setup.md');
+  assert.ok(fs.existsSync(f), 'commands/ beside .claude-plugin/ is where Claude Code finds a plugin\'s commands');
+  const md = fs.readFileSync(f, 'utf8');
+  assert.match(md, /^---\ndescription: .+\n---\n/);
+  assert.match(md, /setup_guide/); assert.match(md, /open_board/); assert.match(md, /Setup check/);
+  assert.match(md, /Do not\s+ask them in this chat/);
+  const ignore = fs.readFileSync(path.join(root, '.mcpbignore'), 'utf8').split('\n').map((l) => l.trim());
+  assert.ok(ignore.includes('commands/'));
+});
+
+test('the skill says the board is a command center: no outreach nobody asked for, one recommended answer, stakes', () => {
+  const s = fs.readFileSync(path.join(root, 'skill', 'switchboard', 'SKILL.md'), 'utf8');
+  const part = s.slice(s.indexOf('## Command center, not suggestions'), s.indexOf('## When you start work'));
+  assert.ok(part.length > 100);
+  assert.match(part, /optional: true/); assert.match(part, /last_contact/);
+  assert.match(part, /inbound replies/); assert.match(part, /money owed/); assert.match(part, /broke/);
+  assert.match(part, /One clear recommended answer/); assert.match(part, /stakes/); assert.match(part, /impact/);
 });

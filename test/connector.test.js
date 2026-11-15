@@ -140,3 +140,65 @@ test('open_board says so when the browser did not open, and offers a way that ne
     if (process.platform !== 'win32') assert.equal(fs.statSync(file).mode & 0o777, 0o600, 'only the person can read it');
   } finally { m.close(); a.close(); }
 });
+
+// A session started outside any repository (the home folder) must name its project before it asks the person anything.
+function mcpIn(cwd, env) {
+  const c = spawn(process.execPath, [path.join(root, 'mcp.js')], { cwd, env: childEnv(env), stdio: ['pipe', 'pipe', 'pipe'] });
+  let buf = '', id = 0; const waiting = new Map();
+  c.stdout.on('data', (d) => { buf += d; let n; while ((n = buf.indexOf('\n')) >= 0) { const m = JSON.parse(buf.slice(0, n)); buf = buf.slice(n + 1); if (waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); } } });
+  const req = (method, params) => new Promise((ok) => { const i = ++id; waiting.set(i, ok); c.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: i, method, params }) + '\n'); });
+  const call = async (name, args) => { const r = (await req('tools/call', { name, arguments: args || {} })).result; return { error: !!r.isError, text: r.content[0].text }; };
+  return { call, hello: () => req('initialize', { protocolVersion: '2025-06-18', clientInfo: { name: 't' } }), close: () => c.kill() };
+}
+
+test('a session outside any repository must pass project to ask the person; other lights only get a warning', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir }), port = new URL(a.url).port, loose = tmp();
+  const m = mcpIn(loose, { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port, HOME: loose, USERPROFILE: loose }); // started in the home folder
+  try {
+    await m.hello();
+    for (const ask of [{ kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes' }, { kind: 'approve', draft: 'Go' }, {}, { kind: 'todo', outbound: true, to: 'Dale' }]) {
+      const r = await m.call('raise_light', Object.assign({ area: 'Shop', title: 'Ship it?' }, ask));
+      assert.ok(r.error, r.text); assert.match(r.text, /started outside a repository and names no project.*Pass project/);
+    }
+    // Setup's questions are for any session to collect, so they need no project.
+    const setup = await m.call('raise_light', { title: 'How should it get your attention?', kind: 'decide', key: 'setup:attention', options: ['Don\'t, I\'ll open it myself', 'A banner on this computer'], recommended: 'Don\'t, I\'ll open it myself', for_anyone: true });
+    assert.ok(!setup.error, setup.text); assert.doesNotMatch(setup.text, /names no project/);
+    const todo = await m.call('raise_light', { area: 'Shop', title: 'Order boxes', kind: 'todo' });
+    assert.ok(!todo.error, todo.text); assert.match(JSON.parse(todo.text).warnings.join(' '), /names no project; pass project/);
+    const job = await m.call('raise_light', { area: 'Shop', title: 'Nightly check', state: 'auto' });
+    assert.ok(!job.error, job.text);
+    const named = await m.call('raise_light', { area: 'Shop', title: 'Ship it?', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes', project: 'around-lex' });
+    assert.ok(!named.error, named.text); assert.equal(JSON.parse(named.text).agent, 't:around-lex');
+    // Once named, the project stays for the rest of the session.
+    const later = await m.call('raise_light', { area: 'Shop', title: 'Send it?', kind: 'approve', draft: 'Hi' });
+    assert.ok(!later.error, later.text);
+  } catch (e) { a.close(); throw e; } finally { m.close(); }
+  // A plain project folder that is not a git repository is not "outside": its name is the project.
+  const plain = mcpIn(tmp(), { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port });
+  try {
+    await plain.hello();
+    const r = await plain.call('raise_light', { area: 'Shop', title: 'Approve the quote?', kind: 'approve', draft: 'Hi' });
+    assert.ok(!r.error, r.text);
+  } finally { plain.close(); a.close(); }
+  // A fixed name (Claude Desktop) and a session inside a repository are never asked for one.
+  const b = await start({ port: 0, dir: tmp() }), bport = new URL(b.url).port;
+  const fixed = mcpIn(tmp(), { SWITCHBOARD_HOME: path.dirname(b.store.file), SWITCHBOARD_PORT: bport, SWITCHBOARD_AGENT: 'desktop' }), inRepo = mcpIn(root, { SWITCHBOARD_HOME: path.dirname(b.store.file), SWITCHBOARD_PORT: bport });
+  try {
+    await fixed.hello(); await inRepo.hello();
+    for (const s of [fixed, inRepo]) { const r = await s.call('raise_light', { area: 'Shop', title: 'Go?', kind: 'decide', options: ['Yes', 'No'], recommended: 'Yes' }); assert.ok(!r.error, r.text); }
+  } finally { fixed.close(); inRepo.close(); b.close(); }
+});
+
+test('a message to a customer raised for_anyone, or with no name, is refused with a clear message', async () => {
+  const dir = tmp(), a = await start({ port: 0, dir }), port = new URL(a.url).port;
+  const m = mcpIn(root, { SWITCHBOARD_HOME: dir, SWITCHBOARD_PORT: port });
+  try {
+    await m.hello();
+    const r = await m.call('raise_light', { area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi Dale', outbound: true, to: 'Dale', for_anyone: true });
+    assert.ok(r.error, r.text); assert.match(r.text, /A message to a customer needs one owner.*without for_anyone/);
+    const res = await fetch(a.url + '/api/lights', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi', phone: '+18595550142' }) });
+    assert.equal(res.status, 400); assert.match((await res.json()).error, /needs one owner/);
+    const mine = await m.call('raise_light', { area: 'Shop', title: 'Reply to Dale', kind: 'approve', draft: 'Hi Dale', outbound: true, to: 'Dale' });
+    assert.ok(!mine.error, mine.text); assert.ok(JSON.parse(mine.text).agent);
+  } finally { m.close(); a.close(); }
+});

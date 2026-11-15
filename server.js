@@ -50,14 +50,32 @@ async function start(opts = {}) {
   const clients = new Set();
   // Banners when something new needs the person: off unless asked for (opts.notify in tests, SWITCHBOARD_NOTIFY=1 for a
   // count only, =titles to name what came in). Never in a simulation.
-  let notify = null;
+  let notify = null, textsSetUp = false, bannersSetUp = false, bannersAsked = false;
+  // Banners follow the page's switch once the person has used it (or answered setup's third question); until then,
+  // SWITCHBOARD_NOTIFY decides, as before.
+  const bannersOn = () => (typeof store.db.settings.banners === 'boolean' ? store.db.settings.banners : bannersAsked);
   if (!sim) {
     const N = require('./lib/notify');
     if (opts.notify !== undefined) { if (opts.notify) { const send = opts.notify.send || N.osSender(); if (send) notify = N.notifier({ send, titles: !!opts.notify.titles, quiet: opts.notify.quiet }); } }
     else {
       const env = N.sendersFromEnv(process.env);
       if (env.warning) console.error(env.warning);
-      if (env.senders.length) notify = N.notifier({ send: (t, b, n, ids) => { for (const f of env.senders) f(t, b, n, ids); }, titles: env.titles });
+      // A text goes out only while the person has texts switched on (the page's "Texts to your phone"), and a banner only
+      // while banners are on. A banner sender is ready on every Mac and Linux board, so the switch can turn it on later;
+      // it never runs while banners are off. (opts.banner stands in for the system's banner in tests.)
+      bannersAsked = env.senders.some((f) => !f.isText);
+      const banner = env.senders.find((f) => !f.isText) || opts.banner || N.osSender({ link: process.env.SWITCHBOARD_PHONE_URL || '' });
+      const senders = env.senders.filter((f) => f.isText).concat(banner ? [banner] : []);
+      bannersSetUp = !!banner;
+      if (senders.length) notify = N.notifier({ send: (t, b, n, ids) => { let went = false; for (const f of senders) if (f.isText ? store.db.settings.texts === true : bannersOn()) { f(t, b, n, ids); went = true; } return went; }, titles: env.titles, quiet: opts.quiet });
+      textsSetUp = env.senders.some((f) => f.isText);
+      // Texts go out only once switched on. A board from before that never set the switch has them off now: say so once.
+      if (textsSetUp && store.db.settings.texts == null) console.error('Texts to your phone are off until you switch them on at the bottom of the board.');
+      // The banners switch wins over SWITCHBOARD_NOTIFY, until SWITCHBOARD_NOTIFY itself changes (the Claude Desktop
+      // "Banners on this computer" toggle, say): then that newer choice wins, and the switch follows it.
+      const S = store.db.settings;
+      if (typeof S.notifyEnv === 'boolean' && S.notifyEnv !== bannersAsked && typeof S.banners === 'boolean') { delete S.banners; console.error(`Banners: SWITCHBOARD_NOTIFY changed, so banners are now ${bannersAsked ? 'on' : 'off'}.`); }
+      if (S.notifyEnv !== bannersAsked) { S.notifyEnv = bannersAsked; store.save(); }
     }
   }
   const ring = () => { if (notify) try { notify.check(store.view()); } catch (e) { console.error('notify failed:', e.message); } };
@@ -161,11 +179,11 @@ async function start(opts = {}) {
         res.writeHead(200, Object.assign({ 'content-type': 'text/html; charset=utf-8' }, SAFE));
         return fs.createReadStream(page).on('error', () => res.end('The page file is missing. Reinstall Switchboard.')).pipe(res);
       }
-      if (req.method === 'GET' && p === '/api/state') return json(res, 200, Object.assign(store.view(), { canAct: fromPage(req), connect: connectInfo() }, sim ? { sim: { current: sim.current, live: sim.live, scenarios: Object.keys(sim.list).map((k) => ({ name: k, title: sim.list[k].title, blurb: sim.list[k].blurb, live: !!(sim.list[k].live && sim.live) })) } } : {}));
+      if (req.method === 'GET' && p === '/api/state') return json(res, 200, Object.assign(store.view(), { canAct: fromPage(req), connect: connectInfo(), textsSetUp, bannersSetUp, banners: bannersOn() }, sim ? { sim: { current: sim.current, live: sim.live, scenarios: Object.keys(sim.list).map((k) => ({ name: k, title: sim.list[k].title, blurb: sim.list[k].blurb, live: !!(sim.list[k].live && sim.live) })) } } : {}));
       if (req.method === 'GET' && (p === '/api/decisions' || p === '/api/wait')) return json(res, 405, { error: 'Collecting decisions is a write. Send a JSON POST.' });
       // Counts only, collecting nothing: a relay looks here before it starts any work.
       if (req.method === 'GET' && p === '/api/pending') return json(res, 200, store.pending(Date.now(), { agent: url.searchParams.get('agent') || '', only: url.searchParams.get('only') === '1' }));
-      if (req.method === 'GET' && p === '/api/fit') return json(res, 200, store.fit(url.searchParams.get('minutes')));
+      if (req.method === 'GET' && p === '/api/fit') return json(res, 200, store.fit(url.searchParams.get('minutes'), undefined, url.searchParams.get('area') || ''));
       if (req.method === 'GET' && p === '/api/history') return json(res, 200, { items: store.history(url.searchParams.get('q') || '') });
       if (req.method === 'GET' && p === '/api/health') return json(res, 200, Object.assign({ ok: true, name: 'switchboard', lock: lockId }, local ? { data: store.file } : {}));
       if (req.method === 'GET' && p === '/api/events') {
@@ -220,7 +238,7 @@ async function start(opts = {}) {
       }
       let out;
       let m;
-      if (p === '/api/lights') out = store.raise(body);
+      if (p === '/api/lights') out = store.raise(body, Date.now(), { api: true });
       else if (p === '/api/complete') {
         if (typeof body.decision_id !== 'string' || !body.decision_id) return json(res, 400, { error: 'Send the decision_id you were handed, so the report lands on the right decision.' });
         out = store.complete(body.id, body.outcome, body.detail, Date.now(), body.decision_id);
@@ -239,7 +257,7 @@ async function start(opts = {}) {
       else if (p === '/api/ack') { out = { acknowledged: store.ack(Array.isArray(body.ids) ? body.ids : [], Date.now(), { agent: String(body.agent || ''), agents: body.agents }) }; if (store.warnings.length) out.warnings = store.warnings.slice(); }
       else if (p === '/api/promote') out = store.promote(body.key, body.yes !== false);
       else if (p === '/api/demote') { store.demote(String(body.key || '')); out = { ok: true }; }
-      else if (p === '/api/settings') out = store.setting('autonomy', body.autonomy);
+      else if (p === '/api/settings') out = 'texts' in body ? store.setting('texts', body.texts) : 'banners' in body ? store.setting('banners', body.banners) : store.setting('autonomy', body.autonomy);
       else if (p === '/api/learn') out = store.learn(body.area, body.why, body.yes !== false);
       else if (p === '/api/unlearn') out = store.unlearn(body.area, body.why);
       else if (p === '/api/reoffer') out = store.reoffer(body.key);

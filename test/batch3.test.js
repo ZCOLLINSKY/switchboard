@@ -18,10 +18,11 @@ test('3.1 (P11) the queue is ordered by meaning', () => {
   s.raise({ area: 'School', title: 'Problem set, due tonight', kind: 'todo', work_minutes: 90, due: T0 + 6 * H }, T0 - DAY);
   s.raise({ area: 'Shop', title: 'Quote, $8,900', draft: 'x', outbound: true, value: 8900 }, T0 - H);
   s.raise({ area: 'Shop', title: 'Deposit reminders did not send', state: 'broken', holds_up: '3 deposits, $2,900' }, T0 - 2 * H);
-  assert.deepEqual(titles(s, T0), ['Problem set, due tonight', 'Quote, $8,900', 'Renew the $12 domain?', 'Lead waiting 2 days', 'Deposit reminders did not send', 'Insurance renewal', 'Background refresh failed']);
+  // Broken jobs are pinned above everything, the one that holds something up first; then deadlines, money and people, the rest.
+  assert.deepEqual(titles(s, T0), ['Deposit reminders did not send', 'Background refresh failed', 'Problem set, due tonight', 'Quote, $8,900', 'Renew the $12 domain?', 'Lead waiting 2 days', 'Insurance renewal']);
   const v = s.view(T0);
-  assert.deepEqual(v.lights.filter((l) => l.keep).map((l) => l.title).sort(), ['Deposit reminders did not send', 'Problem set, due tonight']);
-  assert.equal(v.order.length, 5);
+  assert.deepEqual(v.lights.filter((l) => l.keep).map((l) => l.title).sort(), ['Background refresh failed', 'Deposit reminders did not send', 'Problem set, due tonight']);
+  assert.equal(v.order.length, 4);
   assert.match(v.order.join('; '), /broken/);
 });
 

@@ -190,9 +190,10 @@ test('data safety: a readable file that is not a board is refused; leftovers are
   fs.writeFileSync(path.join(dir, 'data.json'), '[1,2,3]');
   assert.throws(() => open(dir), /not a Switchboard board/);
   fs.writeFileSync(path.join(dir, 'data.json'), JSON.stringify({ lights: [], areas: [] }));
-  fs.writeFileSync(path.join(dir, 'data.json.123.tmp'), '{}');
+  // A pid above every system's limit, so no process can own it (a small number like 123 is a live process on CI).
+  fs.writeFileSync(path.join(dir, 'data.json.99999999.tmp'), '{}');
   const s = open(dir);
-  assert.equal(fs.existsSync(path.join(dir, 'data.json.123.tmp')), false);
+  assert.equal(fs.existsSync(path.join(dir, 'data.json.99999999.tmp')), false);
   const l = msg(s); s.act(l.id, 'approve', { rev: rev(l) }, T0); s.save();
   fs.appendFileSync(path.join(dir, 'events.jsonl'), '{broken\n');
   assert.equal(open(dir).history('').length, 1);

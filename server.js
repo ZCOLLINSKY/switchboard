@@ -5,7 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { open } = require('./lib/store');
+const { open, dirOf } = require('./lib/store');
 
 async function start(opts = {}) {
   const port = Number(opts.port != null ? opts.port : process.env.SWITCHBOARD_PORT || 4747);
@@ -19,7 +19,31 @@ async function start(opts = {}) {
   // be told apart from this computer: SETUP.md says so.
   const PROXY = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-real-ip', 'tailscale-user-login', 'tailscale-user-name', 'tailscale-user-profile-pic',
     'via', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-server', 'cf-connecting-ip', 'true-client-ip', 'x-client-ip', 'fastly-client-ip'];
-  const store = open(opts.dir, { holdMs: opts.holdMs, collectMs: opts.collectMs, sim: !!opts.sim });
+  // One writer per data folder. A second server would silently overwrite the first one's saves, so the lock comes first:
+  // nothing in the folder is read for writing, tidied or saved until this start owns it.
+  const dir = dirOf(opts.dir);
+  const lockFile = path.join(dir, 'server.lock');
+  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+  const lockId = require('crypto').randomBytes(6).toString('hex');
+  const locked = (held) => Object.assign(new Error(`Switchboard is already running on this data${held.url ? ' at ' + held.url : ''} (process ${held.pid}). Use that one, or stop it first. If nothing answers there, it is safe to delete ${lockFile}.`), { code: 'ELOCKED', url: held.url });
+  // A lock is believed only if its owner answers: a process number alone can belong to anything after a crash or a restart.
+  const answers = async (held) => {
+    if (!held.url) return alive(held.pid) && Date.now() - (held.at || 0) < 15000; // still starting up
+    try { const r = await fetch(held.url + '/api/health', { signal: AbortSignal.timeout(1500) }); const h = await r.json(); return h.lock === held.id; } catch (e) { return false; }
+  };
+  let held = null;
+  try { held = JSON.parse(fs.readFileSync(lockFile, 'utf8')); } catch (e) { if (e.code !== 'ENOENT' && !(e instanceof SyntaxError)) throw e; }
+  if (held && held.host === os.hostname() && alive(held.pid) && await answers(held)) throw locked(held);
+  // Take it in one step, so two starts at the same moment cannot both get through.
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  if (held || fs.existsSync(lockFile)) { try { fs.unlinkSync(lockFile); } catch (e) { /* someone else cleared it */ } }
+  try { fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, id: lockId, url: '', live: true, host: os.hostname(), at: Date.now() }), { mode: 0o600, flag: 'wx' }); }
+  catch (e) { if (e.code === 'EEXIST') throw locked({ pid: 'another', url: '' }); throw e; }
+  const unlock = () => { try { const h = JSON.parse(fs.readFileSync(lockFile, 'utf8')); if (h.pid === process.pid && h.id === lockId) fs.unlinkSync(lockFile); } catch (e) { /* already gone */ } };
+  let store;
+  try { store = open(dir, { holdMs: opts.holdMs, collectMs: opts.collectMs, sim: !!opts.sim }); }
+  catch (e) { unlock(); if (e.code === 'EDAMAGED') e.message = damagedMessage(e); throw e; }
+  try { fs.unlinkSync(path.join(store.dir, 'damaged.seen')); } catch (e) { /* none: the usual case */ }
   const waiters = new Set();
   // Simulation mode: made-up days you can switch between, with events that happen while you watch.
   const sim = opts.sim ? { list: require('./scenarios').scenarios, current: null, live: opts.live !== false, timers: [] } : null;
@@ -106,25 +130,6 @@ async function start(opts = {}) {
   const pub = (l) => { const o = Object.assign({}, l, { decided: !!l.decision }); delete o.decision; delete o.undo; delete o.past; delete o.history; delete o.board; return o; };
   const SAFE = { 'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'", 'x-content-type-options': 'nosniff', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' };
   const json = (res, code, body) => { res.writeHead(code, Object.assign({ 'content-type': 'application/json' }, SAFE)); res.end(JSON.stringify(body)); };
-  // One writer per data folder. A second server would silently overwrite the first one's saves.
-  const lockFile = path.join(store.dir, 'server.lock');
-  const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-  const lockId = require('crypto').randomBytes(6).toString('hex');
-  const locked = (held) => Object.assign(new Error(`Switchboard is already running on this data${held.url ? ' at ' + held.url : ''} (process ${held.pid}). Use that one, or stop it first. If nothing answers there, it is safe to delete ${lockFile}.`), { code: 'ELOCKED', url: held.url });
-  // A lock is believed only if its owner answers: a process number alone can belong to anything after a crash or a restart.
-  const answers = async (held) => {
-    if (!held.url) return alive(held.pid) && Date.now() - (held.at || 0) < 15000; // still starting up
-    try { const r = await fetch(held.url + '/api/health', { signal: AbortSignal.timeout(1500) }); const h = await r.json(); return h.lock === held.id; } catch (e) { return false; }
-  };
-  let held = null;
-  try { held = JSON.parse(fs.readFileSync(lockFile, 'utf8')); } catch (e) { if (e.code !== 'ENOENT' && !(e instanceof SyntaxError)) throw e; }
-  if (held && held.host === os.hostname() && alive(held.pid) && await answers(held)) throw locked(held);
-  // Take it in one step, so two starts at the same moment cannot both get through.
-  fs.mkdirSync(store.dir, { recursive: true, mode: 0o700 });
-  if (held || fs.existsSync(lockFile)) { try { fs.unlinkSync(lockFile); } catch (e) { /* someone else cleared it */ } }
-  try { fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, id: lockId, url: '', live: true, host: os.hostname(), at: Date.now() }), { mode: 0o600, flag: 'wx' }); }
-  catch (e) { if (e.code === 'EEXIST') throw locked({ pid: 'another', url: '' }); throw e; }
-  const unlock = () => { try { const h = JSON.parse(fs.readFileSync(lockFile, 'utf8')); if (h.pid === process.pid && h.id === lockId) fs.unlinkSync(lockFile); } catch (e) { /* already gone */ } };
   // The page key: only a browser that was opened through the printed link can approve, undo or promote.
   // It guards against mistakes (a confused assistant with a shell), not against something that reads your files.
   const keyFile = path.join(store.dir, 'page.key');
@@ -300,10 +305,33 @@ async function start(opts = {}) {
   });
 }
 
+// A damaged data file stops the board with one plain line: what is wrong, the newest backup that can be put back, and the
+// command that does it. Nothing is changed.
+function damagedMessage(e) {
+  const { listBackups } = require('./lib/store');
+  const good = listBackups(e.dir).find((b) => b.ok);
+  const usual = path.resolve(e.dir) === path.resolve(os.homedir(), '.local', 'share', 'switchboard');
+  const cmd = `${usual ? '' : `SWITCHBOARD_HOME="${e.dir}" `}node "${path.join(__dirname, 'cli.js')}" restore`;
+  const when = (t) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return `${e.message} ` + (good
+    ? `Newest good backup: ${good.file} (${when(good.at)}, ${good.lights} light${good.lights === 1 ? '' : 's'}). Put it back with: ${cmd} "${good.file}" (it keeps the damaged file in backups/ first). See them all: ${cmd} --list`
+    : `There is no good backup in ${path.join(e.dir, 'backups')}.`);
+}
+// A login item (KeepAlive) starts the board again every few seconds: the same damaged file is said once in its log, not
+// on every try. A different file (or a fixed one, then damaged again) is said again.
+function sayOnce(e) {
+  const seen = path.join(e.dir, 'damaged.seen');
+  let sig = ''; try { const st = fs.statSync(e.file); sig = `${st.size}:${st.mtimeMs}`; } catch (x) { /* gone meanwhile */ }
+  let was = ''; try { was = fs.readFileSync(seen, 'utf8'); } catch (x) { /* first time */ }
+  if (sig && was === sig) return false;
+  try { fs.writeFileSync(seen, sig, { mode: 0o600 }); } catch (x) { /* say it every time, then */ }
+  return true;
+}
+
 module.exports = { start };
 
 if (require.main === module) {
   // The key link only to a terminal: a login item's log file is no place for it.
   start().then((s) => console.log(process.stdout.isTTY ? `Switchboard is on. Open it with this link once per browser: ${s.link}\n(data: ${s.store.file})` : `Switchboard is on at ${s.url}. Open it ready to approve with: node "${path.join(__dirname, 'cli.js')}" link --open${new URL(s.url).port !== '4747' ? ' --port ' + new URL(s.url).port : ''}\n(data: ${s.store.file})`))
-    .catch((e) => { console.error(e.code === 'EADDRINUSE' ? 'Switchboard is already running on that port.' : e.message); process.exit(1); });
+    .catch((e) => { if (e.code !== 'EDAMAGED' || sayOnce(e)) console.error(e.code === 'EADDRINUSE' ? 'Switchboard is already running on that port.' : e.code === 'EDAMAGED' ? 'Switchboard did not start. ' + e.message : e.message); process.exit(1); });
 }

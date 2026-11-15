@@ -28,6 +28,9 @@ const HELP = `Switchboard
                                                       board must restart to use it (a login item is stopped for you)
   snapshot [--label before-0.4.0]                     copy the data file to backups/ with the time in its name, before a
                                                       release or a restart, so the board can be put back exactly as it was
+  restore --list                                      the backups, newest first: when, how big, how many lights
+  restore <file>                                      put a backup back as the data file (the board must be stopped; the
+                                                      data file as it is now is kept in backups/ first)
   mcp                                                 the assistant connector (MCP over stdio)
 
 Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`;
@@ -35,7 +38,7 @@ Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`
 // Which flags each command takes. true = takes a value, false = a switch.
 const FLAGS = {
   start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false, copy: false, at: true },
-  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, snapshot: { label: true }, 'rotate-key': { port: true }, report: { port: true, days: true }, mcp: {},
+  sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, snapshot: { label: true }, restore: { list: false }, 'rotate-key': { port: true }, report: { port: true, days: true }, mcp: {},
   raise: { port: true, area: true, title: true, kind: true, draft: true, options: true, state: true, due: true, to: true, note: true, link: true, source: true, agent: true, key: true, value: true, 'follow-up-days': true, outbound: false },
 };
 const fail = (msg) => { console.error(msg); process.exit(1); };
@@ -56,8 +59,8 @@ for (let i = 0; i < rest.length; i++) {
   if (v === undefined) fail(`--${name} needs a value.`);
   flags[name] = v;
 }
-if (words.length && cmd !== 'sim') fail(`"${words.join(' ')}" is not a flag. Put text in quotes after a flag, like --title "Order more boxes".`);
-if (words.length > 1) fail(`Give one scenario name, not "${words.join(' ')}".`);
+if (words.length && cmd !== 'sim' && cmd !== 'restore') fail(`"${words.join(' ')}" is not a flag. Put text in quotes after a flag, like --title "Order more boxes".`);
+if (words.length > 1) fail(cmd === 'restore' ? `Name one backup, not "${words.join(' ')}". Put a name with spaces in quotes.` : `Give one scenario name, not "${words.join(' ')}".`);
 
 const port = flags.port || process.env.SWITCHBOARD_PORT || 4747;
 const BASE = (process.env.SWITCHBOARD_URL || `http://127.0.0.1:${port}`).replace(/\/+$/, '');
@@ -117,6 +120,20 @@ function openLink(link) {
     c.on('spawn', () => setTimeout(() => end(''), 3000).unref());
   });
 }
+// The macOS login item (LaunchAgent) that runs the board on this data folder, if there is one: { label, file }.
+function loginItemFor(home) {
+  if (process.platform !== 'darwin') return null;
+  const dir = path.join(os.homedir(), 'Library', 'LaunchAgents'), real = (d) => { try { return fs.realpathSync(expand(d)); } catch (e) { return path.resolve(expand(d)); } };
+  let names = []; try { names = fs.readdirSync(dir).filter((f) => f.endsWith('.plist')); } catch (e) { return null; }
+  for (const f of names) {
+    let t = ''; try { t = fs.readFileSync(path.join(dir, f), 'utf8'); } catch (e) { continue; }
+    if (!/<string>[^<]*switchboard[^<]*[\\/](?:server|cli)\.js<\/string>/i.test(t) || /board-relay\.js/.test(t)) continue;
+    const h = (t.match(/<key>SWITCHBOARD_HOME<\/key>\s*<string>([^<]*)<\/string>/) || [])[1] || path.join(os.homedir(), '.local', 'share', 'switchboard');
+    const label = (t.match(/<key>Label<\/key>\s*<string>([^<]*)<\/string>/) || [])[1];
+    if (label && real(h) === real(home)) return { label, file: path.join(dir, f) };
+  }
+  return null;
+}
 async function startBoard(opts, label) {
   try { return await require('./server').start(opts); }
   catch (e) {
@@ -137,6 +154,36 @@ async function startBoard(opts, label) {
     // Reads the data file and writes a copy beside the daily ones; the board keeps running and its file is not touched.
     try { console.log(`Saved a copy of the board: ${require('./lib/store').snapshot(HOME, flags.label)}\nTo put it back: stop the board, copy that file over ${path.join(HOME, 'data.json')}, start it.`); }
     catch (e) { fail(e.message); }
+    return;
+  }
+  if (cmd === 'restore') {
+    const S = require('./lib/store');
+    const size = (n) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`);
+    const when = (t) => new Date(t).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const RESTORE = `${withHome()}${SELF} restore`;
+    if (flags.list) {
+      if (words.length) fail('--list takes no file name. To put one back: ' + RESTORE + ' <file>');
+      const all = S.listBackups(HOME);
+      if (!all.length) { console.log(`No backups yet in ${path.join(HOME, 'backups')}. The board makes one the first time it saves each day.`); return; }
+      console.log(`Backups in ${path.join(HOME, 'backups')}, newest first:`);
+      for (const b of all) console.log(`  ${when(b.at).padEnd(28)} ${size(b.size).padStart(9)}  ${b.ok ? `${b.lights} light${b.lights === 1 ? '' : 's'}`.padEnd(11) : 'damaged'.padEnd(11)}  ${b.name}${b.ok ? '' : ` (cannot be put back: ${b.why})`}`);
+      console.log(`Put one back (with the board stopped): ${RESTORE} <name>`);
+      return;
+    }
+    if (!words.length) fail(`Name the backup to put back: ${RESTORE} <file>. See them all: ${RESTORE} --list`);
+    // Never while the board runs: it holds the data in memory and its next save would write over what was put back.
+    const login = loginItemFor(HOME), uid = typeof process.getuid === 'function' ? process.getuid() : '$(id -u)';
+    const stopHow = (url) => login
+      ? `Its login item (${login.label}) starts it again by itself, so stop it with: launchctl bootout gui/${uid} "${login.file}"`
+      : `Stop it first: ${withHome()}${SELF} stop${onPort(url || BASE)}`;
+    const b = await board(HOME);
+    if (b) fail(`Switchboard is running at ${b.url}, so nothing was changed. ${stopHow(b.url)}. Then run this again.`);
+    let held = null; try { held = JSON.parse(fs.readFileSync(path.join(HOME, 'server.lock'), 'utf8')); } catch (e) { /* no lock: not running */ }
+    const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+    if (held && held.pid && held.host === os.hostname() && alive(held.pid)) fail(`Switchboard is starting or running (process ${held.pid}), so nothing was changed. ${stopHow(held.url)}. If nothing is running, delete ${path.join(HOME, 'server.lock')} and run this again.`);
+    let r; try { r = S.restore(HOME, words[0]); } catch (e) { fail(e.message); }
+    const start = login ? `launchctl bootstrap gui/${uid} "${login.file}" (or, if it is still loaded, it starts by itself in a few seconds)` : startHint(false);
+    console.log(`Put back ${r.from} (${r.lights} light${r.lights === 1 ? '' : 's'}) as ${path.join(HOME, 'data.json')}.${r.kept ? `\nThe data file as it was is kept at ${r.kept}.` : ''}\nStart the board: ${start}`);
     return;
   }
   // Does a com.switchboard plist start the board b? Its SWITCHBOARD_HOME (or the usual folder) and its port

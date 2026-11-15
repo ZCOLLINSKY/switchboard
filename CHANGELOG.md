@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+- **A second start never touches a running board's data.** Starting the board, or a second copy of it, takes the data folder's lock before it reads, tidies or saves anything there; before, a second start could save a setting or clear the running board's save in progress before it found out the board was already running. Opening a board (a report, say) tidies a half-written save only when the process that wrote it is gone.
+- **Long drafts show their first lines.** A draft longer than about five lines shows its first five and "Show all (30
+  lines)", then "Show less": in an open row, on a pass card, on the Needs-you card (Inspect), in the Reach out drawer and
+  in "What you approved". Copy text and Copy & open always copy the whole draft. A long message to a person is read whole
+  before it is approved: its gold button says "Read it all" until it has been shown in full, and Enter or Y shows it
+  first too.
+- **Putting a backup back.** `node cli.js restore --list` shows the backups newest first, with the date, size and number
+  of lights (a damaged one is marked and never offered). `node cli.js restore <file>` puts one back: it refuses while the
+  board is running and says how to stop it (its login item, if it has one), checks the file is a board (a version and a
+  list of lights), keeps the current data file in `backups/` first, then replaces it and says how to start.
+- **A damaged data file says what to do.** The board does not start, and says in one line what is wrong, the newest good
+  backup and the restore command. Started again and again by its login item, it says it once, not every ten seconds.
+- **The relay restarts a hung board.** When the board's port takes the connection but `/api/health` does not answer on
+  two ticks in a row, the relay runs `launchctl kickstart -k` on the board's LaunchAgent (on a Mac, only when that
+  LaunchAgent is loaded, at most once every 15 minutes) and logs it. A board that is down is left to launchd. It never
+  texts.
+- **The relay tests pass on any day, with nothing to set first.** The test for answers whose session has gone now finds
+  Switchboard's store beside the server the other relay tests use, so it no longer needs `SWITCHBOARD_SERVER`. The test
+  that reads a due date from the words writes one a few days after today ("Due Thu, Nov 19") instead of a fixed Nov 14,
+  so it does not break once that day has passed. Skipping past dates is still covered by its own test.
+- **The relay's live code has history.** Its folder already had its own local git repository; the code launchd runs is
+  now committed there as a baseline. Nothing was pushed. Switchboard's repository still ignores the folder.
+
 ## 0.3.1 (Nov 15, 2026)
 
 - **Public changes are answered one at a time.** Putting something live on a website, a post on a social site, a newsletter, press release or launch post is high stakes, like a deletion or a production database change, and never joins a group tap.

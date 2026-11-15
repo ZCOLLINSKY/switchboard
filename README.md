@@ -337,8 +337,10 @@ days from the bar at the top of the page. Nothing touches your real board.
 - **Nothing is erased.** Every change is appended to `events.jsonl` next to the
   data file, and "Past decisions" reads from that log. Finished lights move
   to `archive.jsonl` after 30 days. A copy of the data file is kept for each of the last 14
-  days in `backups/` (to go back: stop the board, copy one over `data.json`,
-  start it).
+  days in `backups/`. `node cli.js restore --list` shows them, newest first, and
+  `node cli.js restore <file>` puts one back (with the board stopped; the data
+  file as it was is kept in `backups/` first). If the data file is damaged, the
+  board does not start and says, in one line, which backup to put back.
 - **It listens only on your own computer** unless you start it with `--host`.
   There is no login, so don't put it on the open internet.
 - **Only your page can approve.** Approving, undoing and switching autonomy need

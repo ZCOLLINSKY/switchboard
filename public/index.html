@@ -97,6 +97,7 @@ h1.zero em{color:var(--green)}
 .pane h5{margin:0 0 7px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .pane p{margin:0;font-size:14px;line-height:1.5;color:#D5DBE5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pane p + p{margin-top:6px}
+.longdraft{display:grid;gap:8px;justify-items:start} .longdraft .showall{font-size:12px;padding:5px 11px}
 .chg{font-weight:600;margin-bottom:8px}
 .chg s{color:var(--muted);font-weight:400}.chg b{color:var(--green)}
 textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(--gold-line);border-radius:8px;padding:10px;resize:vertical;line-height:1.5}
@@ -241,6 +242,8 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   // pass: a timed (or Focus) run through the cards. needIdx: which "Needs you" card is showing. fold: which drawers are open.
   // picked: a safe or read-first line the person unticked stays unticked.
   var pass = null, needIdx = 0, fold = {}, picked = {};
+  // fullDraft: which long drafts are shown whole ("Show all"), by light id. Copying always takes the whole text.
+  var fullDraft = {};
   // The "Reach out?" drawer: which row is open, the words it showed when opened, and which row is asking why "Not now".
   // moreId: which card shows its More menu.
   var roOpen = null, roShown = {}, roWhy = null, moreId = null;
@@ -595,6 +598,8 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
         b.appendChild(B('I sent it', function () { act(l, 'approve'); }, 'gh'));
       }
       else if (l.needsDraft && !l.draft) b.appendChild(B('Write it myself', edit));
+      // A long message to a person is read whole before it is approved: the first tap shows all of it.
+      else if (unread(l)) b.appendChild(B('Read it all', function () { readAll(l); }, '', enter));
       else b.appendChild(B('Approve', function () { act(l, 'approve'); }, '', enter));
       if (l.draft) b.appendChild(B('Change\u2026', edit, 'gh', isSel ? 'E' : null));
       if (l.channel === 'agent' && !l.followUps) b.appendChild(B(l.outbound ? 'Don\u2019t send' : 'No', function () { act(l, 'no'); }, 'gh'));
@@ -685,7 +690,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       if (checks.length || warn.length) more.appendChild(h('div', { class: 'pane wide checkline' }, warn.length ? h('p', { class: 'warnline', text: warn.join(' ') }) : null, checks.length ? h('p', {}, h('b', { text: 'Check before it goes: ' }), checks.join(' \u00b7 ') + (l.to ? ' \u00b7 to ' + l.to : '')) : null));
     }
     var overlay = l.stuck || l.failure || l.unsure;
-    if (l.approvedText && overlay) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.unsure ? 'What you approved (it may have gone out)' : l.failure ? 'What you approved. “Try again” sends exactly this' + (l.to ? ' to ' + l.to : '') : 'What you approved (not sent yet)' }), h('p', { text: l.approvedText })));
+    if (l.approvedText && overlay) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.unsure ? 'What you approved (it may have gone out)' : l.failure ? 'What you approved. “Try again” sends exactly this' + (l.to ? ' to ' + l.to : '') : 'What you approved (not sent yet)' }), draftText(l, l.approvedText)));
     if (!(overlay && l.approvedText) && (l.changeFrom || l.changeTo || l.draft || editId === l.id)) {
       var pane = h('div', { class: 'pane' + (editId === l.id ? ' wide' : '') }, h('h5', { text: editId === l.id ? 'Change the words yourself' : l.outbound ? 'What will be sent' : 'What will change' }));
       if (l.changeFrom || l.changeTo) pane.appendChild(h('div', { class: 'chg' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })));
@@ -708,7 +713,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
             h('div', { class: 'inline' }, h('button', { class: 'btn gh', type: 'button', text: 'Send note to your assistant', onclick: sendNote }), talk2)));
         }
         pane.appendChild(h('div', { class: 'inline' }, sendOwn, (function (btn) { btn.id = 'approve-mine'; return btn; })(B(l.channel === 'agent' ? ((edits[l.id] != null && edits[l.id] !== l.draft) ? 'Approve my version' : 'Approve as is') : 'Save, I sent it', function () { if (!ta.value.trim()) { toast('Write the message first.'); return; } act(l, 'approve', { text: ta.value }); })), B('Cancel', function () { delete edits[l.id]; editId = null; editBase = null; render(); }, 'gh')));
-      } else if (l.draft) pane.appendChild(h('p', { text: l.draft }));
+      } else if (l.draft) pane.appendChild(draftText(l, l.draft));
       more.appendChild(pane);
     }
     if (redoId === l.id) {
@@ -736,8 +741,10 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     return f;
   }
   function smallLine(l) {
-    // A message to a person is shown whole: you approve what you can read.
-    var preview = l.draft ? '“' + (l.outbound ? l.draft : l.draft.slice(0, 120) + (l.draft.length > 120 ? '…' : '')) + '”' : l.note.length > 150 ? l.note.slice(0, 150) + '…' : l.note, s = [];
+    // A message to a person is shown whole (you approve what you can read), up to about five lines; a longer one shows its
+    // first lines here and all of it when the row is opened.
+    var long = l.outbound && l.draft && clipDraft(l.draft).clipped;
+    var preview = l.draft ? '“' + (l.outbound ? (long ? clipDraft(l.draft).text : l.draft) : l.draft.slice(0, 120) + (l.draft.length > 120 ? '…' : '')) + '”' + (long ? ' (' + clipDraft(l.draft).lines + ' lines: open it to read them all)' : '') : l.note.length > 150 ? l.note.slice(0, 150) + '…' : l.note, s = [];
     if (changedAt[l.id]) s.push('This changed while it was on your screen. Look again before you decide.');
     if (l.alert) s.push(l.alert);
     if (l.noRecipient) s.push('No name on this yet. Check who it goes to before you send.');
@@ -817,6 +824,24 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
     d.appendChild(body);
     return d;
   }
+  // A long draft shows its first lines; "Show all" shows the rest. Only what is shown changes: every Copy button copies
+  // l.draft, the whole text. About five lines: more than six lines, or more than 600 characters, is cut.
+  function clipDraft(t) {
+    t = String(t == null ? '' : t); var lines = t.split('\n'), n = lines.length;
+    if (n <= 6 && t.length <= 600) return { text: t, clipped: false, lines: n };
+    var head = lines.slice(0, 5).join('\n');
+    if (head.length > 500) { head = head.slice(0, 500); var sp = head.lastIndexOf(' '); if (sp > 350) head = head.slice(0, sp); }
+    return { text: head.replace(/\s+$/, '') + '…', clipped: true, lines: n };
+  }
+  function draftText(l, text) {
+    var c = clipDraft(text), whole = fullDraft[l.id];
+    if (!c.clipped) return h('p', { text: text });
+    return h('div', { class: 'longdraft' }, h('p', { text: whole ? text : c.text }),
+      B(whole ? 'Show less' : 'Show all' + (c.lines > 6 ? ' (' + c.lines + ' lines)' : ''), function () { if (whole) delete fullDraft[l.id]; else fullDraft[l.id] = 1; render(); }, 'plain showall'));
+  }
+  // A message to a person that is longer than its first lines, not yet shown whole: approving it first shows it all.
+  function unread(l) { return l.kind === 'approve' && l.channel === 'agent' && l.outbound && !!l.draft && clipDraft(l.draft).clipped && !fullDraft[l.id]; }
+  function readAll(l) { fullDraft[l.id] = 1; openId = l.id; sel = l.id; selAt = Date.now(); render(); }
   function preview(l) { var t = l.draft ? '“' + l.draft + '”' : l.note || ''; return t.length > 150 ? t.slice(0, 150) + '…' : t; }
   // A post the person makes themselves: copy the words, open the page, then ask whether it went.
   function copyOpen(l) {
@@ -940,7 +965,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       var more = h('div', { class: 'more' });
       if (l.source) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'What came in' }), h('p', { text: l.source })));
       if (l.note) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'Why it was suggested' }), h('p', { text: l.note })));
-      if (l.draft) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.to ? 'What would go to ' + l.to : 'What would go out' }), h('p', { text: l.draft })));
+      if (l.draft) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: l.to ? 'What would go to ' + l.to : 'What would go out' }), draftText(l, l.draft)));
       var b = h('div', { class: 'btns' });
       if (changed) b.appendChild(B('Look again', function () { roShown[l.id] = l.rev; delete asked[l.id]; render(); }));
       else if (!S.canAct) b = null;
@@ -1386,6 +1411,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
       // In the list, the first Enter on a message to a person opens it. The second one sends it.
       if (l.firstTime) { if (!rapid && openId !== l.id) { openId = l.id; render(); } toast('First time writing to them: use the button, not Enter.'); return; }
       if (!rapid && l.kind === 'approve' && (l.outbound || (l.draft || '').length > 120) && openId !== l.id) { openId = l.id; selAt = Date.now(); render(); return; }
+      if (unread(l)) { readAll(l); toast('Read it all, then press again.'); return; }
       var nd = rapid ? null : visible().need;
       if (!rapid && careful(l) && openId !== l.id && !(nd && nd.id === l.id)) { openId = l.id; selAt = Date.now(); render(); toast('High stakes: read it, then press again.'); return; }
       p();

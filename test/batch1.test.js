@@ -97,3 +97,33 @@ test('1.3 over HTTP an approve must carry the rev that was shown', async () => {
     assert.equal((await post(`/api/lights/${l.id}/act`, { action: 'approve', rev })).status, 200);
   } finally { a.close(); }
 });
+
+test('a second start on a running board touches nothing: the save in progress and the data file stay as they are', async () => {
+  const dir = tmp();
+  const a = await start({ port: 0, dir });
+  try {
+    a.store.raise({ area: 'A', title: 'one thing' }); a.store.save();
+    const file = path.join(dir, 'data.json'), before = fs.readFileSync(file, 'utf8'), mtime = fs.statSync(file).mtimeMs;
+    // The running board's half-written save, as it looks for a moment while it saves (a process that is alive).
+    const inFlight = path.join(dir, `data.json.${process.ppid}.tmp`);
+    fs.writeFileSync(inFlight, '{"half":', { mode: 0o600 });
+    // A second start whose banner setting differs from the saved one used to save it before taking the lock.
+    const was = process.env.SWITCHBOARD_NOTIFY; process.env.SWITCHBOARD_NOTIFY = '1';
+    try { await assert.rejects(start({ port: 0, dir, banner: () => {} }), /already running/); }
+    finally { if (was === undefined) delete process.env.SWITCHBOARD_NOTIFY; else process.env.SWITCHBOARD_NOTIFY = was; }
+    assert.ok(fs.existsSync(inFlight), 'the running board\'s save in progress was left alone');
+    assert.equal(fs.readFileSync(file, 'utf8'), before, 'the data file was not written');
+    assert.equal(fs.statSync(file).mtimeMs, mtime);
+    fs.unlinkSync(inFlight);
+  } finally { a.close(); }
+});
+
+test('opening a board tidies half-written saves only from processes that are gone', () => {
+  const dir = tmp();
+  open(dir, { fresh: true }).save();
+  const dead = path.join(dir, 'data.json.999999.tmp'), alive = path.join(dir, `data.json.${process.ppid}.tmp`);
+  fs.writeFileSync(dead, 'x'); fs.writeFileSync(alive, 'x');
+  open(dir);
+  assert.ok(!fs.existsSync(dead), 'a gone process\'s leftover is tidied');
+  assert.ok(fs.existsSync(alive), 'a running process\'s save in progress is kept');
+});

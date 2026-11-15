@@ -135,7 +135,7 @@ test('a fresh decision is held back, and can be undone until it is picked up', (
   assert.throws(() => s.act(l.id, 'undo', {}, T0 + 3000 + HOLD_MS + 1), /Too late/);
 });
 
-test('the queue puts deadlines first, then people waiting, then the rest by age, then background failures', () => {
+test('the queue puts deadlines first, then money and people waiting, then the rest by age, then background failures', () => {
   const s = fresh();
   s.raise({ area: 'A', title: 'old chore', kind: 'todo' }, T0 - 5 * DAY);
   s.raise({ area: 'A', title: 'reply to a person', draft: 'x', outbound: true }, T0 - DAY);
@@ -144,7 +144,7 @@ test('the queue puts deadlines first, then people waiting, then the rest by age,
   s.raise({ area: 'A', title: 'job failed', state: 'broken' }, T0);
   s.raise({ area: 'A', title: 'form due tonight', kind: 'todo', due: T0 + 3600e3 }, T0);
   const v = s.view(T0);
-  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['form due tonight', 'reply to a person', 'old chore', 'small quote', 'big quote', 'job failed']);
+  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['form due tonight', 'big quote', 'small quote', 'reply to a person', 'old chore', 'job failed']);
 });
 
 test('bulk approve works for changes and refuses messages to people', () => {
@@ -416,4 +416,41 @@ test('an approval only one program can collect names that program, instead of as
   assert.equal(shown(relay.id).alert, 'Waiting for zachs-board to check in. Only it can collect this one.');
   assert.doesNotMatch(shown(relay.id).alert, /Start a chat/);
   assert.match(shown(anyone.id).alert, /^Waiting for an assistant to check in\. Start a chat and say/);
+});
+
+test('money sits with the people waiting: a Stripe step or an invoice rises above other questions', () => {
+  const s = fresh();
+  s.raise({ area: 'A', title: 'Pick a font', kind: 'decide', options: ['A', 'B'] }, T0 - 3 * DAY);
+  s.raise({ area: 'A', title: 'Turn off the old pay links in Stripe', kind: 'todo', link: 'https://x' }, T0);
+  s.raise({ area: 'A', title: 'Fix jobs with no invoice link', kind: 'decide', options: ['Yes', 'No'] }, T0 - DAY);
+  const v = s.view(T0);
+  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['Fix jobs with no invoice link', 'Turn off the old pay links in Stripe', 'Pick a font']);
+});
+
+test('a session that names no container files its light under its project, never Inbox, when the board has one', () => {
+  const s = fresh();
+  s.addArea({ name: 'Around Lex' });
+  assert.equal(s.raise({ title: 'one', agent: 'claude-code:around-lex' }, T0).area, 'around-lex');
+  assert.equal(s.raise({ area: 'Inbox', title: 'two', agent: 'claude-code:around-lex~1a2b' }, T0).area, 'around-lex');
+  assert.equal(s.raise({ area: 'Inbox', title: 'three', agent: 'claude-code:nowhere' }, T0).area, 'inbox');
+  assert.equal(s.raise({ area: 'Other', title: 'four', agent: 'claude-code:around-lex' }, T0).area, 'other');
+});
+
+test('the project container is skipped while it sleeps, and raising again with Inbox gives no false warning', () => {
+  const s = fresh();
+  s.addArea({ name: 'Around Lex' });
+  const one = s.raise({ title: 'one', key: 'k1', agent: 'claude-code:around-lex' }, T0);
+  assert.equal(one.area, 'around-lex');
+  s.raise({ area: 'Inbox', title: 'one again', key: 'k1', agent: 'claude-code:around-lex' }, T0 + 1000);
+  assert.ok(!(s.warnings || []).some((w) => /area cannot be changed/.test(w)), 'no false warning');
+  s.db.areas.find((a) => a.id === 'around-lex').wakeAt = T0 + DAY;
+  assert.equal(s.raise({ title: 'two', agent: 'claude-code:around-lex' }, T0).area, 'inbox', 'a sleeping container would hide it');
+});
+
+test('at equal money, a person waiting comes before a money step', () => {
+  const s = fresh();
+  s.raise({ area: 'A', title: 'Turn off the old pay links in Stripe', kind: 'todo', link: 'https://x' }, T0 - DAY);
+  s.raise({ area: 'A', title: 'reply to a person', draft: 'x', outbound: true }, T0);
+  const v = s.view(T0);
+  assert.deepEqual(v.queue.map((id) => v.lights.find((l) => l.id === id).title), ['reply to a person', 'Turn off the old pay links in Stripe']);
 });

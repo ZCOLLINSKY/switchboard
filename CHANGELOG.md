@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **Money sits with the people waiting.** A light with a value, or one about a
+  payment, invoice, refund, deposit or Stripe step, now sorts with the people
+  waiting on you (most money first; at equal money, a person comes first)
+  instead of by age with everything else.
+- **A session's lights go to its project.** Raising with no container (or only
+  Inbox) files the light under the container named by the session's project,
+  when the board has one and it is awake. Inbox otherwise, as before.
+
 - **Scheduled tasks keep their answers.** `get_decisions` takes
   `checks_every_minutes`: a task that runs every 30 minutes (or four times a
   day) says so, and an answer to its light waits for its next run instead of

@@ -81,6 +81,10 @@
       "description": "Report what happened after acting on your decision."
     },
     {
+      "name": "record_answer",
+      "description": "Record an answer you gave in a chat, in your own words, so the board stops asking."
+    },
+    {
       "name": "ack_decisions",
       "description": "Report several handled answers at once (not messages)."
     },

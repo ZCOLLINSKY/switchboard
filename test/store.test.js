@@ -695,3 +695,87 @@ test('an option label marked "(recommended)" becomes the recommended answer, and
   s.update(plain.id, { options: ['Blue (recommended)', 'Green'] }, 'claude:x', T0);
   assert.equal(s.db.lights.find((x) => x.id === plain.id).recommended, 'Blue', 'new options that mark one say what is recommended now');
 });
+
+test('an answer given in chat: recorded with the person\'s words by the session that asked, collected at once, never trust', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const q = s.raise({ area: 'A', title: 'Which day for the install?', kind: 'decide', options: ['Tuesday', 'Wednesday'], agent: me.agent }, T0);
+  const r = s.recordAnswer(q.id, Object.assign({ value: 'wednesday', quote: 'wednesday works, do that' }, me), T0 + 1000);
+  assert.equal(r.held, false);
+  const l = s.db.lights.find((x) => x.id === q.id);
+  assert.equal(l.state, 'done');
+  assert.deepEqual([l.decision.value, l.decision.via, l.decision.quote, l.decision.by, l.decision.releaseAt], ['Wednesday', 'chat', 'wednesday works, do that', 'you', T0 + 1000]);
+  const got = s.decisions(T0 + 1000, me).decisions;
+  assert.equal(got.length, 1, 'collected right away: the person already said it');
+  assert.equal(got[0].value, 'Wednesday');
+  assert.equal(Object.keys(s.db.streaks).length, 0, 'a chat answer earns no trust');
+  assert.ok(s.history('', 50).some((x) => x.id === q.id), 'search_history finds it');
+});
+
+test('record_answer refuses: another session\'s light, a message to a person, an approval, a wrong option, no quote', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const theirs = s.raise({ area: 'A', title: 'Pick one', kind: 'decide', options: ['A', 'B'], agent: 'claude-code:other' }, T0);
+  assert.throws(() => s.recordAnswer(theirs.id, Object.assign({ value: 'A', quote: 'A' }, me), T0), /belongs to claude-code:other/);
+  const nobody = s.raise({ area: 'A', title: 'Pick again', kind: 'decide', options: ['A', 'B'] }, T0);
+  assert.throws(() => s.recordAnswer(nobody.id, Object.assign({ value: 'A', quote: 'A' }, me), T0), /Leave it for the board/);
+  const msg = s.raise({ area: 'A', title: 'Text Pat', kind: 'approve', draft: 'Hi Pat', outbound: true, to: 'Pat Lee', agent: me.agent }, T0);
+  assert.throws(() => s.recordAnswer(msg.id, Object.assign({ value: 'yes', quote: 'send it' }, me), T0), /message to a person is approved on the board/);
+  const change = s.raise({ area: 'A', title: 'Change the price', kind: 'approve', change_from: '$10', change_to: '$12', agent: me.agent }, T0);
+  assert.throws(() => s.recordAnswer(change.id, Object.assign({ value: 'yes', quote: 'yes' }, me), T0), /approval is given on the board/);
+  const q = s.raise({ area: 'A', title: 'Pick a color', kind: 'decide', options: ['Red', 'Blue'], agent: me.agent }, T0);
+  assert.throws(() => s.recordAnswer(q.id, Object.assign({ value: 'Green', quote: 'green' }, me), T0), /one of this light's options/);
+  assert.throws(() => s.recordAnswer(q.id, Object.assign({ value: 'Red' }, me), T0), /quote is required/);
+  assert.equal(s.db.lights.find((x) => x.id === q.id).state, 'need_you');
+});
+
+test('record_answer on a high-stakes light only waits for the person\'s Confirm; Not that clears it; a changed light refuses it', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const q = s.raise({ area: 'A', title: 'Delete the old backups folder?', kind: 'decide', options: ['Yes', 'No'], agent: me.agent }, T0);
+  const r = s.recordAnswer(q.id, Object.assign({ value: 'Yes', quote: 'yeah delete it' }, me), T0 + 1000);
+  assert.equal(r.held, true);
+  let l = s.db.lights.find((x) => x.id === q.id);
+  assert.equal(l.state, 'need_you'); assert.equal(l.decision, null); assert.equal(l.chatAnswer.quote, 'yeah delete it');
+  assert.equal(s.decisions(T0 + 99e6, me).decisions.length, 0, 'nothing to collect before the Confirm');
+  s.act(q.id, 'dismiss_chat', {}, T0 + 2000);
+  assert.equal(s.db.lights.find((x) => x.id === q.id).chatAnswer, null);
+  s.recordAnswer(q.id, Object.assign({ value: 'Yes', quote: 'yes really' }, me), T0 + 3000);
+  s.act(q.id, 'confirm_chat', {}, T0 + 4000);
+  l = s.db.lights.find((x) => x.id === q.id);
+  assert.deepEqual([l.state, l.decision.value, l.decision.via, l.decision.quote], ['done', 'Yes', 'chat', 'yes really']);
+  assert.ok(l.decision.releaseAt > T0 + 4000, 'a confirm keeps the usual hold, so it can be taken back');
+  const q2 = s.raise({ area: 'A', title: 'Drop the old leads table?', kind: 'decide', options: ['Yes', 'No'], agent: me.agent }, T0);
+  s.recordAnswer(q2.id, Object.assign({ value: 'Yes', quote: 'yes' }, me), T0 + 1000);
+  s.update(q2.id, { note: 'Background only.' }, me.agent, T0 + 1500);
+  assert.ok(s.db.lights.find((x) => x.id === q2.id).chatAnswer, 'a note is background: the answer still stands for the person to confirm');
+  s.update(q2.id, { title: 'Drop the old leads table and the archive table?' }, me.agent, T0 + 2000);
+  assert.ok(s.warnings.some((w) => /answer from the chat was about this light as it was/.test(w)), 'the assistant is told to ask again');
+  assert.throws(() => s.act(q2.id, 'confirm_chat', {}, T0 + 3000), /There is no answer from a chat/);
+});
+
+test('a to-do said done in chat is done; a high-stakes to-do waits for Confirm', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const t = s.raise({ area: 'A', title: 'Order the bulbs', kind: 'todo', link: 'https://example.com', agent: me.agent }, T0);
+  s.recordAnswer(t.id, Object.assign({ value: 'done', quote: 'ordered them this morning' }, me), T0 + 1000);
+  assert.equal(s.db.lights.find((x) => x.id === t.id).state, 'done');
+  const h = s.raise({ area: 'A', title: 'Remove the old pay links in Stripe', kind: 'todo', link: 'https://example.com', agent: me.agent }, T0);
+  assert.equal(s.recordAnswer(h.id, Object.assign({ value: 'done', quote: 'did it' }, me), T0 + 1000).held, true);
+  s.act(h.id, 'confirm_chat', {}, T0 + 2000);
+  assert.equal(s.db.lights.find((x) => x.id === h.id).state, 'done');
+});
+
+test('a chat answer is judged by the answer given: "Yes" to a deletion that recommends No still waits for Confirm', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const q = s.raise({ area: 'A', title: 'Delete the old backups folder?', kind: 'decide', options: ['Yes', 'No'], recommended: 'No', agent: me.agent }, T0);
+  assert.equal(s.recordAnswer(q.id, Object.assign({ value: 'Yes', quote: 'yeah delete those' }, me), T0 + 1000).held, true, 'the risky answer waits');
+  s.act(q.id, 'dismiss_chat', {}, T0 + 2000);
+  assert.equal(s.recordAnswer(q.id, Object.assign({ value: 'No', quote: 'no keep them' }, me), T0 + 3000).held, false, 'keeping them changes nothing: recorded');
+});
+
+test('a light waiting on the Confirm of a chat answer is shown one at a time, never in a group', () => {
+  const s = fresh(), me = { agent: 'claude-code:acme' };
+  const q = s.raise({ area: 'A', title: 'Delete the old backups folder?', kind: 'decide', options: ['Yes', 'No'], recommended: 'No', agent: me.agent }, T0);
+  assert.ok(s.view(T0).lanes.read.includes(q.id), 'before: a deletion recommending No is read first');
+  s.recordAnswer(q.id, Object.assign({ value: 'Yes', quote: 'delete them' }, me), T0 + 1000);
+  const v = s.view(T0 + 1000);
+  assert.ok(v.lanes.high.includes(q.id) && !v.lanes.read.includes(q.id) && !v.lanes.safe.includes(q.id));
+  assert.throws(() => s.bulk([q.id], 'recommended', {}, T0 + 2000), /one at a time/i);
+});

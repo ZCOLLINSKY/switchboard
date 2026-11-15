@@ -559,6 +559,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function noOf(l) { var y = yesOf(l); if (y == null) return null; var rest = l.options.filter(function (o) { return o !== y; }); return rest.length === 1 ? rest[0] : null; }
   function primary(l) {
     if (changedAt[l.id] || editId === l.id || redoId === l.id || noteId === l.id || l.board || l.brake || l.kind === 'sense') return null;
+    if (l.chatAnswer) return function () { act(l, 'confirm_chat'); }; // the card shows their chat answer: Enter confirms that, nothing else
     if (l.kind === 'approve') return l.channel === 'agent' && !(l.needsDraft && !l.draft) ? function () { act(l, 'approve'); } : null;
     if (l.kind === 'todo') return function () { act(l, 'done'); };
     if (l.options.length && !(careful(l) && !(l.recommended && l.options.indexOf(l.recommended) >= 0))) return function () { act(l, 'answer', { value: yesOf(l) }); };
@@ -566,6 +567,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   }
   function secondary(l) {
     if (changedAt[l.id] || editId === l.id || redoId === l.id || noteId === l.id || l.board || l.brake || l.kind === 'sense') return null;
+    if (l.chatAnswer) return function () { act(l, 'dismiss_chat'); }; // N: not what I meant
     if (l.kind === 'approve') return l.channel === 'agent' && !l.followUps ? function () { act(l, 'no'); } : null;
     var n = l.kind === 'todo' ? null : noOf(l);
     return n != null ? function () { act(l, 'answer', { value: n }); } : null;
@@ -662,6 +664,15 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function details(l, always) {
     var more = h('div', { class: 'more' });
     if (l.source) more.appendChild(h('div', { class: 'pane' }, h('h5', { text: 'What came in' }), h('p', { text: l.source })));
+    // An answer the person gave in a chat, waiting on a high-stakes light: their words, and their own tap to make it count.
+    if (l.chatAnswer && (l.state === 'need_you' || l.state === 'broken')) {
+      var ca = l.chatAnswer;
+      more.appendChild(h('div', { class: 'pane asked wide chatans' }, h('h5', { text: 'You answered in chat' + (ca.at ? ', ' + new Date(ca.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '') }),
+        h('p', {}, h('q', { text: ca.quote })),
+        h('p', {}, h('b', { text: 'Your assistant took that as: ' }), ca.value || ca.text || 'done'),
+        h('p', { class: 'note', text: 'High stakes, so it waits for your tap here. Nothing happens until you confirm.' }),
+        h('p', {}, B('Confirm', function () { act(l, 'confirm_chat'); }), ' ', B('Not that', function () { act(l, 'dismiss_chat'); }, 'gh'))));
+    }
     if (l.askedFor && (l.state === 'need_you' || l.state === 'broken')) {
       var same = (l.draft || '') === (l.askedFor.before || '') && (l.changeTo || '') === (l.askedFor.beforeChange || '');
       var ask = h('div', { class: 'pane asked wide' }, h('h5', { text: 'You asked for' }), h('p', {}, h('q', { text: l.askedFor.why })));
@@ -864,7 +875,13 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
   function needCard(l, n) {
     var isSel = sel === l.id, a = area(l.area), yes = yesOf(l), no = noOf(l);
     var b = h('div', { class: 'btns' });
+    var ca = l.chatAnswer;
     if (changedAt[l.id]) b.appendChild(B('Look again', function () { lookAgain(l); }));
+    else if (ca) {
+      // They answered in a chat: their own tap here makes it count. Confirm or say it was not that; the options stay in Inspect.
+      b.appendChild(B('Confirm: ' + (ca.value || ca.text || 'done'), function () { act(l, 'confirm_chat'); }, '', isSel ? '⏎' : null));
+      b.appendChild(B('Not that', function () { act(l, 'dismiss_chat'); }, 'gh'));
+    }
     else {
       if (l.link) b.appendChild(A('Open page ↗', l.link, 'gh'));
       l.options.forEach(function (o) { b.appendChild(B(o === yes ? o + ' · recommended' : o, function () { act(l, 'answer', { value: o }); }, o === yes ? '' : 'gh', isSel && o === yes ? '⏎' : isSel && o === no ? 'N' : null)); });
@@ -878,6 +895,7 @@ textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(-
         h('div', { class: 'txt' }, h('p', {}, l.title, tags(l)),
           l.changeFrom || l.changeTo ? h('small', { class: 'chgline' }, h('s', { text: l.changeFrom || '(empty)' }), ' → ', h('b', { text: l.changeTo || '(removed)' })) : null,
           h('span', { class: 'impact' + (l.impact ? '' : ' none'), text: l.impact ? 'Impact: ' + l.impact : 'No impact line from the assistant' }),
+          ca ? h('small', { class: 'chatsaid' }, 'You said in chat: ', h('q', { text: ca.quote })) : null,
           changedAt[l.id] ? h('small', { text: 'This changed while it was on your screen. Look again before you decide.' }) : null),
         b));
     if (snoozeId === l.id) r.appendChild(snoozeMenu(l));

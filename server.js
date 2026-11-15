@@ -248,9 +248,14 @@ async function start(opts = {}) {
         if (typeof body.decision_id !== 'string' || !body.decision_id) return json(res, 400, { error: 'Send the decision_id you were handed, so the report lands on the right decision.' });
         out = store.complete(body.id, body.outcome, body.detail, Date.now(), body.decision_id);
       }
+      else if (p === '/api/record') {
+        // An answer the person gave in a chat, recorded by the session that asked (record_answer).
+        const r = store.recordAnswer(String(body.id || ''), { agent: String(body.agent || ''), agents: body.agents, value: body.value, quote: body.quote, said_at: body.said_at });
+        out = Object.assign(pub(r.light), { held: r.held }, r.decision_id ? { decision_id: r.decision_id } : {});
+      }
       else if ((m = p.match(/^\/api\/lights\/([a-f0-9]+)\/act$/))) {
         if (body.action === 'approve' && typeof body.rev !== 'string') return json(res, 400, { error: 'Send the rev of the light as it was shown.' });
-        out = store.act(m[1], body.action, body);
+        out = store.act(m[1], body.action, Object.assign({}, body, { chat: null })); // a chat answer comes only through /api/record
       }
       else if ((m = p.match(/^\/api\/lights\/([a-f0-9]+)$/))) out = store.update(m[1], body, person ? 'you' : String(body.agent || 'agent').slice(0, 40));
       else if (p === '/api/areas') out = store.addArea(body);

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Answers you give in chat count.** When you answer an assistant in the chat instead of on the board, it can record
+  your answer with your exact words (`record_answer`), so the board stops asking and the answer is on record.
+  A question or to-do is decided at once. On a high-stakes light the board shows "You answered in chat" with your
+  words, and nothing happens until you tap Confirm ("Not that" clears it). A message to a person or an approval is
+  never answered from a chat, only the session that asked can record an answer, and a chat answer never counts toward
+  something running by itself.
 - **A second start never touches a running board's data.** Starting the board, or a second copy of it, takes the data folder's lock before it reads, tidies or saves anything there; before, a second start could save a setting or clear the running board's save in progress before it found out the board was already running. Opening a board (a report, say) tidies a half-written save only when the process that wrote it is gone.
 - **Long drafts show their first lines.** A draft longer than about five lines shows its first five and "Show all (30
   lines)", then "Show less": in an open row, on a pass card, on the Needs-you card (Inspect), in the Reach out drawer and

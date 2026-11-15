@@ -127,3 +127,24 @@ test('opening a board tidies half-written saves only from processes that are gon
   assert.ok(!fs.existsSync(dead), 'a gone process\'s leftover is tidied');
   assert.ok(fs.existsSync(alive), 'a running process\'s save in progress is kept');
 });
+
+test('an answer from a chat over HTTP: recorded, then collected by the session that asked; the page cannot pass one off', async () => {
+  const dir = tmp();
+  const a = await start({ port: 0, dir });
+  const post = (p, body, key) => fetch(a.url + p, { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, key ? { 'x-switchboard-key': a.key } : {}), body: JSON.stringify(body) }).then(async (r) => ({ status: r.status, body: await r.json() }));
+  try {
+    const me = 'claude-code:acme';
+    const q = (await post('/api/lights', { area: 'A', title: 'Which day?', kind: 'decide', options: ['Tue', 'Wed'], agent: me })).body;
+    const r = await post('/api/record', { id: q.id, value: 'Wed', quote: 'wed is better', agent: me });
+    assert.equal(r.status, 200, JSON.stringify(r.body)); assert.equal(r.body.held, false); assert.ok(r.body.decision_id);
+    const got = (await post('/api/decisions', { agent: me })).body.decisions;
+    assert.deepEqual(got.map((d) => [d.id, d.value]), [[q.id, 'Wed']]);
+    assert.equal((await post('/api/record', { id: q.id, value: 'Tue', quote: 'x', agent: 'claude-code:someone-else' })).status, 400);
+    // The page's own taps never become a "chat" answer, whatever the request says.
+    const p2 = (await post('/api/lights', { area: 'A', title: 'Which color?', kind: 'decide', options: ['Red', 'Blue'], agent: me })).body;
+    const st = (await (await fetch(a.url + '/api/state', { headers: { 'x-switchboard-key': a.key } })).json()).lights.find((l) => l.id === p2.id);
+    assert.equal((await post(`/api/lights/${p2.id}/act`, { action: 'answer', value: 'Red', rev: st.rev, chat: { quote: 'not really said', by: me } }, true)).status, 200);
+    const d = a.store.db.lights.find((l) => l.id === p2.id).decision;
+    assert.equal(d.via, undefined); assert.ok(d.releaseAt > Date.now() - 1000, 'a tap on the page keeps its hold');
+  } finally { a.close(); }
+});

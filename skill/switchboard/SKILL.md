@@ -67,6 +67,22 @@ look for a faster path. A decision with
 not like it: stop doing that action type on your own and tell them what was
 done.
 
+## When the person answers you in chat
+
+People often answer in the chat instead of on the board. When their words clearly
+answer one of your open lights, call `record_answer` with the light's `id` (or
+`key`), the `value` (one of its options exactly, `done` for a to-do, or their
+words for an open question) and `quote`: their own words, exactly as they said
+them. Never your summary, and never a guess at what they meant. Then collect it
+with `get_decisions` and report it with `complete_decision` as usual.
+
+- On a high-stakes light (production data, legal wording, money, deleting,
+  going public) it only shows them their words on the board with Confirm.
+  Nothing happens until they tap it.
+- Messages to people and approvals are never answered from a chat. If they say
+  "send it" in chat, tell them it is waiting on the board.
+- Only for lights you raised. If it is another session's light, tell the person.
+
 ## When you need the person
 
 Raise a light instead of ending your turn with a question. Then keep working on

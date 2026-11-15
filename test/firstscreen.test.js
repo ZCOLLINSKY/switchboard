@@ -128,3 +128,11 @@ test('a row keeps the gold link to open beside its main button, and a choice wit
   assert.match(code, /var edit = function \(\) \{ [^}]*moreId = null; render\(\); \}/);
   assert.match(code, /snoozeId = null; moreId = null; fit = null; render\(\); \} return; \}/, 'Escape closes More… too');
 });
+
+test('a light answered in chat: the card shows the words and Confirm, Enter confirms it and N clears it, never the recommended option', () => {
+  const page = require('fs').readFileSync(require('path').join(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.match(page, /if \(l\.chatAnswer\) return function \(\) \{ act\(l, 'confirm_chat'\); \};/, 'Enter confirms the chat answer');
+  assert.match(page, /if \(l\.chatAnswer\) return function \(\) \{ act\(l, 'dismiss_chat'\); \};/, 'N clears it');
+  assert.match(page, /'You said in chat: ', h\('q', \{ text: ca\.quote \}\)/, 'the card quotes their words');
+  assert.ok(page.indexOf("if (l.chatAnswer) return function () { act(l, 'confirm_chat'); }") < page.indexOf("act(l, 'answer', { value: yesOf(l) })"), 'checked before the recommended option');
+});

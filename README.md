@@ -107,6 +107,12 @@ Because it already has the tools, it skips installing and does
 **Any other assistant, or no plugin:** get the folder (`git clone` as above, or
 **Download ZIP**) and follow [Let your AI assistant set it up](#let-your-ai-assistant-set-it-up).
 
+### One click to open (Mac)
+
+`node cli.js app` makes `Switchboard.app` in your Applications folder. Drag it onto your Dock: each click opens the
+board ready to approve, and starts it first if it is not running. It holds no key itself; it asks the running board
+for its link each time, so it keeps working after `rotate-key`.
+
 ### If you installed the plugin
 
 - **Always allow its tools.** The first time Claude Code asks to use a

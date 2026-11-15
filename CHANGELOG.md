@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **One click to open, on a Mac.** `node cli.js app` makes `Switchboard.app` (with the board's icon) in your Applications folder. Drag it onto the Dock: each click opens the board ready to approve, and starts the board first if it is not running. It holds no key; it asks the running board for its link each time.
 - **Answers never strand between sessions.** A session started in a project's folder now also collects answers on lights raised under that project's name by a session that has since gone quiet (10 minutes after the answer was ready, with no check-in from it). Only for collecting: it never changes or closes those lights, a session that is still around keeps its answers, and a message to a person still waits for a session that can send it.
 
 ## 0.3.2 (Nov 15, 2026)

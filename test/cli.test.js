@@ -170,3 +170,17 @@ test('rotate-key writes a new private page key; after a restart every old link c
     assert.equal((await act(fs.readFileSync(path.join(dir, 'page.key'), 'utf8').trim())).status, 200, 'the new one can');
   } finally { b.close(); }
 });
+
+test('app: on a Mac, a Switchboard.app that opens the board ready to approve, holding no key itself', { skip: process.platform !== 'darwin' }, async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sb-app-')), port = await freePort();
+  const out = await run(['app', '--dir', dir, '--port', String(port)], {});
+  assert.equal(out.code, 0, out.out);
+  const app = path.join(dir, 'Switchboard.app', 'Contents');
+  const plist = fs.readFileSync(path.join(app, 'Info.plist'), 'utf8'), exe = path.join(app, 'MacOS', 'Switchboard'), script = fs.readFileSync(exe, 'utf8');
+  assert.match(plist, /<key>CFBundleExecutable<\/key><string>Switchboard<\/string>/);
+  assert.ok(fs.statSync(exe).mode & 0o100, 'the script can run');
+  assert.match(script, new RegExp(`cli\\.js' link --open --port ${port}`), 'it asks the running board for its link each time');
+  assert.match(script, /start --port \d+ >\/dev\/null 2>&1 &/, 'and starts the board first when it is not running');
+  assert.doesNotMatch(script, /key=|[a-f0-9]{32}/, 'no key is written into the app');
+  assert.match(out.out, /Drag it from that folder onto your Dock/);
+});

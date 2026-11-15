@@ -31,12 +31,15 @@ const HELP = `Switchboard
   restore --list                                      the backups, newest first: when, how big, how many lights
   restore <file>                                      put a backup back as the data file (the board must be stopped; the
                                                       data file as it is now is kept in backups/ first)
+  app [--dir ~/Applications] [--port N]              on a Mac: make Switchboard.app, one click to open the board ready to
+                                                      approve (it starts the board first if it is not running)
   mcp                                                 the assistant connector (MCP over stdio)
 
 Flags take a value after a space or an equals sign: --port 5000 or --port=5000.`;
 
 // Which flags each command takes. true = takes a value, false = a switch.
 const FLAGS = {
+  app: { dir: true, port: true },
   start: { port: true, host: true, open: false }, stop: { port: true }, link: { port: true, sim: false, open: false, copy: false, at: true },
   sim: { port: true, host: true, open: false, 'no-live': false }, demo: { port: true, clear: false }, list: { port: true }, snapshot: { label: true }, restore: { list: false }, 'rotate-key': { port: true }, report: { port: true, days: true }, mcp: {},
   raise: { port: true, area: true, title: true, kind: true, draft: true, options: true, state: true, due: true, to: true, note: true, link: true, source: true, agent: true, key: true, value: true, 'follow-up-days': true, outbound: false },
@@ -255,6 +258,46 @@ async function startBoard(opts, label) {
     if (flags.open) { console.log(`Opening Switchboard at ${b.url} in the browser.`); await openLink(`${b.url}/?key=${k}`); }
     else if (flags.sim || toPerson()) console.log(`${b.url}/?key=${k}`);
     else console.log(`Switchboard is running at ${b.url}. Its link is printed only in a terminal, for the person: ${SELF} link${onPort(b.url)}. To open it in the browser on this computer: ${openHint(b.url)}`);
+  } else if (cmd === 'app') {
+    // A Mac app that opens this board with its key link: no terminal, one click from the Dock. It holds no key itself:
+    // each click asks the running board for its link (a new key after rotate-key just works).
+    if (process.platform !== 'darwin') fail(`The app is for a Mac. Elsewhere, open ${SELF} link --open, or bookmark the board after opening its link once.`);
+    const dir = expand(flags.dir ? String(flags.dir) : path.join(os.homedir(), 'Applications'));
+    const app = path.join(dir, 'Switchboard.app'), contents = path.join(app, 'Contents');
+    const q = (v) => "'" + String(v).replace(/'/g, "'\\''") + "'";
+    const port = flags.port != null ? ' --port ' + Number(flags.port) : onPort(BASE);
+    const home = process.env.SWITCHBOARD_HOME ? `export SWITCHBOARD_HOME=${q(HOME)}\n` : '';
+    const cli = q(path.join(root, 'cli.js')), node = q(process.execPath);
+    const script = `#!/bin/sh
+# Switchboard.app: opens the board ready to approve. Made by "cli.js app"; run it again to remake it.
+${home}if ${node} ${cli} link --open${port} >/dev/null 2>&1; then exit 0; fi
+# Not running: start it in the background, then open it once it answers.
+nohup ${node} ${cli} start${port} >/dev/null 2>&1 &
+i=0; while [ $i -lt 20 ]; do sleep 0.5; if ${node} ${cli} link --open${port} >/dev/null 2>&1; then exit 0; fi; i=$((i+1)); done
+osascript -e 'display alert "Switchboard did not start" message "Run: node cli.js start in Terminal to see why."' >/dev/null 2>&1
+exit 1
+`;
+    const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleName</key><string>Switchboard</string>
+<key>CFBundleDisplayName</key><string>Switchboard</string>
+<key>CFBundleIdentifier</key><string>local.switchboard.open</string>
+<key>CFBundleExecutable</key><string>Switchboard</string>
+<key>CFBundleIconFile</key><string>Switchboard</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>${require('./package.json').version}</string>
+<key>LSUIElement</key><true/>
+</dict></plist>
+`;
+    fs.mkdirSync(path.join(contents, 'MacOS'), { recursive: true });
+    fs.mkdirSync(path.join(contents, 'Resources'), { recursive: true });
+    fs.writeFileSync(path.join(contents, 'Info.plist'), plist);
+    fs.writeFileSync(path.join(contents, 'MacOS', 'Switchboard'), script, { mode: 0o755 });
+    fs.chmodSync(path.join(contents, 'MacOS', 'Switchboard'), 0o755);
+    // The board's own icon, as the Mac wants it (sips comes with macOS); without it the app still works.
+    try { require('child_process').execFileSync('/usr/bin/sips', ['-s', 'format', 'icns', path.join(root, 'icon.png'), '--out', path.join(contents, 'Resources', 'Switchboard.icns')], { stdio: 'ignore', timeout: 20000 }); } catch (e) { /* no icon */ }
+    console.log(`Made ${app}. Drag it from that folder onto your Dock. Each click opens the board ready to approve${port ? ' on' + port.replace(' --port', ' port') : ''}.`);
   } else if (cmd === 'report') {
     // Receipts from the board's own log, read where the board keeps it; what is open now comes from the board itself.
     const b = await board(HOME);

@@ -8,7 +8,7 @@ const assert = require('node:assert');
 const fs = require('fs'), os = require('os'), path = require('path');
 const { spawn } = require('child_process');
 const { start } = require('../server');
-const { rev } = require('../lib/store');
+const { rev, attentionOptions } = require('../lib/store');
 const root = path.join(__dirname, '..');
 const json = (f) => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sbpk-'));
@@ -81,7 +81,9 @@ test('setup_guide gives the first-run steps from SETUP.md without touching a boa
     assert.deepEqual(g.questions.map((q) => q.key), ['setup:areas', 'setup:never', 'setup:attention', 'setup:check']);
     for (const q of g.questions) { assert.equal(q.area, 'Switchboard', 'raise_light needs an area'); assert.equal(q.kind, 'decide'); assert.equal(q.for_anyone, true); assert.ok(q.options.length >= 1 && q.options.every((o) => o.length <= 40)); }
     const att = g.questions[2];
-    assert.deepEqual(att.options, ["Don't, I'll open it myself", 'A banner on this computer', 'A text to my phone']);
+    // Texts go out through Messages on a Mac, so other systems are not offered them.
+    assert.deepEqual(att.options, attentionOptions());
+    if (process.platform === 'darwin') assert.deepEqual(att.options, ["Don't, I'll open it myself", 'A banner on this computer', 'A text to my phone']);
     assert.equal(att.recommended, "Don't, I'll open it myself", 'the safe choice is the recommended one');
     assert.equal(g.questions[1].recommended, 'Keep all four');
     assert.match(g.note, /Do not ask them in the chat/);

@@ -810,3 +810,15 @@ test('the fallback never takes an answer from a session that is still around, no
   s2.act(m2.id, 'approve', { rev: rev(s2.db.lights.find((l) => l.id === m2.id)) }, T0 + 1000);
   assert.equal(s2.decisions(T0 + 99 * 60e3, inRepo).decisions.length, 0, 'a message to a person waits for a session that can send it');
 });
+
+test('raise time: a recommendation that changes nothing, and an eleventh open ask in one container, each get a warning', () => {
+  const s = fresh();
+  const l = s.raise({ title: 'Switch the newsletter to weekly', kind: 'decide', options: ['Yes', 'Not now'], recommended: 'Not now' }, T0);
+  assert.ok(s.warnings.some((w) => /changes nothing/.test(w)), s.warnings.join('; '));
+  s.raise({ title: 'Keep the STOP opt-out?', kind: 'decide', options: ['Yes', 'No'], recommended: 'No' }, T0);
+  assert.ok(!s.warnings.some((w) => /changes nothing/.test(w)), 'a question about keeping something is not status quo');
+  for (let i = 0; i < 10; i++) s.raise({ title: `Approve fix ${i}`, kind: 'approve', draft: 'x', key: `k${i}`, area: 'Busy' }, T0);
+  s.raise({ title: 'Approve fix 11', kind: 'approve', draft: 'x', key: 'k11', area: 'Busy' }, T0);
+  assert.ok(s.warnings.some((w) => /fold this into one light/.test(w)), s.warnings.join('; '));
+  assert.ok(l.id);
+});

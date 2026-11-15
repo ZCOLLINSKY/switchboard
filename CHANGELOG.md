@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Your phone buzzes, with no cloud.** `SWITCHBOARD_NOTIFY_TEXT` (your own number
+  or Apple ID) has the Mac's Messages app text you when something new needs you,
+  on the same rules as the banner (at most every 30 minutes, none at night, a
+  count unless `SWITCHBOARD_NOTIFY=titles`), with `SWITCHBOARD_PHONE_URL` added.
+  macOS asks once for permission to use Messages.
 - **Take every recommendation.** `recommended` on a question (one of its
   options) marks the answer the assistant recommends; the page offers "Take all
   N recommendations" when there are two or more, lists each answer first, and

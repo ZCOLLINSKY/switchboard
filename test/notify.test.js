@@ -85,3 +85,30 @@ test('the board rings when a light that needs the person is raised, and only whe
     assert.equal(quiet.length, 0);
   } finally { b.close(); }
 });
+
+test('a text to the owner\'s own phone goes through Messages, with the words as arguments', () => {
+  const { textSender } = require('../lib/notify');
+  const calls = [];
+  const send = textSender({ to: '+18595550123', platform: 'darwin', spawn: (cmd, args) => { calls.push([cmd, args]); return { on() {}, unref() {} }; } });
+  send('Switchboard', '2 new things need you; "Dale" said `rm -rf`');
+  assert.equal(calls[0][0], 'osascript');
+  const args = calls[0][1], script = args.filter((a, i) => args[i - 1] === '-e');
+  assert.ok(script.join(' ').includes('Messages') && !script.join(' ').includes('Dale') && !script.join(' ').includes('8595550123'), 'neither the number nor the words are spliced into the script');
+  assert.deepEqual(args.slice(-2), ['+18595550123', 'Switchboard: 2 new things need you; "Dale" said `rm -rf`']);
+  assert.equal(textSender({ to: 'zach@example.com', platform: 'darwin', spawn: () => ({ on() {}, unref() {} }) }) != null, true, 'an Apple ID email works too');
+  assert.equal(textSender({ to: 'call me', platform: 'darwin' }), null, 'not a number or an email: no sender');
+  assert.equal(textSender({ to: '+18595550123', platform: 'linux' }), null, 'Messages is a Mac app');
+});
+
+test('the board texts when SWITCHBOARD_NOTIFY_TEXT is set, adding the phone link when there is one', () => {
+  const { sendersFromEnv } = require('../lib/notify');
+  const calls = [], spawn = (cmd, args) => { calls.push(args.slice(-2)); return { on() {}, unref() {} }; };
+  const only = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: '+18595550123', SWITCHBOARD_PHONE_URL: 'https://box.tailnet.ts.net:8443/' }, { platform: 'darwin', spawn });
+  assert.equal(only.senders.length, 1, 'texting alone is enough to switch notifications on');
+  only.senders[0]('Switchboard', '1 new thing needs you on Switchboard');
+  assert.deepEqual(calls[0], ['+18595550123', 'Switchboard: 1 new thing needs you on Switchboard https://box.tailnet.ts.net:8443/']);
+  assert.equal(sendersFromEnv({ SWITCHBOARD_NOTIFY: 'titles', SWITCHBOARD_NOTIFY_TEXT: '+18595550123' }, { platform: 'darwin', spawn }).senders.length, 2, 'banner and text');
+  const bad = sendersFromEnv({ SWITCHBOARD_NOTIFY_TEXT: 'my phone' }, { platform: 'darwin', spawn });
+  assert.equal(bad.senders.length, 0); assert.match(bad.warning, /SWITCHBOARD_NOTIFY_TEXT/);
+  assert.equal(sendersFromEnv({}, { platform: 'darwin', spawn }).senders.length, 0, 'off unless asked for');
+});

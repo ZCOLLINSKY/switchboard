@@ -50,10 +50,16 @@ async function start(opts = {}) {
   const clients = new Set();
   // Banners when something new needs the person: off unless asked for (opts.notify in tests, SWITCHBOARD_NOTIFY=1 for a
   // count only, =titles to name what came in). Never in a simulation.
-  const notifyOpt = opts.notify !== undefined ? opts.notify
-    : process.env.SWITCHBOARD_NOTIFY && process.env.SWITCHBOARD_NOTIFY !== '0' ? { titles: process.env.SWITCHBOARD_NOTIFY === 'titles' } : null;
   let notify = null;
-  if (!sim && notifyOpt) { const { notifier, osSender } = require('./lib/notify'); const send = notifyOpt.send || osSender(); if (send) notify = notifier({ send, titles: !!notifyOpt.titles }); }
+  if (!sim) {
+    const N = require('./lib/notify');
+    if (opts.notify !== undefined) { if (opts.notify) { const send = opts.notify.send || N.osSender(); if (send) notify = N.notifier({ send, titles: !!opts.notify.titles }); } }
+    else {
+      const env = N.sendersFromEnv(process.env);
+      if (env.warning) console.error(env.warning);
+      if (env.senders.length) notify = N.notifier({ send: (t, b) => { for (const f of env.senders) f(t, b); }, titles: env.titles });
+    }
+  }
   const ring = () => { if (notify) try { notify.check(store.view()); } catch (e) { console.error('notify failed:', e.message); } };
   ring(); // learns what is already waiting, so starting the board never rings
 
